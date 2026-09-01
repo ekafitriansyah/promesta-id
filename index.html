@@ -1,0 +1,3145 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <script>
+      window.addEventListener("error", function(e) {
+        if (e && e.message && e.message !== "Script error.") {
+          console.error("Global error:", e.message, e.filename, e.lineno, e.colno, e.error);
+        }
+      });
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>promesta.id</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960' fill='%23facc15'%3E%3Cpath d='M480-120 200-276v-240L40-600l440-240 440 240v320h-80v-276l-80 44v240L480-120Z'/%3E%3C/svg%3E">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300..800&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+<!-- APP LOADING OVERLAY -->
+    <div class="fb-loading" id="fb-loading">
+      <div class="fb-spinner"></div>
+      <p>Memuat...</p>
+    </div>
+
+    
+
+    <!-- COMBINED ENTRY & LOGIN SCREEN (WITH DARK GLASS MORPHISM) -->
+    <div class="login-screen hidden" id="login-screen">
+      <div class="auth-hybrid-container" id="auth-hybrid-container">
+        <!-- Left Panel: Welcome/Hero Area -->
+        <div class="auth-welcome-panel" id="auth-welcome-panel">
+          <div class="welcome-decor-container">
+            <div class="welcome-icon-box">
+              <i class="material-symbols-rounded" style="font-size: 30px"
+                 data-lucide="graduation-cap"></i>
+            </div>
+            <h2
+              class="typewriter-logo"
+              style="
+                margin: 0;
+                font-size: 15pt;
+                text-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+              "
+            >
+              Promesta<span class="dot">.</span><span class="id">id</span>
+            </h2>
+          </div>
+
+          <h1 class="welcome-heading">
+            Selamat Datang,<br />
+            <span class="welcome-dynamic-name" id="welcome-dynamic-name"
+              >Guru Hebat!</span
+            >
+          </h1>
+
+          <blockquote class="welcome-quote-box" id="welcome-quote-container">
+            <p class="welcome-quote-text" id="welcome-quote-text">
+              "Pendidikan adalah senjata paling mematikan di dunia, karena
+              dengan pendidikan, Anda dapat mengubah dunia."
+            </p>
+            <cite class="welcome-quote-author" id="welcome-quote-author"
+              > -  Nelson Mandela</cite
+            >
+          </blockquote>
+
+          <p class="welcome-desc">
+            Kelola penyusunan Program Semester (Promes) otomatis dan seluruh administrasi perangkat ajar
+            dengan lebih mudah dan terstruktur melalui Promesta.id.
+          </p>
+
+          <button
+            class="welcome-action-btn"
+            id="welcome-action-btn"
+            onclick="activateLoginMode()"
+          >
+            Mulai Pengelolaan Kelas
+            <i
+              class="material-symbols-rounded"
+              style="font-size: 18px; margin-left: 8px"
+               data-lucide="arrow-right"></i>
+          </button>
+        </div>
+
+        <!-- Right Panel: Login / Signup Form -->
+        <div class="auth-form-panel" id="auth-form-panel">
+          <div class="auth-form-header">
+            <h3 class="auth-form-title">Akses Akun</h3>
+            <p class="auth-form-subtitle">Sistem Perangkat Pembelajaran</p>
+          </div>
+
+          <!-- Name & Title Field -->
+          <div class="login-field">
+            <label>Nama Lengkap & Gelar</label>
+            <input
+              type="text"
+              id="login-nama"
+              placeholder="Contoh: Dr. Budi Santoso, M.Pd."
+              autocomplete="name"
+              onkeydown="if (event.key === 'Enter') doLogin();"
+            />
+          </div>
+
+          <!-- Password Field -->
+          <div class="login-field">
+            <label>Password</label>
+            <input
+              type="password"
+              id="login-password"
+              placeholder="Masukkan password Anda..."
+              autocomplete="current-password"
+              onkeydown="if (event.key === 'Enter') doLogin();"
+            />
+          </div>
+
+          <!-- License Key Field (Shown dynamically for unregistered users) -->
+          <div class="login-field" id="license-field" style="display: none; background: rgba(24acc15, 250, 20, 0.03); border: 1px dashed rgba(250, 204, 21, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+            <label style="color: #facc15; font-weight: 600;">Kode Aktivasi / Lisensi (Pendaftaran Baru)</label>
+            <p style="font-size: var(--fs-xs); color: rgba(255,255,255,0.6); margin-bottom: 8px; line-height: 1.3;">
+              Nama Anda belum terdaftar. Silakan masukkan 8-digit Kode Lisensi resmi Anda untuk mengaktifkan akun offline ini.
+            </p>
+            <input
+              type="text"
+              id="login-license"
+              placeholder="Masukkan 8-digit kode lisensi (Contoh: 12345678)"
+              style="border-color: rgba(250, 204, 21, 0.5); text-transform: uppercase;"
+              maxlength="12"
+              onkeydown="if (event.key === 'Enter') doLogin();"
+            />
+          </div>
+
+          <div class="login-err" id="login-err"></div>
+
+          <button class="btn-login" id="auth-submit-btn" onclick="doLogin()">
+            Masuk
+          </button>
+
+          <div class="login-forgot">
+            <a
+              href="#"
+              onclick="
+                doForgotPassword();
+                return false;
+              "
+              >Lupa password? Atur ulang dengan Lisensi</a
+            >
+          </div>
+
+          <!-- Return to main slide button (only visible on large layout or mobile when login-active is true) -->
+          <div style="margin-top: 20px; text-align: center">
+            <a
+              href="#"
+              class="back-to-welcome-btn"
+              onclick="
+                deactivateLoginMode();
+                return false;
+              "
+            >
+              <i
+                class="material-symbols-rounded"
+                style="
+                  font-size: 15px;
+                  vertical-align: middle;
+                  margin-right: 4px;
+                "
+                 data-lucide="arrow-left"></i>
+              Kembali
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD KELAS -->
+    <div class="dashboard-screen hidden" id="dashboard-screen">
+      <div class="dashboard-topbar">
+        <h1 class="typewriter-logo">
+          Promesta<span class="dot">.</span><span class="id">id</span>
+        </h1>
+        <div class="dashboard-topbar-right">
+          <button onclick="bukaModalOnboarding()" class="dash-topbar-btn btn-topbar-help" title="Petunjuk">
+            <i class="material-symbols-rounded" style="font-size: 15px;" data-lucide="help-circle"></i>
+            <span class="topbar-btn-text">Petunjuk</span>
+          </button>
+          <button onclick="backupAllData()" class="dash-topbar-btn btn-topbar-backup" title="Backup">
+            <i class="material-symbols-rounded" style="font-size: 15px;" data-lucide="database-arrow-up"></i>
+            <span class="topbar-btn-text">Backup</span>
+          </button>
+          <button onclick="document.getElementById('import-all-json').click()" class="dash-topbar-btn btn-topbar-impor" title="Impor">
+            <i class="material-symbols-rounded" style="font-size: 15px;" data-lucide="database-arrow-down"></i>
+            <span class="topbar-btn-text">Impor</span>
+          </button>
+          <input type="file" id="import-all-json" accept=".json" style="display: none;" onchange="importAllData(event)">
+          <button onclick="resetAllDataLocal()" class="dash-topbar-btn btn-topbar-reset" title="Reset">
+            <i class="material-symbols-rounded" style="font-size: 15px;" data-lucide="trash"></i>
+            <span class="topbar-btn-text">Reset</span>
+          </button>
+          <span id="dash-guru-nama" title="Profil Guru">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="opacity: 0.9; flex-shrink: 0;"
+            >
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span id="dash-guru-nama-text" class="topbar-btn-text"> - </span>
+          </span>
+          <button
+            class="dash-topbar-btn btn-topbar-key"
+            onclick="openChangePasswordModal()"
+            title="Ganti Password"
+          >
+            <i class="material-symbols-rounded" style="font-size: 15px;" data-lucide="key-round"></i>
+            <span class="topbar-btn-text">Ganti Password</span>
+          </button>
+          <button
+            class="dash-topbar-btn btn-topbar-logout"
+            onclick="doLogout()"
+            title="Keluar"
+          >
+            <i class="material-symbols-rounded" style="font-size: 15px;" data-lucide="log-out"></i>
+            <span class="topbar-btn-text">Keluar</span>
+          </button>
+        </div>
+      </div>
+      <div class="dashboard-body">
+        <div class="dashboard-layout-grid">
+          <!-- Left Column: Hero & Checklist -->
+          <div class="dashboard-left-card">
+
+            <h1 class="dashboard-welcome-name" id="dash-welcome">Halo, Guru!</h1>
+            <div class="dashboard-guru-star" id="dash-guru-title">
+              <i data-lucide="star" style="width: 16px; height: 16px; fill: currentColor;"></i>
+              <span>Guru Hebat</span>
+            </div>
+            <p class="dashboard-welcome-text">Pilih kelas aktif Anda untuk mulai menyusun administrasi berikut secara instan:</p>
+            <div class="dashboard-checklist-list">
+              <div class="dashboard-checklist-item">
+                <i data-lucide="circle-check-big" style="width: 18px; height: 18px; color: #10b981; flex-shrink: 0;"></i>
+                <span>Kalender Pendidikan</span>
+              </div>
+              <div class="dashboard-checklist-item">
+                <i data-lucide="circle-check-big" style="width: 18px; height: 18px; color: #10b981; flex-shrink: 0;"></i>
+                <span>Alur Tujuan Pembelajaran</span>
+              </div>
+              <div class="dashboard-checklist-item">
+                <i data-lucide="circle-check-big" style="width: 18px; height: 18px; color: #10b981; flex-shrink: 0;"></i>
+                <span>Rencana Pekan Efektif (RPE)</span>
+              </div>
+              <div class="dashboard-checklist-item">
+                <i data-lucide="circle-check-big" style="width: 18px; height: 18px; color: #10b981; flex-shrink: 0;"></i>
+                <span>Program Tahunan (Prota)</span>
+              </div>
+              <div class="dashboard-checklist-item">
+                <i data-lucide="circle-check-big" style="width: 18px; height: 18px; color: #10b981; flex-shrink: 0;"></i>
+                <span>Program Semester (Prosem)</span>
+              </div>
+              <div class="dashboard-checklist-item">
+                <i data-lucide="circle-check-big" style="width: 18px; height: 18px; color: #10b981; flex-shrink: 0;"></i>
+                <span>Kriteria Ketercapaian (KKTP)</span>
+              </div>
+              <div class="dashboard-checklist-item">
+                <i data-lucide="circle-check-big" style="width: 18px; height: 18px; color: #10b981; flex-shrink: 0;"></i>
+                <span>Presensi & Absensi Murid</span>
+              </div>
+              <div class="dashboard-checklist-item">
+                <i data-lucide="circle-check-big" style="width: 18px; height: 18px; color: #10b981; flex-shrink: 0;"></i>
+                <span>Jurnal Harian Mengajar</span>
+              </div>
+              <div class="dashboard-checklist-item">
+                <i data-lucide="circle-check-big" style="width: 18px; height: 18px; color: #10b981; flex-shrink: 0;"></i>
+                <span>Rekapitulasi Nilai Asesmen</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Classes Grid -->
+          <div class="dashboard-right-card">
+            <div class="dashboard-classes-header" style="justify-content: space-between; align-items: flex-start; gap: 16px;">
+              <div style="display: flex; flex-direction: column; flex: 1;">
+                <h2 class="dashboard-classes-title">Daftar Kelas Mengajar Anda</h2>
+                <div class="dashboard-welcome-text" style="margin: 6px 0 0 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <i data-lucide="graduation-cap" style="width: 16px; height: 16px; color: #10b981; flex-shrink: 0;"></i>
+                  <span style="font-weight: 700; color: #10b981;"><span id="stat-total-kelas" class="num">0</span> Kelas Aktif</span>
+                </div>
+              </div>
+              <button class="dashboard-add-btn" onclick="bukaModalKelas()" title="Tambah Kelas Baru" style="align-self: flex-start; margin-top: 4px;">
+                <i data-lucide="plus" style="width: 18px; height: 18px;"></i>
+              </button>
+            </div>
+            <div class="kelas-grid" id="kelas-grid">
+              <!-- cards dirender JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL CETAK ABSENSI -->
+    <div class="modal-overlay hidden" id="modal-print-absensi" style="z-index: 10001;">
+      <div class="modal-box" style="max-width: 500px; width: 92%;">
+        <div class="modal-title" style="display: flex; align-items: center; gap: 10px;">
+          <i class="material-symbols-rounded" style="color: var(--accent); font-size: 24px;" data-lucide="printer"></i>
+          <span id="print-absensi-modal-title">Cetak Absensi Murid</span>
+        </div>
+        <p style="font-size: var(--fs-xs); color: var(--text-light); margin-bottom: 16px; line-height: 1.5;">
+          Pilih bulan yang ingin dicetak dan tentukan apakah setiap bulan dipisahkan ke halaman baru.
+        </p>
+
+        <!-- Dynamic Month Checkboxes -->
+        <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+          <label style="font-weight: 600; font-size: var(--fs-sm);">Bulan yang Dicetak:</label>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" onclick="toggleAllPrintAbsensiMonths(true)" style="background: rgba(255,255,255,0.08); border: 1px solid var(--border); color: var(--text-light); padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">Pilih Semua</button>
+            <button type="button" onclick="toggleAllPrintAbsensiMonths(false)" style="background: rgba(255,255,255,0.08); border: 1px solid var(--border); color: var(--text-light); padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">Hapus Semua</button>
+          </div>
+        </div>
+
+        <div id="print-absensi-months-list" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 14px; background: rgba(0,0,0,0.25); border: 1px solid var(--border); padding: 14px; border-radius: 10px; margin-bottom: 18px; max-height: 200px; overflow-y: auto;">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Page Break Option -->
+        <div style="background: rgba(255,255,255,0.04); border: 1px solid var(--border); padding: 12px 14px; border-radius: 10px; margin-bottom: 20px;">
+          <label style="display: flex; align-items: center; gap: 10px; font-size: var(--fs-sm); cursor: pointer; color: var(--text); font-weight: 600;">
+            <input type="checkbox" id="print-absensi-split-cb" checked style="accent-color: var(--accent); width: 18px; height: 18px;">
+            <span>Pisahkan Setiap Bulan ke Halaman Baru</span>
+          </label>
+          <p style="font-size: 11px; color: var(--text-light); margin-top: 4px; margin-left: 28px; line-height: 1.4;">
+            Jika diaktifkan, setiap bulan akan dicetak pada lembar kertas tersendiri.
+          </p>
+        </div>
+
+        <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button class="btn-modal-cancel" onclick="closePrintAbsensiModal()" style="padding: 9px 18px; border-radius: 8px; background: rgba(255,255,255,0.08); border: 1px solid var(--border); color: var(--text); font-size: var(--fs-sm); cursor: pointer;">
+            Batal
+          </button>
+          <button class="btn-modal-ok" onclick="executePrintAbsensiFromModal()" style="padding: 9px 20px; border-radius: 8px; background: var(--accent); color: #0f1d3a; font-weight: 700; font-size: var(--fs-sm); border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <i class="material-symbols-rounded" style="font-size: 18px;" data-lucide="printer"></i>
+            <span>Cetak Dokumen</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL GANTI PASSWORD -->
+    <div class="modal-overlay hidden" id="modal-ganti-password" style="z-index: 10001;">
+      <div class="modal-box" style="max-width: 400px;">
+        <div class="modal-title">Ganti Password</div>
+        <div class="modal-field">
+          <label>Password Lama</label>
+          <input type="password" id="chg-pass-old" placeholder="Masukkan password saat ini..." />
+        </div>
+        <div class="modal-field">
+          <label>Password Baru</label>
+          <input type="password" id="chg-pass-new" placeholder="Masukkan password baru..." />
+        </div>
+        <div class="modal-field">
+          <label>Konfirmasi Password Baru</label>
+          <input type="password" id="chg-pass-confirm" placeholder="Ulangi password baru..." />
+        </div>
+        <div class="login-err" id="chg-pass-err" style="margin-bottom: 12px; color: #f87171; font-size: var(--fs-xs);"></div>
+        <div class="modal-actions">
+          <button class="btn-modal-cancel" onclick="closeChangePasswordModal()">
+            Batal
+          </button>
+          <button
+            class="btn-modal-ok btn-save"
+            onclick="submitChangePassword()"
+            style="background: var(--accent); color: #0d1527;"
+          >
+            Simpan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL IMPOR SISWA (TEMPEL) -->
+    <div class="modal-overlay hidden" id="modal-impor-siswa" style="z-index: 10001;">
+      <div class="modal-box" style="max-width: 500px;">
+        <div class="modal-title">Tambah Banyak</div>
+        <p style="font-size: 11px; color: var(--text-light, #94a3b8); margin-bottom: 12px; line-height: 1.5;">
+          Tempelkan daftar nama murid di bawah ini. Pastikan satu baris hanya berisi satu nama murid. Format angka penomoran (misal: "1. Andi", "2) Budi") akan otomatis dihilangkan secara otomatis.
+        </p>
+        <div class="modal-field">
+          <textarea id="impor-siswa-textarea" placeholder="Contoh:&#10;Andi Wijaya&#10;Budi Santoso&#10;Citra Lestari" style="width: 100%; height: 180px; font-family: inherit; font-size: 13px; padding: 12px; background: rgba(0,0,0,0.2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; resize: vertical; outline: none; transition: border-color 0.2s;"></textarea>
+        </div>
+        <div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 20px; text-align: left;">
+          <input type="checkbox" id="impor-siswa-append" style="accent-color: var(--accent, #facc15); cursor: pointer; margin-top: 3px;" checked />
+          <label for="impor-siswa-append" style="font-size: 11px; color: var(--text-light, #94a3b8); cursor: pointer; user-select: none; line-height: 1.4;">
+            Tambahkan ke daftar murid yang sudah ada. Jika dinonaktifkan, seluruh daftar murid kelas saat ini akan diganti sepenuhnya dengan data di atas.
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-modal-cancel" onclick="closeImporSiswaModal()">
+            Batal
+          </button>
+          <button
+            class="btn-modal-ok"
+            onclick="submitImporSiswa()"
+            style="background: var(--accent); color: #0d1527;"
+          >
+            Mulai Impor
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL BUAT / EDIT KELAS -->
+    <div class="modal-overlay hidden" id="modal-kelas">
+      <div class="modal-box modal-box-landscape">
+        <div class="modal-title" id="modal-kelas-title">Tambah Kelas Baru</div>
+        <div class="modal-grid-2col">
+          <!-- Kolom 1: Identitas Sekolah -->
+          <div class="modal-col">
+            <div style="display: flex; gap: 8px">
+              <div class="modal-field" style="flex: 1; min-width: 0">
+                <label>Tahun Ajaran</label>
+                <input type="text" id="mk-tahun" placeholder="Contoh: 2026/2027" />
+              </div>
+              <div class="modal-field" style="flex: 1; min-width: 0">
+                <label>Jenjang</label>
+                <select id="mk-jenjang" onchange="updateModalFaseOptions(true); checkModalMapelLock(true); updateModalPlaceholders();" oninput="updateModalFaseOptions(true); checkModalMapelLock(true); updateModalPlaceholders();">
+                  <option value="SD">SD / MI</option>
+                  <option value="SMP">SMP / MTs</option>
+                  <option value="SMA">SMA / MA</option>
+                  <option value="SMK">SMK / MAK</option>
+                </select>
+              </div>
+            </div>
+            <div class="modal-field">
+              <label>Nama Sekolah</label>
+              <input
+                type="text"
+                id="mk-sekolah"
+                placeholder="SD Negeri 17 Nusantara"
+              />
+            </div>
+          </div>
+
+          <!-- Kolom 2: Tingkat Kelas & Rombel -->
+          <div class="modal-col">
+            <div style="display: flex; gap: 8px">
+              <div class="modal-field" style="flex: 1; min-width: 0">
+                <label>Fase <span style="color: #f87171; font-weight: bold">*</span></label>
+                <select id="mk-fase" style="text-align-last: left" onchange="updateModalKelasSuggestions(true); checkModalMapelLock(true); updateModalPlaceholders();" oninput="updateModalKelasSuggestions(true); checkModalMapelLock(true); updateModalPlaceholders();">
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C" selected>C</option>
+                  <option value="D">D</option>
+                  <option value="E">E</option>
+                  <option value="F">F</option>
+                </select>
+              </div>
+              <div class="modal-field" style="flex: 1; min-width: 0">
+                <label>Kelas <span style="color: #f87171; font-weight: bold">*</span></label>
+                <select id="mk-kelas" style="text-align-last: left" onchange="updateModalMapelOptions(false); checkModalMapelLock(true); updateModalPlaceholders();" oninput="updateModalMapelOptions(false); checkModalMapelLock(true); updateModalPlaceholders();"></select>
+              </div>
+            </div>
+            <div class="modal-field">
+              <label>Rombel <span style="color: #f87171; font-weight: bold">*</span></label>
+              <input type="text" id="mk-rombel" placeholder="1 Putra A" oninput="checkModalMapelLock(); updateModalPlaceholders();" onchange="updateModalMapelOptions(false); checkModalMapelLock(true); updateModalPlaceholders();" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Mata Pelajaran (Full Width di bagian bawah) -->
+        <div class="modal-field" style="margin-top: 4px;">
+          <label>Mata Pelajaran <span style="color: #f87171; font-weight: bold">*</span></label>
+          <select id="mk-mapel" onchange="toggleMapelManual('mk-mapel', 'mk-mapel-manual-container', 'mk-mapel-manual')">
+          </select>
+          <div id="mk-mapel-manual-container" class="hidden" style="margin-top: 8px;">
+            <textarea id="mk-mapel-manual" class="auto-resize" rows="1" placeholder="Tulis nama Mata Pelajaran / Muatan Lokal kustom..." style="resize: none; overflow: hidden; padding:10px 14px;background:rgba(255,255,255,0.05);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:var(--f);font-size:var(--fs);width:100%;box-sizing:border-box;"></textarea>
+          </div>
+          <div id="mk-mapel-lock-notice" class="hidden" style="font-size: 11px; color: #fbbf24; margin-top: 4px; font-weight: 500;">
+            ⚠ Fase, Kelas, dan Rombel wajib diisi terlebih dahulu untuk memilih Mata Pelajaran.
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-modal-cancel" onclick="tutupModalKelas()">
+            Batal
+          </button>
+          <button
+            class="btn-modal-ok btn-save"
+            id="modal-kelas-ok"
+            onclick="simpanModalKelas()"
+          >
+            Simpan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL EDIT KOMPONEN PENILAIAN -->
+    <div class="modal-overlay hidden" id="modal-edit-komponen" style="z-index: 10000;">
+      <div class="modal-box" style="max-width: 500px; max-height: 85vh; display: flex; flex-direction: column;">
+        <div class="modal-title">Edit Komponen Penilaian</div>
+        <div style="flex: 1; overflow-y: auto; padding-right: 4px; margin-bottom: 20px;">
+          <div class="modal-field">
+            <label>Nama Komponen Penilaian</label>
+            <input type="text" id="edit-comp-name" placeholder="Misal: Sumatif Akhir Semester" />
+          </div>
+          <div class="modal-field">
+            <label>Kode / Singkatan</label>
+            <input type="text" id="edit-comp-code" placeholder="Misal: SAS" />
+            <span style="font-size: var(--fs-xs); color: var(--text-light); display: block; margin-top: 4px; line-height: 1.4;">
+              Jika dikosongkan, nama lengkap akan ditampilkan pada tabel daftar nilai.
+            </span>
+          </div>
+          <div class="modal-field">
+            <label>Bobot Persentase (%)</label>
+            <input type="number" id="edit-comp-bobot" min="0" max="100" placeholder="50" />
+          </div>
+
+          <div style="border-top: 1px solid var(--border); margin: 16px 0; padding-top: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <label style="font-weight: 700; color: var(--text); font-size: 14px; margin: 0;">Sub Komponen Penilaian</label>
+              <button type="button" class="btn-add" onclick="addEditSubKomponen()" style="padding: 4px 10px; font-size: 12px; margin: 0;">
+                <i class="material-symbols-rounded" style="font-size:16px" data-lucide="plus"></i> Tambah Sub Komponen
+              </button>
+            </div>
+            <div id="edit-sub-comps-container" style="display: flex; flex-direction: column; gap: 8px;">
+              <!-- Dynamic sub-components rows will be injected here -->
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions" style="border-top: 1px solid var(--border); padding-top: 12px;">
+          <button type="button" class="btn-modal-cancel" onclick="tutupModalEditKomponen()">Batal</button>
+          <button type="button" class="btn-modal-ok btn-save" onclick="simpanModalEditKomponen()">Simpan</button>
+        </div>
+      </div>
+    </div>
+
+        <!-- MODAL ONBOARDING / PETUNJUK LANGKAH AWAL -->
+    <div class="modal-overlay hidden" id="modal-onboarding">
+      <div class="modal-box" style="max-width: 760px; width: 94vw; max-height: 88vh; display: flex; flex-direction: column; padding: 24px 28px; border-radius: 14px;">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 14px;">
+          <div>
+            <div class="modal-title" style="display: flex; align-items: center; gap: 8px; font-size: 18px; margin-bottom: 4px; color: var(--text);">
+              <i class="material-symbols-rounded" style="font-size: 22px; color: #3b82f6;" data-lucide="compass"></i>
+              Panduan Alur Kerja Promesta.id (Kurikulum Merdeka 2025)
+            </div>
+            <p style="font-size: 12.5px; color: var(--text-light); margin: 0;">Petunjuk praktis penyusunan perangkat ajar dan administrasi pembelajaran otomatis</p>
+          </div>
+          <button onclick="tutupModalOnboarding()" style="background: none; border: none; color: var(--text-light); cursor: pointer; padding: 4px; border-radius: 6px; display: flex; align-items: center; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-light)'" title="Tutup">
+            <i class="material-symbols-rounded" style="font-size: 20px;" data-lucide="x"></i>
+          </button>
+        </div>
+
+        <div style="font-size: 13.5px; color: var(--text-light); line-height: 1.6; margin: 16px 0; overflow-y: auto; padding-right: 6px; display: flex; flex-direction: column; gap: 14px;">
+          <!-- Langkah 1 -->
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 14px 16px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #3b82f6; color: #fff; font-size: 12px; font-weight: 700; flex-shrink: 0;">1</span>
+              <strong style="color: var(--text); font-size: 14px;">Buat &amp; Buka Kelas Baru</strong>
+            </div>
+            <p style="margin: 0 0 0 34px; font-size: 13px; color: var(--text-light);">
+              Di halaman Dashboard, klik tombol <strong>+ Tambah Kelas</strong>. Tentukan Jenjang, Mata Pelajaran, Fase, Kelas/Rombel, dan Tahun Ajaran. Klik kartu kelas yang telah dibuat untuk membuka lembar kerja utama.
+            </p>
+          </div>
+
+          <!-- Langkah 2 -->
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 14px 16px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #eab308; color: #000; font-size: 12px; font-weight: 700; flex-shrink: 0;">2</span>
+              <strong style="color: var(--text); font-size: 14px;">Lengkapi Menu pada Kategori "Input Data" (Wajib)</strong>
+            </div>
+            <p style="margin: 0 0 10px 34px; font-size: 13px; color: var(--text-light);">
+              Lengkapi 6 menu administrasi dasar di sidebar kiri:
+            </p>
+            
+            <div style="margin-left: 34px; display: flex; flex-direction: column; gap: 8px; font-size: 12.5px;">
+              <div style="background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 8px 12px; border-left: 3px solid #60a5fa;">
+                <strong style="color: #93c5fd;">1. Data Umum:</strong>
+                <span style="color: var(--text-light);"> Isi identitas <em>Sekolah</em>, <em>Jadwal Mengajar Hari &amp; JP</em>, serta <em>Data Pengesahan Titik Kertas Cetak</em>.</span>
+              </div>
+              <div style="background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 8px 12px; border-left: 3px solid #f87171;">
+                <strong style="color: #fca5a5;">2. Data Libur:</strong>
+                <span style="color: var(--text-light);"> Tentukan <em>Hari Pertama Masuk Sekolah</em>, sistem <em>5 atau 6 hari kerja</em>, dan tandai hari libur resmi/kegiatan sekolah.</span>
+              </div>
+              <div style="background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 8px 12px; border-left: 3px solid #34d399;">
+                <strong style="color: #6ee7b7;">3. Capaian Pembelajaran (CP):</strong>
+                <span style="color: var(--text-light);"> Gunakan tombol <strong>"Isi Otomatis CP"</strong> untuk memuat data CP standar resmi <strong>BSKAP Kemendikbudristek No. 046/H/KR/2025</strong> secara otomatis.</span>
+              </div>
+              <div style="background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 8px 12px; border-left: 3px solid #fbbf24;">
+                <strong style="color: #fde68a;">4. Pemetaan TP:</strong>
+                <span style="color: var(--text-light);"> Klik <strong>"Otomatis dari CP"</strong> untuk memetakan Tujuan Pembelajaran, Bab, Materi Pokok, dan Alokasi JP per semester.</span>
+              </div>
+              <div style="background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 8px 12px; border-left: 3px solid #a78bfa;">
+                <strong style="color: #c4b5fd;">5. Daftar Murid:</strong>
+                <span style="color: var(--text-light);"> Masukkan data siswa secara manual atau gunakan opsi <strong>Salin-Tempel Massal</strong> dari Excel/Dapodik.</span>
+              </div>
+              <div style="background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 8px 12px; border-left: 3px solid #38bdf8;">
+                <strong style="color: #7dd3fc;">6. Pengaturan Penilaian:</strong>
+                <span style="color: var(--text-light);"> Sesuaikan rentang KKTP (Kriteria Ketercapaian) dan bobot komponen nilai akhir.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Langkah 3 -->
+          <div style="background: rgba(234, 179, 8, 0.08); border: 1px solid rgba(234, 179, 8, 0.25); border-radius: 10px; padding: 14px 16px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #facc15; color: #000; font-size: 12px; font-weight: 700; flex-shrink: 0;">3</span>
+              <strong style="color: #fef08a; font-size: 14px;">Klik "Generate Dokumen" ⚡</strong>
+            </div>
+            <p style="margin: 0 0 0 34px; font-size: 13px; color: #fef9c3;">
+              Setelah seluruh data pada menu <strong>Input Data</strong> terisi, klik tombol kuning <strong>"Generate Dokumen"</strong> di sidebar. Sistem akan mengkalkulasi alokasi pekan efektif, mendistribusikan Prota/Promes, memetakan Jurnal Harian, serta menyiapkan lembar Presensi &amp; Buku Nilai.
+            </p>
+          </div>
+
+          <!-- Langkah 4 -->
+          <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 10px; padding: 14px 16px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #22c55e; color: #fff; font-size: 12px; font-weight: 700; flex-shrink: 0;">4</span>
+              <strong style="color: #86efac; font-size: 14px;">Tinjau, Cetak &amp; Ekspor di Menu "Output"</strong>
+            </div>
+            <p style="margin: 0 0 0 34px; font-size: 13px; color: #dcfce7;">
+              Seluruh dokumen hasil (Kalender Pendidikan, Alur Tujuan Pembelajaran / ATP, RPE, Jurnal Harian, Prota, Promes, Presensi, KKTP, Buku Nilai) siap ditinjau dan dicetak. Setiap dokumen dilengkapi opsi <strong>Cetak/PDF Kontras Tinggi</strong> dan <strong>Ekspor Excel (.xlsx)</strong>.
+            </p>
+          </div>
+        </div>
+
+        <div class="modal-actions" style="justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px;">
+          <button class="btn-modal-ok" onclick="tutupModalOnboarding()" style="display: flex; align-items: center; gap: 6px; padding: 8px 18px; font-weight: 600;">
+            <i class="material-symbols-rounded" style="font-size: 16px;" data-lucide="check"></i>
+            Mengerti &amp; Mulai
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL PETUNJUK DATA LIBUR -->
+    <div class="modal-overlay hidden" id="modal-petunjuk-libur">
+      <div class="modal-box" style="max-width: 720px; width: 94vw; max-height: 88vh; display: flex; flex-direction: column; padding: 24px 28px; border-radius: 14px;">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 14px;">
+          <div>
+            <div class="modal-title" style="display: flex; align-items: center; gap: 8px; font-size: 18px; margin-bottom: 4px; color: var(--text);">
+              <i class="material-symbols-rounded" style="font-size: 22px; color: #facc15;" data-lucide="calendar-heart"></i>
+              Petunjuk Pengisian Data Libur & Kalender
+            </div>
+            <p style="font-size: 12.5px; color: var(--text-light); margin: 0;">Panduan lengkap mengatur hari kerja, agenda libur, dan integrasi ke perangkat ajar</p>
+          </div>
+          <button onclick="tutupModalPetunjukLibur()" style="background: none; border: none; color: var(--text-light); cursor: pointer; padding: 4px; border-radius: 6px; display: flex; align-items: center; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-light)'" title="Tutup">
+            <i class="material-symbols-rounded" style="font-size: 20px;" data-lucide="x"></i>
+          </button>
+        </div>
+
+        <div style="font-size: 13px; color: var(--text-light); line-height: 1.6; margin: 16px 0; overflow-y: auto; padding-right: 6px; display: flex; flex-direction: column; gap: 14px;">
+          
+          <!-- Banner Pengantar -->
+          <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 10px; padding: 13px 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <i class="material-symbols-rounded" style="font-size: 18px; color: #60a5fa;" data-lucide="sparkles"></i>
+              <strong style="color: #93c5fd; font-size: 13.5px;">Peran Kunci Data Libur dalam Aplikasi</strong>
+            </div>
+            <p style="margin: 0; font-size: 12.5px; color: var(--text-light); line-height: 1.5;">
+              Data Libur dan Agenda Sekolah menjadi fondasi perhitungan otomatis di seluruh modul:
+              <br>• <strong>Rencana Pekan Efektif (RPE)</strong>: Menghitung jumlah pekan efektif vs pekan tidak efektif per semester.
+              <br>• <strong>Kalender Pendidikan (Kaldik)</strong>: Otomatis memberi warna tanggal & menyusun daftar agenda bulanan.
+              <br>• <strong>Jurnal Harian Mengajar</strong>: Mencegah penempatan jadwal pertemuan pada tanggal libur/nonaktif.
+              <br>• <strong>Prota & Promes</strong>: Menentukan distribusi alokasi Jam Pelajaran (JP) secara akurat.
+            </p>
+          </div>
+
+          <!-- 4 Langkah Utama -->
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="font-weight: 600; color: var(--text); font-size: 13px; display: flex; align-items: center; gap: 6px;">
+              <i class="material-symbols-rounded" style="font-size: 16px; color: #38bdf8;" data-lucide="list-ordered"></i>
+              Langkah Praktis Pengisian:
+            </div>
+
+            <!-- Langkah 1 -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 11px 15px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #3b82f6; color: #fff; font-size: 11.5px; font-weight: 700; flex-shrink: 0;">1</span>
+                <strong style="color: var(--text); font-size: 13px;">Atur Hari Kerja Sekolah (5 atau 6 Hari)</strong>
+              </div>
+              <p style="margin: 0 0 0 32px; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+                Buka menu <strong>Kelola Data Libur &rarr; Atur Hari Kerja</strong> untuk menentukan hari belajar aktif di sekolah (misal: <em>5 Hari: Senin-Jumat</em> atau <em>6 Hari: Senin-Sabtu</em>). Hari yang tidak dicentang otomatis dihitung sebagai hari libur mingguan.
+              </p>
+            </div>
+
+            <!-- Langkah 2 -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 11px 15px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #eab308; color: #000; font-size: 11.5px; font-weight: 700; flex-shrink: 0;">2</span>
+                <strong style="color: var(--text); font-size: 13px;">Pilih Tab Semester (Ganjil / Genap)</strong>
+              </div>
+              <p style="margin: 0 0 0 32px; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+                Gunakan tombol switch semester di bagian atas tabel:
+                <br>• <strong>Semester Ganjil</strong>: Mengatur periode kalender <strong>Juli s.d. Desember</strong>.
+                <br>• <strong>Semester Genap</strong>: Mengatur periode kalender <strong>Januari s.d. Juni</strong>.
+              </p>
+            </div>
+
+            <!-- Langkah 3 -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 11px 15px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #22c55e; color: #fff; font-size: 11.5px; font-weight: 700; flex-shrink: 0;">3</span>
+                <strong style="color: var(--text); font-size: 13px;">Tambah Data Libur / Rentang Agenda</strong>
+              </div>
+              <p style="margin: 0 0 0 32px; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+                Klik tombol hijau <strong>(+)</strong> di atas tabel. Anda dapat memasukkan <strong>1 Tanggal Tunggal</strong> (misal: Libur Nasional) atau <strong>Rentang Tanggal</strong> (misal: Libur Semester / Pekan Asesmen). Lengkapi keterangan agenda dan pilih kategori yang sesuai.
+              </p>
+            </div>
+
+            <!-- Langkah 4 -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 11px 15px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #a855f7; color: #fff; font-size: 11.5px; font-weight: 700; flex-shrink: 0;">4</span>
+                <strong style="color: var(--text); font-size: 13px;">Simpan Perubahan</strong>
+              </div>
+              <p style="margin: 0 0 0 32px; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+                Setelah selesai menambah, mengedit tanggal, atau menghapus entri, klik tombol hijau <strong>"Simpan"</strong> di bagian bawah untuk menyimpan data ke database aplikasi.
+              </p>
+            </div>
+          </div>
+
+          <!-- Kategori & Pewarnaan -->
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 13px 16px;">
+            <div style="font-weight: 600; color: var(--text); font-size: 13px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+              <i class="material-symbols-rounded" style="font-size: 16px; color: #facc15;" data-lucide="palette"></i>
+              Panduan 3 Kategori & Pengaruh Efektifitas KBM:
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px;">
+              <div style="display: flex; align-items: flex-start; gap: 8px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); padding: 8px 12px; border-radius: 8px;">
+                <span style="width: 12px; height: 12px; border-radius: 50%; background: #ef4444; margin-top: 3px; flex-shrink: 0;"></span>
+                <div>
+                  <strong style="color: #fca5a5;">Libur (Merah - Non-Efektif)</strong>
+                  <div style="color: var(--text-light); line-height: 1.4;">Untuk hari libur resmi nasional, cuti bersama, libur awal puasa/hari raya, dan libur akhir semester. Hari ini dihitung <strong>libur total (0 JP KBM)</strong>.</div>
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: flex-start; gap: 8px; background: rgba(249, 115, 22, 0.08); border: 1px solid rgba(249, 115, 22, 0.2); padding: 8px 12px; border-radius: 8px;">
+                <span style="width: 12px; height: 12px; border-radius: 50%; background: #f97316; margin-top: 3px; flex-shrink: 0;"></span>
+                <div>
+                  <strong style="color: #fdba74;">Kegiatan Sekolah - KBM Nonaktif (Oranye - Non-Efektif)</strong>
+                  <div style="color: var(--text-light); line-height: 1.4;">Untuk agenda sekolah tanpa proses belajar mengajar reguler, seperti Pekan STS/SAS/SAT/Ujian Sekolah, Classmeeting, dan Porseni. Jam KBM dihitung <strong>non-efektif</strong>.</div>
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: flex-start; gap: 8px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); padding: 8px 12px; border-radius: 8px;">
+                <span style="width: 12px; height: 12px; border-radius: 50%; background: #3b82f6; margin-top: 3px; flex-shrink: 0;"></span>
+                <div>
+                  <strong style="color: #93c5fd;">Kegiatan Sekolah - KBM Aktif (Biru - Efektif)</strong>
+                  <div style="color: var(--text-light); line-height: 1.4;">Untuk agenda sekolah di mana aktivitas pembelajaran tetap berlangsung atau diakui jam mengajarnya, seperti MPLS, Peringatan Hari Guru, Upacara Hari Besar, atau Gelar Karya P5. Jam KBM <strong>tetap dihitung efektif</strong>.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fitur Tambahan & Menu Kelola -->
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 13px 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+              <i class="material-symbols-rounded" style="font-size: 18px; color: #38bdf8;" data-lucide="settings-2"></i>
+              <strong style="color: var(--text); font-size: 13px;">Menu "Kelola Data Libur" (Pojok Kanan Atas):</strong>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; font-size: 12px;">
+              <!-- Atur Hari Kerja -->
+              <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 9px 11px;">
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px; color: #60a5fa; font-weight: 600;">
+                  <i class="material-symbols-rounded" style="font-size: 14px;" data-lucide="calendar-check"></i>
+                  <span>Atur Hari Kerja</span>
+                </div>
+                <p style="margin: 0; color: var(--text-light); line-height: 1.35; font-size: 11.5px;">
+                  Pilih sistem 5 atau 6 hari sekolah untuk menentukan libur mingguan.
+                </p>
+              </div>
+
+              <!-- Cadangan JSON -->
+              <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 9px 11px;">
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px; color: #facc15; font-weight: 600;">
+                  <i class="material-symbols-rounded" style="font-size: 14px;" data-lucide="database-arrow-up"></i>
+                  <span>Ekspor / Impor JSON</span>
+                </div>
+                <p style="margin: 0; color: var(--text-light); line-height: 1.35; font-size: 11.5px;">
+                  Cadangkan data libur atau salin kalender dari kelas/sekolah lain secara instan.
+                </p>
+              </div>
+
+              <!-- Hapus Semua -->
+              <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 9px 11px;">
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px; color: #f87171; font-weight: 600;">
+                  <i class="material-symbols-rounded" style="font-size: 14px;" data-lucide="trash-2"></i>
+                  <span>Hapus Semua Data</span>
+                </div>
+                <p style="margin: 0; color: var(--text-light); line-height: 1.35; font-size: 11.5px;">
+                  Kosongkan seluruh data libur kedua semester untuk mengatur ulang dari awal.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tips Tambahan -->
+          <div style="background: rgba(234, 179, 8, 0.07); border: 1px solid rgba(234, 179, 8, 0.2); border-radius: 10px; padding: 11px 15px; font-size: 12px; display: flex; align-items: flex-start; gap: 8px;">
+            <i class="material-symbols-rounded" style="font-size: 18px; color: #facc15; margin-top: 1px; flex-shrink: 0;" data-lucide="lightbulb"></i>
+            <div style="color: var(--text-light); line-height: 1.45;">
+              <strong style="color: #fde047;">Tips:</strong> Saat mengedit agenda yang memiliki rentang tanggal, Anda dapat menghapus atau menambah tanggal spesifik secara fleksibel menggunakan <em>chip tanggal</em> pada jendela edit tanpa perlu membuat entri baru.
+            </div>
+          </div>
+
+        </div>
+
+        <div class="modal-actions" style="justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px;">
+          <button class="btn-modal-ok" onclick="tutupModalPetunjukLibur()" style="display: flex; align-items: center; gap: 6px; padding: 8px 18px; font-weight: 600;">
+            <i class="material-symbols-rounded" style="font-size: 16px;" data-lucide="check"></i>
+            Mengerti & Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL PETUNJUK CAPAIAN PEMBELAJARAN (CP) -->
+    <div class="modal-overlay hidden" id="modal-petunjuk-cp">
+      <div class="modal-box" style="max-width: 720px; width: 94vw; max-height: 88vh; display: flex; flex-direction: column; padding: 24px 28px; border-radius: 14px;">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 14px;">
+          <div>
+            <div class="modal-title" style="display: flex; align-items: center; gap: 8px; font-size: 18px; margin-bottom: 4px; color: var(--text);">
+              <i class="material-symbols-rounded" style="font-size: 22px; color: #34d399;" data-lucide="book-open"></i>
+              Petunjuk Capaian Pembelajaran (CP)
+            </div>
+            <p style="font-size: 12.5px; color: var(--text-light); margin: 0;">Panduan menyusun Elemen dan Capaian Pembelajaran Kurikulum Merdeka</p>
+          </div>
+          <button onclick="tutupModalPetunjukCP()" style="background: none; border: none; color: var(--text-light); cursor: pointer; padding: 4px; border-radius: 6px; display: flex; align-items: center; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-light)'" title="Tutup">
+            <i class="material-symbols-rounded" style="font-size: 20px;" data-lucide="x"></i>
+          </button>
+        </div>
+
+        <div style="font-size: 13px; color: var(--text-light); line-height: 1.6; margin: 16px 0; overflow-y: auto; padding-right: 6px; display: flex; flex-direction: column; gap: 14px;">
+          
+          
+          <!-- Banner Regulasi CP Terbaru -->
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 13px 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <i class="material-symbols-rounded" style="font-size: 18px; color: #10b981;" data-lucide="check-circle-2"></i>
+              <strong style="color: #34d399; font-size: 13.5px;">Capaian Pembelajaran (CP) Sesuai Regulasi Terbaru!</strong>
+            </div>
+            <p style="margin: 0; font-size: 12.5px; color: var(--text-light); line-height: 1.5;">
+              Capaian Pembelajaran disesuaikan dengan regulasi Kurikulum Merdeka yaitu <strong>Kepka BSKAP NOMOR 046/H/KR/2025</strong> Tentang CP Dasar dan Menengah serta Salinan <strong>Kepka BKPDM No. 020 Tahun 2026</strong> tentang Perubahan atas Keputusan Kepala BSKAP Kemendikdasmen No. 046/H/KR/2025 untuk Matematika (Fase C). Bapak/Ibu Guru diperkenankan untuk merumuskan Tujuan Pembelajaran (TP) sesuai kebutuhan masing-masing sekolah.
+            </p>
+          </div>
+
+          <!-- Banner Pengantar -->
+          <div style="background: rgba(52, 211, 153, 0.08); border: 1px solid rgba(52, 211, 153, 0.2); border-radius: 10px; padding: 13px 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <i class="material-symbols-rounded" style="font-size: 18px; color: #34d399;" data-lucide="sparkles"></i>
+              <strong style="color: #6ee7b7; font-size: 13.5px;">Peran Kunci Capaian Pembelajaran (CP)</strong>
+            </div>
+            <p style="margin: 0; font-size: 12.5px; color: var(--text-light); line-height: 1.5;">
+              Capaian Pembelajaran (CP) merupakan kompetensi pembelajaran yang harus dicapai peserta didik pada setiap fase. Pada aplikasi ini, data CP menjadi acuan utama untuk merumuskan <strong>Alur Tujuan Pembelajaran (ATP)</strong>, mengisi otomatis daftar <strong>Tujuan Pembelajaran (TP)</strong>, dan menyusun materi ajar.
+            </p>
+          </div>
+
+          <!-- 3 Pilihan Metode Pengisian -->
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="font-weight: 600; color: var(--text); font-size: 13px; display: flex; align-items: center; gap: 6px;">
+              <i class="material-symbols-rounded" style="font-size: 16px; color: #38bdf8;" data-lucide="layers"></i>
+              3 Pilihan Metode Pengisian CP:
+            </div>
+
+            <!-- Metode 1: Otomatis -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 11px 15px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #10b981; color: #fff; font-size: 11.5px; font-weight: 700; flex-shrink: 0;">1</span>
+                <strong style="color: var(--text); font-size: 13px;">Isi Otomatis CP (Sangat Disarankan)</strong>
+              </div>
+              <p style="margin: 0 0 0 32px; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+                Klik tombol <strong>Kelola CP &rarr; Isi Otomatis CP</strong> atau klik banner saran otomatis di atas tabel. Sistem akan otomatis memuat seluruh Elemen dan teks CP resmi standar BSKAP Kemendikbudristek berdasarkan <em>Mata Pelajaran</em> dan <em>Fase</em> yang Anda tentukan di Data Umum.
+              </p>
+            </div>
+
+            <!-- Metode 2: Manual -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 11px 15px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #3b82f6; color: #fff; font-size: 11.5px; font-weight: 700; flex-shrink: 0;">2</span>
+                <strong style="color: var(--text); font-size: 13px;">Tambah Elemen Manual</strong>
+              </div>
+              <p style="margin: 0 0 0 32px; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+                Klik tombol hijau <strong>(+) Tambah Elemen</strong> untuk memasukkan domain materi baru, uraian Capaian Pembelajaran, dan draf Tujuan Pembelajaran yang disesuaikan dengan kurikulum muatan lokal atau satuan pendidikan Anda.
+              </p>
+            </div>
+
+            <!-- Metode 3: Excel -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 11px 15px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #f59e0b; color: #fff; font-size: 11.5px; font-weight: 700; flex-shrink: 0;">3</span>
+                <strong style="color: var(--text); font-size: 13px;">Impor / Ekspor Template Excel</strong>
+              </div>
+              <p style="margin: 0 0 0 32px; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+                Gunakan <strong>Kelola CP &rarr; Unduh Template Excel</strong> untuk mengunduh template spreadsheet resmi (nama file otomatis menyertakan kelas & mapel Anda). Setelah diisi secara offline, unggah melalui opsi <strong>Impor Data Excel</strong>.
+              </p>
+            </div>
+          </div>
+
+          <!-- Penjelasan Struktur Elemen -->
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 13px 16px;">
+            <div style="font-weight: 600; color: var(--text); font-size: 13px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+              <i class="material-symbols-rounded" style="font-size: 16px; color: #38bdf8;" data-lucide="info"></i>
+              Struktur Kolom Capaian Pembelajaran:
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+              <div>• <strong>Nama Elemen:</strong> Domain atau cabang keilmuan mapel (misal: <em>Bilangan, Aljabar, Pengukuran, Geometri</em> untuk Matematika; atau <em>Menyimak, Membaca, Berbicara, Menulis</em> untuk Bahasa).</div>
+              <div>• <strong>Capaian Pembelajaran:</strong> Rumusan narasi kompetensi dan konten materi esensial pada akhir fase.</div>
+              <div>• <strong>Tujuan Pembelajaran:</strong> Rincian tujuan pembelajaran turunan dari CP yang akan dipetakan ke semester ganjil/genap.</div>
+            </div>
+          </div>
+
+          <!-- Tips Tambahan -->
+          <div style="background: rgba(234, 179, 8, 0.07); border: 1px solid rgba(234, 179, 8, 0.2); border-radius: 10px; padding: 11px 15px; font-size: 12px; display: flex; align-items: flex-start; gap: 8px;">
+            <i class="material-symbols-rounded" style="font-size: 18px; color: #facc15; margin-top: 1px; flex-shrink: 0;" data-lucide="lightbulb"></i>
+            <div style="color: var(--text-light); line-height: 1.45;">
+              <strong style="color: #fde047;">Langkah Selanjutnya:</strong> Setelah CP selesai disusun, beralihlah ke tab <strong>Pemetaan TP</strong> untuk membagi alokasi Jam Pelajaran (JP) dan mendistribusikan materi ke Semester Ganjil dan Genap.
+            </div>
+          </div>
+
+        </div>
+
+        <div class="modal-actions" style="justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px;">
+          <button class="btn-modal-ok" onclick="tutupModalPetunjukCP()" style="display: flex; align-items: center; gap: 6px; padding: 8px 18px; font-weight: 600;">
+            <i class="material-symbols-rounded" style="font-size: 16px;" data-lucide="check"></i>
+            Mengerti & Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL PETUNJUK PEMETAAN TP -->
+    <div class="modal-overlay hidden" id="modal-petunjuk-tp">
+      <div class="modal-box" style="max-width: 720px; width: 94vw; max-height: 88vh; display: flex; flex-direction: column; padding: 24px 28px; border-radius: 14px;">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 14px;">
+          <div>
+            <div class="modal-title" style="display: flex; align-items: center; gap: 8px; font-size: 18px; margin-bottom: 4px; color: var(--text);">
+              <i class="material-symbols-rounded" style="font-size: 22px; color: #facc15;" data-lucide="list-todo"></i>
+              Petunjuk Pemetaan Tujuan Pembelajaran (TP)
+            </div>
+            <p style="font-size: 12.5px; color: var(--text-light); margin: 0;">Panduan menyusun Bab, Materi Pokok, Kode TP, Asesmen Sumatif, dan Distribusi JP</p>
+          </div>
+          <button onclick="tutupModalPetunjukTP()" style="background: none; border: none; color: var(--text-light); cursor: pointer; padding: 4px; border-radius: 6px; display: flex; align-items: center; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-light)'" title="Tutup">
+            <i class="material-symbols-rounded" style="font-size: 20px;" data-lucide="x"></i>
+          </button>
+        </div>
+
+        <div style="font-size: 13px; color: var(--text-light); line-height: 1.6; margin: 16px 0; overflow-y: auto; padding-right: 6px; display: flex; flex-direction: column; gap: 14px;">
+          
+          
+          <!-- Banner Regulasi CP Terbaru -->
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 13px 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <i class="material-symbols-rounded" style="font-size: 18px; color: #10b981;" data-lucide="check-circle-2"></i>
+              <strong style="color: #34d399; font-size: 13.5px;">Capaian Pembelajaran (CP) Sesuai Regulasi Terbaru!</strong>
+            </div>
+            <p style="margin: 0; font-size: 12.5px; color: var(--text-light); line-height: 1.5;">
+              Capaian Pembelajaran disesuaikan dengan regulasi Kurikulum Merdeka yaitu <strong>Kepka BSKAP NOMOR 046/H/KR/2025</strong> Tentang CP Dasar dan Menengah serta Salinan <strong>Kepka BKPDM No. 020 Tahun 2026</strong> tentang Perubahan atas Keputusan Kepala BSKAP Kemendikdasmen No. 046/H/KR/2025 untuk Matematika (Fase C). Bapak/Ibu Guru diperkenankan untuk merumuskan Tujuan Pembelajaran (TP) sesuai kebutuhan masing-masing sekolah.
+            </p>
+          </div>
+
+          <!-- Banner Pengantar -->
+          <div style="background: rgba(234, 179, 8, 0.08); border: 1px solid rgba(234, 179, 8, 0.2); border-radius: 10px; padding: 13px 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <i class="material-symbols-rounded" style="font-size: 18px; color: #facc15;" data-lucide="sparkles"></i>
+              <strong style="color: #fde047; font-size: 13.5px;">Peran Kunci Pemetaan TP</strong>
+            </div>
+            <p style="margin: 0; font-size: 12.5px; color: var(--text-light); line-height: 1.5;">
+              Pemetaan TP adalah pusat administrasi pengajaran. Struktur TP yang disusun di sini otomatis menjadi acuan untuk tabel <strong>Program Tahunan (Prota)</strong>, matriks mingguan <strong>Program Semester (Promes)</strong>, materi pada <strong>Jurnal Mengajar Harian</strong>, hingga kolom penilaian di <strong>Buku Nilai</strong>.
+            </p>
+          </div>
+
+          <!-- 4 Langkah Utama -->
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="font-weight: 600; color: var(--text); font-size: 13px; display: flex; align-items: center; gap: 6px;">
+              <i class="material-symbols-rounded" style="font-size: 16px; color: #38bdf8;" data-lucide="list-ordered"></i>
+              4 Langkah Praktis Penyusunan TP:
+            </div>
+
+            <!-- Langkah 1 -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 11px 15px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #3b82f6; color: #fff; font-size: 11.5px; font-weight: 700; flex-shrink: 0;">1</span>
+                <strong style="color: var(--text); font-size: 13px;">Isi Otomatis dari CP / Tambah Manual</strong>
+              </div>
+              <p style="margin: 0 0 0 32px; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+                Gunakan menu <strong>Kelola Tujuan Pembelajaran &rarr; Isi Otomatis dari CP</strong> untuk menyalin butir-butir TP yang telah Anda susun di halaman Capaian Pembelajaran, atau gunakan tombol <strong>(+) Tambah TP</strong> untuk menulis secara manual per semester.
+              </p>
+            </div>
+
+            <!-- Langkah 2 -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 11px 15px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #eab308; color: #000; font-size: 11.5px; font-weight: 700; flex-shrink: 0;">2</span>
+                <strong style="color: var(--text); font-size: 13px;">Kelompokkan Bab &amp; Materi Pokok</strong>
+              </div>
+              <p style="margin: 0 0 0 32px; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+                Isikan nama <strong>Bab</strong> (misal: <em>Bab 1: Bilangan Cacah</em>) dan <strong>Materi Pokok</strong>. Pengelompokan bab ini memastikan judul bab muncul rapi dan terorganisir di Promes, Jurnal Harian, dan Rapor.
+              </p>
+            </div>
+
+            <!-- Langkah 3 -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 11px 15px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #22c55e; color: #fff; font-size: 11.5px; font-weight: 700; flex-shrink: 0;">3</span>
+                <strong style="color: var(--text); font-size: 13px;">Tandai Evaluasi / Sumatif (STS / SAS / Non-Materi)</strong>
+              </div>
+              <p style="margin: 0 0 0 32px; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+                Centang kolom <strong>Evaluasi/Sumatif</strong> jika baris tersebut adalah pekan evaluasi (misal: <em>STS, SAS, SAT, Remedial, Pengayaan</em>). Baris bertanda evaluasi akan otomatis dikecualikan dari kolom penilaian TP materi di buku nilai.
+              </p>
+            </div>
+
+            <!-- Langkah 4 -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 11px 15px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #a855f7; color: #fff; font-size: 11.5px; font-weight: 700; flex-shrink: 0;">4</span>
+                <strong style="color: var(--text); font-size: 13px;">Atur Alokasi JP &amp; Distribusi Otomatis</strong>
+              </div>
+              <p style="margin: 0 0 0 32px; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+                Isikan Jam Pelajaran (JP) pada setiap TP. Anda juga dapat menggunakan tombol <strong>Kelola Tujuan Pembelajaran &rarr; Distribusi JP Otomatis</strong> agar sistem membagi total JP efektif secara proporsional sesuai target alokasi waktu pada Rencana Pekan Efektif (RPE).
+              </p>
+            </div>
+          </div>
+
+          <!-- Tips Kode TP & Excel -->
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 13px 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <i class="material-symbols-rounded" style="font-size: 18px; color: #38bdf8;" data-lucide="settings-2"></i>
+              <strong style="color: var(--text); font-size: 13px;">Fitur Tambahan &amp; Berkas Excel:</strong>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+              <div>• <strong>Format Kode TP:</strong> Berikan kode berurutan (misal: <em>TP 1.1, TP 1.2</em> untuk Bab 1, dan <em>TP 2.1</em> untuk Bab 2) agar mudah dibaca pada kisi-kisi dan rapor.</div>
+              <div>• <strong>Template &amp; Impor Excel:</strong> Gunakan menu <em>Unduh Template Excel</em> (nama file menyertakan kelas &amp; mapel) untuk pengisian offline, lalu unggah kembali via <em>Impor Data Excel</em>.</div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="modal-actions" style="justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px;">
+          <button class="btn-modal-ok" onclick="tutupModalPetunjukTP()" style="display: flex; align-items: center; gap: 6px; padding: 8px 18px; font-weight: 600;">
+            <i class="material-symbols-rounded" style="font-size: 16px;" data-lucide="check"></i>
+            Mengerti & Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL PETUNJUK DAFTAR MURID -->
+    <div class="modal-overlay hidden" id="modal-petunjuk-siswa">
+      <div class="modal-box" style="max-width: 720px; width: 94vw; max-height: 88vh; display: flex; flex-direction: column; padding: 24px 28px; border-radius: 14px;">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 14px;">
+          <div>
+            <div class="modal-title" style="display: flex; align-items: center; gap: 8px; font-size: 18px; margin-bottom: 4px; color: var(--text);">
+              <i class="material-symbols-rounded" style="font-size: 22px; color: #c4b5fd;" data-lucide="users"></i>
+              Petunjuk Pengelolaan Daftar Murid
+            </div>
+            <p style="font-size: 12.5px; color: var(--text-light); margin: 0;">Panduan input NIS, NISN, nama lengkap murid, dan fitur salin-tempel massal</p>
+          </div>
+          <button onclick="tutupModalPetunjukSiswa()" style="background: none; border: none; color: var(--text-light); cursor: pointer; padding: 4px; border-radius: 6px; display: flex; align-items: center; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-light)'" title="Tutup">
+            <i class="material-symbols-rounded" style="font-size: 20px;" data-lucide="x"></i>
+          </button>
+        </div>
+
+        <div style="font-size: 13px; color: var(--text-light); line-height: 1.6; margin: 16px 0; overflow-y: auto; padding-right: 6px; display: flex; flex-direction: column; gap: 14px;">
+          
+          <!-- Banner Pengantar -->
+          <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 10px; padding: 13px 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <i class="material-symbols-rounded" style="font-size: 18px; color: #c4b5fd;" data-lucide="sparkles"></i>
+              <strong style="color: #d8b4fe; font-size: 13.5px;">Peran Kunci Data Murid</strong>
+            </div>
+            <p style="margin: 0; font-size: 12.5px; color: var(--text-light); line-height: 1.5;">
+              Daftar Murid yang Anda masukkan di sini menjadi basis data peserta didik untuk lembar <strong>Presensi/Absensi Harian</strong> (Semester Ganjil &amp; Genap), lembar <strong>Input Nilai Sumatif/Formatif</strong>, <strong>Rekap Nilai Akhir</strong>, hingga cetak <strong>Buku Nilai Guru</strong>.
+            </p>
+          </div>
+
+          <!-- Pilihan Cara Menambah Murid -->
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="font-weight: 600; color: var(--text); font-size: 13px; display: flex; align-items: center; gap: 6px;">
+              <i class="material-symbols-rounded" style="font-size: 16px; color: #38bdf8;" data-lucide="user-plus"></i>
+              Metode Input Data Murid:
+            </div>
+
+            <!-- Metode 1: Salin Tempel Massal -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 11px 15px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #10b981; color: #fff; font-size: 11.5px; font-weight: 700; flex-shrink: 0;">1</span>
+                <strong style="color: var(--text); font-size: 13px;">Tambah Banyak (Salin-Tempel Massal / Cepat)</strong>
+              </div>
+              <p style="margin: 0 0 0 32px; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+                Klik menu <strong>Kelola Murid &rarr; Tambah Banyak</strong>. Anda cukup menyalin (<em>copy-paste</em>) satu kolom daftar nama murid dari file Excel, Word, atau data Dapodik sekolah Anda langsung ke kotak teks. Sistem otomatis membagi baris dan membuatkan nomor urut.
+              </p>
+            </div>
+
+            <!-- Metode 2: Satuan -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 11px 15px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #3b82f6; color: #fff; font-size: 11.5px; font-weight: 700; flex-shrink: 0;">2</span>
+                <strong style="color: var(--text); font-size: 13px;">Tambah Murid Satuan</strong>
+              </div>
+              <p style="margin: 0 0 0 32px; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+                Klik menu <strong>Kelola Murid &rarr; Tambah Murid</strong> untuk memasukkan siswa secara spesifik lengkap dengan <strong>Nomor Induk Siswa (NIS)</strong>, <strong>NISN</strong>, dan <strong>Nama Lengkap</strong>.
+              </p>
+            </div>
+
+            <!-- Metode 3: Hapus / Reset -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 11px 15px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #ef4444; color: #fff; font-size: 11.5px; font-weight: 700; flex-shrink: 0;">3</span>
+                <strong style="color: var(--text); font-size: 13px;">Hapus Semua Murid</strong>
+              </div>
+              <p style="margin: 0 0 0 32px; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+                Gunakan opsi <strong>Hapus Semua Murid</strong> jika Anda ingin mengosongkan daftar rombel dan mengisi ulang data siswa baru untuk tahun ajaran berikutnya.
+              </p>
+            </div>
+          </div>
+
+          <!-- Tips Tambahan -->
+          <div style="background: rgba(234, 179, 8, 0.07); border: 1px solid rgba(234, 179, 8, 0.2); border-radius: 10px; padding: 11px 15px; font-size: 12px; display: flex; align-items: flex-start; gap: 8px;">
+            <i class="material-symbols-rounded" style="font-size: 18px; color: #facc15; margin-top: 1px; flex-shrink: 0;" data-lucide="lightbulb"></i>
+            <div style="color: var(--text-light); line-height: 1.45;">
+              <strong style="color: #fde047;">Tips:</strong> Anda dapat mengedit nama atau NIS/NISN siswa kapan saja dengan mengeklik tombol ikon pensil pada baris tabel murid bersangkutan. Perubahan nama akan otomatis tersinkron ke buku nilai dan absensi.
+            </div>
+          </div>
+
+        </div>
+
+        <div class="modal-actions" style="justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px;">
+          <button class="btn-modal-ok" onclick="tutupModalPetunjukSiswa()" style="display: flex; align-items: center; gap: 6px; padding: 8px 18px; font-weight: 600;">
+            <i class="material-symbols-rounded" style="font-size: 16px;" data-lucide="check"></i>
+            Mengerti & Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL PETUNJUK PENGATURAN PENILAIAN -->
+    <div class="modal-overlay hidden" id="modal-petunjuk-penilaian">
+      <div class="modal-box" style="max-width: 720px; width: 94vw; max-height: 88vh; display: flex; flex-direction: column; padding: 24px 28px; border-radius: 14px;">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 14px;">
+          <div>
+            <div class="modal-title" style="display: flex; align-items: center; gap: 8px; font-size: 18px; margin-bottom: 4px; color: var(--text);">
+              <i class="material-symbols-rounded" style="font-size: 22px; color: #38bdf8;" data-lucide="ruler"></i>
+              Petunjuk Pengaturan Penilaian &amp; KKTP
+            </div>
+            <p style="font-size: 12.5px; color: var(--text-light); margin: 0;">Panduan menentukan interval predikat KKTP, komponen sumatif, dan pembobotan Nilai Akhir</p>
+          </div>
+          <button onclick="tutupModalPetunjukPenilaian()" style="background: none; border: none; color: var(--text-light); cursor: pointer; padding: 4px; border-radius: 6px; display: flex; align-items: center; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-light)'" title="Tutup">
+            <i class="material-symbols-rounded" style="font-size: 20px;" data-lucide="x"></i>
+          </button>
+        </div>
+
+        <div style="font-size: 13px; color: var(--text-light); line-height: 1.6; margin: 16px 0; overflow-y: auto; padding-right: 6px; display: flex; flex-direction: column; gap: 14px;">
+          
+          <!-- Banner Pengantar -->
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; padding: 13px 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <i class="material-symbols-rounded" style="font-size: 18px; color: #38bdf8;" data-lucide="sparkles"></i>
+              <strong style="color: #7dd3fc; font-size: 13.5px;">Peran Kunci Pengaturan Penilaian</strong>
+            </div>
+            <p style="margin: 0; font-size: 12.5px; color: var(--text-light); line-height: 1.5;">
+              Halaman ini mengatur standar ketercapaian kompetensi murid serta formula pembobotan nilai yang diterapkan pada halaman <strong>Input Nilai</strong> untuk menghitung <strong>Nilai Akhir (NA)</strong> dan menyusun deskripsi rapor secara otomatis.
+            </p>
+          </div>
+
+          <!-- 2 Bagian Utama -->
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="font-weight: 600; color: var(--text); font-size: 13px; display: flex; align-items: center; gap: 6px;">
+              <i class="material-symbols-rounded" style="font-size: 16px; color: #facc15;" data-lucide="sliders-horizontal"></i>
+              2 Bagian Utama yang Diatur:
+            </div>
+
+            <!-- Bagian 1: KKTP -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 11px 15px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #3b82f6; color: #fff; font-size: 11.5px; font-weight: 700; flex-shrink: 0;">1</span>
+                <strong style="color: var(--text); font-size: 13px;">Kriteria Ketercapaian Tujuan Pembelajaran (KKTP)</strong>
+              </div>
+              <p style="margin: 0 0 0 32px; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+                Menentukan skala interval predikat (contoh standar: <em>0-69%: Perlu Bimbingan</em>, <em>70-79%: Cukup</em>, <em>80-89%: Baik</em>, <em>90-100%: Sangat Baik</em>). Kategori ini otomatis digunakan untuk menyusun <strong>Deskripsi Capaian Kompetensi</strong> tertinggi dan yang perlu bimbingan pada Rapor.
+              </p>
+            </div>
+
+            <!-- Bagian 2: Komponen & Bobot -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 11px 15px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #10b981; color: #fff; font-size: 11.5px; font-weight: 700; flex-shrink: 0;">2</span>
+                <strong style="color: var(--text); font-size: 13px;">Komponen Penilaian &amp; Pembobotan Nilai Akhir</strong>
+              </div>
+              <p style="margin: 0 0 0 32px; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+                Tentukan komponen evaluasi yang digunakan (misal: <em>Sumatif Materi TP</em>, <em>Sumatif Tengah Semester / STS</em>, dan <em>Sumatif Akhir Semester / SAS</em>) beserta persentase bobotnya (contoh: <em>TP 50% + STS 25% + SAS 25% = 100%</em>). Nilai Akhir dihitung secara otomatis dan transparan berdasarkan bobot ini.
+              </p>
+            </div>
+          </div>
+
+          <!-- Pemilihan Semester -->
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 13px 16px;">
+            <div style="font-weight: 600; color: var(--text); font-size: 13px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+              <i class="material-symbols-rounded" style="font-size: 16px; color: #facc15;" data-lucide="calendar"></i>
+              Pengaturan Mandiri Per Semester:
+            </div>
+            <p style="margin: 0; font-size: 12px; color: var(--text-light); line-height: 1.45;">
+              Gunakan tombol toggle <strong>Semester Ganjil</strong> dan <strong>Semester Genap</strong> untuk menyesuaikan komponen dan bobot penilaian yang mungkin berbeda antara semester 1 dan semester 2.
+            </p>
+          </div>
+
+        </div>
+
+        <div class="modal-actions" style="justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px;">
+          <button class="btn-modal-ok" onclick="tutupModalPetunjukPenilaian()" style="display: flex; align-items: center; gap: 6px; padding: 8px 18px; font-weight: 600;">
+            <i class="material-symbols-rounded" style="font-size: 16px;" data-lucide="check"></i>
+            Mengerti & Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="mobile-overlay"
+      id="mobile-overlay"
+      onclick="toggleSidebar()"
+    ></div>
+    <div class="mobile-topbar">
+      <h1 class="typewriter-logo" style="font-size: 16pt">
+        Promesta<span class="dot">.</span><span class="id">id</span>
+      </h1>
+      <button class="mobile-menu-btn" onclick="toggleSidebar()">
+        <i class="material-symbols-rounded" data-lucide="menu"></i>
+      </button>
+    </div>
+
+    <aside class="sidebar" id="app-sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-inner">
+          <h1 class="typewriter-logo" id="brand-logo" style="font-size: 16pt; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            Promesta<span class="dot">.</span><span class="id">id</span>
+          </h1>
+          <h1 class="typewriter-logo" id="brand-logo-collapsed">
+            PM<span class="dot">.</span><span class="id">id</span>
+          </h1>
+          <button class="btn-collapse-sidebar" onclick="toggleCollapseSidebar()" title="Ciutkan Sidebar">
+            <i class="material-symbols-rounded" data-lucide="panel-left-open"></i>
+          </button>
+        </div>
+        <!-- Info List -->
+        <div id="sidebar-info"
+          style="
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-top: 14px;
+            font-size: 11.5px;
+            color: rgba(255, 255, 255, 0.7);
+          "
+        >
+          <!-- Nama Sekolah -->
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              padding: 6px 8px;
+              margin-left: -8px;
+              width: calc(100% + 16px);
+              box-sizing: border-box;
+            "
+          >
+            <i
+              style="
+                font-family: &quot;Material Symbols Rounded&quot;;
+                font-size: 15px;
+                flex-shrink: 0;
+              "
+               data-lucide="graduation-cap"></i>
+            <span
+              id="sidebar-sekolah"
+              style="
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              "
+              >promesta.id</span
+            >
+          </div>
+
+          <!-- Mata Pelajaran & Kelas -->
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              padding: 6px 8px;
+              margin-left: -8px;
+              width: calc(100% + 16px);
+              box-sizing: border-box;
+            "
+          >
+            <i
+              style="
+                font-family: &quot;Material Symbols Rounded&quot;;
+                font-size: 15px;
+                flex-shrink: 0;
+              "
+               data-lucide="book-open"></i>
+            <span
+              id="sidebar-kelas-label"
+              style="
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              "
+              > - </span
+            >
+          </div>
+
+          <!-- Nama Guru (Click to go back) -->
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              padding: 6px 8px;
+              background: rgba(255, 255, 255, 0.1);
+              border-radius: 6px;
+              cursor: pointer;
+              color: #fff;
+              transition: background 0.15s;
+              margin-left: -8px;
+              width: calc(100% + 16px);
+              box-sizing: border-box;
+            "
+            onclick="kembaliKeDashboard()"
+            onmouseover="this.style.background = 'rgba(255,255,255,0.2)'"
+            onmouseout="this.style.background = 'rgba(255,255,255,0.1)'"
+            title="Kembali ke Dashboard (Daftar Kelas)"
+          >
+            <i
+              style="
+                font-family: &quot;Material Symbols Rounded&quot;;
+                font-size: 15px;
+                flex-shrink: 0;
+              "
+               data-lucide="user"></i>
+            <span
+              id="sidebar-guru-nama"
+              style="
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-weight: 600;
+              "
+              > - </span
+            >
+          </div>
+          <!-- Mulai Tour/Panduan Button -->
+          <button
+            onclick="startClassTour(currentKelasId)"
+            style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              padding: 6px 12px;
+              background: rgba(250, 204, 21, 0.12);
+              border: 1px dashed rgba(250, 204, 21, 0.4);
+              border-radius: 6px;
+              cursor: pointer;
+              color: var(--accent-light);
+              transition: all 0.2s;
+              margin-top: 10px;
+              margin-left: -8px;
+              width: calc(100% + 16px);
+              box-sizing: border-box;
+              font-family: var(--f);
+              font-size: var(--fs-xs);
+              font-weight: 600;
+              text-align: left;
+            "
+            onmouseover="this.style.background = 'rgba(250, 204, 21, 0.2)'; this.style.borderColor = 'var(--accent)'"
+            onmouseout="this.style.background = 'rgba(250, 204, 21, 0.12)'; this.style.borderColor = 'rgba(250, 204, 21, 0.4)'"
+            title="Mulai Panduan Interaktif Kelas"
+          >
+            <i class="material-symbols-rounded" style="font-size: 15px;" data-lucide="compass"></i>
+            <span>Panduan Interaktif Tour</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <span class="nav-label">Input Data</span>
+        <button class="nav-btn active" title="Data Umum" onclick="showTab('data-umum')">
+          <i class="ic" data-lucide="graduation-cap"></i>Data Umum
+        </button>
+        <button
+          title="Data Libur"
+          class="nav-btn"
+          onclick="
+            showTab('data-libur');
+            renderKalender('ganjil');
+            renderKalender('genap');
+            renderKatColorSettings();
+          "
+        >
+          <i class="ic" data-lucide="calendar-off"></i>Data Libur
+        </button>
+        <button class="nav-btn" title="Capaian Pembelajaran" onclick="showTab('atp-input')">
+          <i class="ic" data-lucide="book-open"></i>Capaian Pembelajaran
+        </button>
+        <button class="nav-btn" title="Pemetaan TP" onclick="showTab('tp')">
+          <i class="ic" data-lucide="list-todo"></i>Pemetaan TP
+        </button>
+        <button class="nav-btn" title="Daftar Murid" onclick="showTab('siswa')">
+          <i class="ic" data-lucide="users"></i>Daftar Murid
+        </button>
+        <button class="nav-btn" title="Pengaturan Penilaian" onclick="showTab('pengaturan-penilaian')">
+          <i class="ic" data-lucide="ruler"></i>Pengaturan Penilaian
+        </button>
+      </div>
+
+      <div class="nav-section">
+        <button type="button" title="Generate Dokumen" class="btn-gen" onclick="generate()">
+          <i class="ic" data-lucide="zap"></i>Generate Dokumen
+        </button>
+      </div>
+      <div class="nav-section disabled-section hidden" id="output-nav-section" title="Silakan klik Generate Dokumen terlebih dahulu">
+        <span class="nav-label">Output</span>
+        <button
+          title="Kalender Pendidikan"
+          class="nav-btn"
+          onclick="
+            showTab('kalender');
+            renderKalenderPendidikan();
+          "
+        >
+          <i class="ic" data-lucide="calendar-days"></i>Kalender Pendidikan
+        </button>
+        <button class="nav-btn" title="Alur Tujuan Pembelajaran" onclick="showTab('atp')">
+          <i class="ic" data-lucide="route"></i>Alur Tujuan Pembelajaran
+        </button>
+        <button class="nav-btn" title="Rencana Pekan Efektif" onclick="showTab('rpe')">
+          <i class="ic" data-lucide="clipboard-list"></i>Rencana Pekan Efektif
+        </button>
+        <button class="nav-btn" title="Jurnal Harian" onclick="showTab('jurnal')">
+          <i class="ic" data-lucide="file-edit"></i>Jurnal Harian
+        </button>
+        <button class="nav-btn" title="Program Tahunan" onclick="showTab('prota')">
+          <i class="ic" data-lucide="calendar-range"></i>Program Tahunan
+        </button>
+        <button class="nav-btn" title="Program Semester" onclick="showTab('prosem')">
+          <i class="ic" data-lucide="table"></i>Program Semester
+        </button>
+        <button class="nav-btn" title="Absensi Murid" onclick="showTab('absensi')">
+          <i class="ic" data-lucide="clipboard-check"></i>Absensi Murid
+        </button>
+        <button class="nav-btn" title="KKTP" onclick="showTab('kktp')">
+          <i class="ic" data-lucide="list-checks"></i>KKTP
+        </button>
+        <button class="nav-btn" title="Daftar Nilai" onclick="showTab('nilai')">
+          <i class="ic" data-lucide="graduation-cap"></i>Daftar Nilai
+        </button>
+      </div>
+
+      <div class="sidebar-bottom">
+        <button class="btn-logout" title="Ganti Password" onclick="openChangePasswordModal()" style="background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2); margin-bottom: 8px;">
+          <i class="ic" data-lucide="key-round"></i>
+          Ganti Password
+        </button>
+        <button class="btn-logout" title="Keluar" onclick="doLogout()">
+          <i class="ic" data-lucide="log-out"></i>
+          Keluar
+        </button>
+        <div class="btn-row" style="display: flex; gap: 8px; justify-content: center;">
+          <button
+            onclick="saveData()"
+            title="Ekspor cadangan JSON"
+            style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; background: rgba(34, 197, 94, 0.1); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 6px; padding: 6px 0; font-weight: 500; font-size: 11px; cursor: pointer; transition: background 0.2s;"
+          >
+            <i class="material-symbols-rounded" style="font-size: 18px;" data-lucide="database-arrow-up"></i> Backup
+          </button>
+          <button
+            onclick="loadData()"
+            title="Impor cadangan JSON"
+            style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 6px; padding: 6px 0; font-weight: 500; font-size: 11px; cursor: pointer; transition: background 0.2s;"
+          >
+            <i class="material-symbols-rounded" style="font-size: 18px;" data-lucide="database-arrow-down"></i> Impor
+          </button>
+          <button
+            onclick="resetData()"
+            title="Reset ke default"
+            style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 6px; padding: 6px 0; font-weight: 500; font-size: 11px; cursor: pointer; transition: background 0.2s;"
+          >
+            <i class="material-symbols-rounded" style="font-size: 18px;" data-lucide="rotate-cw"></i> Reset
+          </button>
+        </div>
+        <!-- OFFLINE_DOWNLOAD_BUTTON_START -->
+        <a id="btn-download-offline" class="btn-logout" href="./promesta-offline.html" download="promesta-offline.html" title="Unduh versi HTML Standalone Offline (Siap pakai tanpa internet)" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); margin-top: 8px; margin-bottom: 8px;">
+          <i class="ic" data-lucide="download"></i>
+          Unduh HTML Offline
+        </a>
+        <!-- OFFLINE_DOWNLOAD_BUTTON_END -->
+        <div class="sidebar-ver">v04 &mdash; promesta.id</div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <!-- DATA LIBUR (Input) -->
+      <div id="tab-data-libur" class="tab-pane">
+        <div
+          class="tab-header"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+          "
+        >
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px">
+              <h2>Data Libur</h2>
+              <button
+                class="header-info-tip"
+                type="button"
+                onclick="bukaModalPetunjukLibur()"
+                title="Buka Petunjuk Pengisian Data Libur & Kalender"
+              >
+                <i class="material-symbols-rounded" style="font-size: 14px" data-lucide="info"></i>
+              </button>
+            </div>
+            <div class="sem-toggle">
+              <button
+                class="sem-btn active"
+                id="btn-libur-sem-1"
+                onclick="switchSemContent('libur', 1)"
+              >
+                Semester Ganjil
+              </button>
+              <button
+                class="sem-btn"
+                id="btn-libur-sem-2"
+                onclick="switchSemContent('libur', 2)"
+              >
+                Semester Genap
+              </button>
+            </div>
+          </div>
+          <div
+            style="
+              display: flex;
+              gap: 8px;
+              flex-wrap: wrap;
+              align-items: center;
+            "
+          >
+            <div class="header-dropdown align-right" id="dropdown-libur-menu">
+              <button
+                class="btn-add header-dropdown-btn"
+                type="button"
+                onclick="toggleHeaderDropdown(event, 'dropdown-libur-menu')"
+                title="Kelola & Cadangan Data Libur"
+              >
+                <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="settings-2"></i>
+                <span>Kelola Data Libur</span>
+                <i class="material-symbols-rounded chevron-icon" style="font-size: 15px; margin-left: 2px" data-lucide="chevron-down"></i>
+              </button>
+              <div class="header-dropdown-menu">
+                <div class="header-dropdown-group-title">Hari Kerja</div>
+                <button
+                  class="header-dropdown-item"
+                  type="button"
+                  onclick="openHariKerjaModal(); closeAllHeaderDropdowns();"
+                >
+                  <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="calendar-check"></i>
+                  <span>Atur Hari Kerja</span>
+                </button>
+                <div class="header-dropdown-divider"></div>
+                <div class="header-dropdown-group-title">Cadangan JSON</div>
+                <button
+                  class="header-dropdown-item"
+                  type="button"
+                  onclick="exportKalender(); closeAllHeaderDropdowns();"
+                >
+                  <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="database-arrow-up"></i>
+                  <span>Ekspor Data JSON</span>
+                </button>
+                <button
+                  class="header-dropdown-item"
+                  type="button"
+                  onclick="importKalender(); closeAllHeaderDropdowns();"
+                >
+                  <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="database-arrow-down"></i>
+                  <span>Impor Data JSON</span>
+                </button>
+                <div class="header-dropdown-divider"></div>
+                <button
+                  class="header-dropdown-item danger"
+                  type="button"
+                  onclick="clearKalender(); closeAllHeaderDropdowns();"
+                >
+                  <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="trash-2"></i>
+                  <span>Hapus Semua Data Libur</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Semester Ganjil -->
+        <div id="libur-1-content">
+          <div class="card card-kalender" style="margin-bottom: 18px">
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+              "
+            >
+              <div class="sec-title" style="margin-bottom: 0">
+                Semester Ganjil
+              </div>
+              <button
+                class="btn-circle-add"
+                onclick="addKalenderRange('ganjil')"
+                title="Tambah Data Libur / Agenda"
+              >
+                <i class="material-symbols-rounded" style="font-size:18px" data-lucide="plus"></i>
+              </button>
+            </div>
+            <div style="overflow-x: auto">
+              <table class="dt">
+                <thead>
+                  <tr>
+                    <th style="width: 36px">No</th>
+                    <th style="width: 215px; min-width: 200px">Tanggal</th>
+                    <th style="width: 140px">Kategori</th>
+                    <th>Keterangan</th>
+                    <th style="width: 55px; text-align: center">Penting</th>
+                    <th style="width: 55px; text-align: center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="body-kalender-ganjil"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <!-- Semester Genap -->
+        <div id="libur-2-content" style="display: none">
+          <div class="card card-kalender">
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+              "
+            >
+              <div class="sec-title" style="margin-bottom: 0">
+                Semester Genap
+              </div>
+              <button
+                class="btn-circle-add"
+                onclick="addKalenderRange('genap')"
+                title="Tambah Data Libur / Agenda"
+              >
+                <i class="material-symbols-rounded" style="font-size:18px" data-lucide="plus"></i>
+              </button>
+            </div>
+            <div style="overflow-x: auto">
+              <table class="dt">
+                <thead>
+                  <tr>
+                    <th style="width: 36px">No</th>
+                    <th style="width: 215px; min-width: 200px">Tanggal</th>
+                    <th style="width: 140px">Kategori</th>
+                    <th>Keterangan</th>
+                    <th style="width: 55px; text-align: center">Penting</th>
+                    <th style="width: 55px; text-align: center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="body-kalender-genap"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <!-- Simpan -->
+        <div style="margin-top: 14px; display: flex; gap: 8px">
+          <button
+            class="btn-add green btn-save"
+            onclick="saveKalenderAndRefresh()"
+          >
+            <i class="material-symbols-rounded" style="font-size: 18px;" data-lucide="save"></i> Simpan
+          </button>
+        </div>
+      </div>
+
+      <!-- KALENDER PENDIDIKAN (Output) -->
+      <div id="tab-kalender" class="tab-pane">
+        <div
+          class="tab-header"
+          style="
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-bottom: 20px;
+          "
+        >
+          <h2 style="margin-bottom: 0">Kalender Pendidikan</h2>
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              flex-wrap: wrap;
+              gap: 12px;
+            "
+          >
+            <div id="kal-month-filter" class="kal-filter-bar no-print"></div>
+            <button class="btn-print" onclick="printTab('kalender')">
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="printer"></i> Cetak
+            </button>
+          </div>
+        </div>
+        <div id="kalender-content">
+          <div class="empty">
+            <div class="ic"><i class="material-symbols-rounded" style="font-size:48px; color:inherit" data-lucide="calendar-days"></i></div>
+            <h3>Memuat kalender...</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- DATA UMUM -->
+      <div id="tab-data-umum" class="tab-pane active">
+        <div class="tab-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <h2>Data Umum</h2>
+          <button class="btn-add green btn-save" type="button" onclick="simpanDataUmumManually()" title="Simpan">
+            <i class="material-symbols-rounded" style="font-size: 18px;" data-lucide="save"></i>
+            <span>Simpan</span>
+          </button>
+        </div>
+        <div class="data-umum-grid">
+          <div class="card card-identitas" style="margin-bottom: 0">
+            <div class="sec-title">Identitas</div>
+            <div class="data-card-body">
+              <div style="display: flex; gap: 8px">
+                <div class="fg" style="flex: 1; min-width: 0">
+                  <label>Tahun Ajaran</label>
+                  <input type="text" id="f-tahun" value="" placeholder="Contoh: 2026/2027" />
+                </div>
+                <div class="fg" style="flex: 1; min-width: 0">
+                  <label>Jenjang</label>
+                  <select id="f-jenjang" onchange="updateFaseOptions(true); checkDataUmumMapelLock(true); triggerMapelChange(); updateDataUmumPlaceholders();" oninput="updateFaseOptions(true); checkDataUmumMapelLock(true); triggerMapelChange(); updateDataUmumPlaceholders();">
+                    <option value="SD">SD / MI</option>
+                    <option value="SMP">SMP / MTs</option>
+                    <option value="SMA">SMA / MA</option>
+                    <option value="SMK">SMK / MAK</option>
+                  </select>
+                </div>
+              </div>
+              <div class="fg">
+                <label>Nama Sekolah</label
+                ><textarea
+                  id="f-sekolah"
+                  class="auto-resize"
+                  rows="1"
+                  style="resize: none; overflow: hidden"
+                  placeholder="SD Negeri 17 Nusantara"
+                ></textarea>
+              </div>
+              <div style="display: flex; gap: 8px">
+                <div class="fg" style="flex: 1; min-width: 0">
+                  <label>Fase <span style="color: #f87171; font-weight: bold">*</span></label>
+                  <select id="f-fase" style="text-align-last: left" onchange="updateKelasSuggestions(true); checkDataUmumMapelLock(true); triggerMapelChange(); updateDataUmumPlaceholders();" oninput="updateKelasSuggestions(true); checkDataUmumMapelLock(true); triggerMapelChange(); updateDataUmumPlaceholders();">
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C" selected>C</option>
+                    <option value="D">D</option>
+                  </select>
+                </div>
+                <div class="fg" style="flex: 1; min-width: 0">
+                  <label>Kelas <span style="color: #f87171; font-weight: bold">*</span></label>
+                  <select id="f-kelas" style="text-align-last: left" onchange="updateDataUmumMapelOptions(false); checkDataUmumMapelLock(true); triggerMapelChange(); updateDataUmumPlaceholders();" oninput="updateDataUmumMapelOptions(false); checkDataUmumMapelLock(true); triggerMapelChange(); updateDataUmumPlaceholders();"></select>
+                </div>
+              </div>
+              <div class="fg">
+                <label>Rombel <span style="color: #f87171; font-weight: bold">*</span></label>
+                <textarea
+                  id="f-rombel"
+                  class="auto-resize"
+                  rows="1"
+                  style="resize: none; overflow: hidden"
+                  placeholder="1 Putra A"
+                  oninput="checkDataUmumMapelLock(); triggerMapelChange(); updateDataUmumPlaceholders();"
+                  onchange="updateDataUmumMapelOptions(false); checkDataUmumMapelLock(true); triggerMapelChange(); updateDataUmumPlaceholders();"
+                ></textarea>
+              </div>
+              <div class="fg">
+                <label>Mata Pelajaran <span style="color: #f87171; font-weight: bold">*</span></label>
+                <select id="f-mapel" onchange="toggleMapelManual('f-mapel', 'f-mapel-manual-container', 'f-mapel-manual'); triggerMapelChange();" oninput="toggleMapelManual('f-mapel', 'f-mapel-manual-container', 'f-mapel-manual'); triggerMapelChange();">
+                </select>
+                <div id="f-mapel-manual-container" class="hidden" style="margin-top: 8px;">
+                  <textarea id="f-mapel-manual" class="auto-resize" rows="1" oninput="triggerMapelChange();" placeholder="Tulis nama Mata Pelajaran / Muatan Lokal kustom..." style="resize: none; overflow: hidden; padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid var(--border); border-radius: 8px; font-family: var(--f); font-size: var(--fs); width: 100%; box-sizing: border-box;"></textarea>
+                </div>
+                <div id="f-mapel-lock-notice" class="hidden" style="font-size: 11px; color: #fbbf24; margin-top: 4px; font-weight: 500; display: flex; align-items: center; gap: 4px;">
+                  <span>⚠ Fase, Kelas, dan Rombel wajib diisi terlebih dahulu untuk memilih Mata Pelajaran.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card card-jadwal" style="margin-bottom: 0">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px">
+              <div class="sec-title" style="margin-bottom: 0">Jadwal Mengajar</div>
+            </div>
+            <div class="data-card-body">
+              <div class="fg">
+                <label>Hari Pertama Pekan</label>
+                <select id="f-first-day">
+                  <option value="0" selected>Minggu (Minggu - Sabtu)</option>
+                  <option value="1">Senin (Senin - Minggu)</option>
+                </select>
+              </div>
+              <div id="jadwal-container"></div>
+            </div>
+          </div>
+          <div class="card card-pengesahan" style="margin-bottom: 0">
+            <div class="sec-title">Data Pengesahan</div>
+            <div class="data-card-body">
+              <div class="fg">
+                <label>Nama Kepala Sekolah</label
+                ><textarea
+                  id="f-kepsek"
+                  class="auto-resize"
+                  rows="1"
+                  style="resize: none; overflow: hidden"
+                  placeholder="Abdurrahman, M.Pd., Gr."
+                ></textarea>
+                <div
+                  style="
+                    display: flex;
+                    gap: 15px;
+                    margin-top: 4px;
+                    margin-bottom: 2px;
+                    font-size: 13px;
+                  "
+                >
+                  <label
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 4px;
+                      font-weight: normal;
+                      margin-bottom: 0;
+                      cursor: pointer;
+                      color: var(--text);
+                    "
+                    ><input
+                      type="radio"
+                      name="f-kepsek-id-type"
+                      value="NIP"
+                      checked
+                      onchange="toggleIdInput('kepsek')"
+                    />
+                    NIP</label
+                  >
+                  <label
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 4px;
+                      font-weight: normal;
+                      margin-bottom: 0;
+                      cursor: pointer;
+                      color: var(--text);
+                    "
+                    ><input
+                      type="radio"
+                      name="f-kepsek-id-type"
+                      value="NUPTK"
+                      onchange="toggleIdInput('kepsek')"
+                    />
+                    NUPTK</label
+                  >
+                  <label
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 4px;
+                      font-weight: normal;
+                      margin-bottom: 0;
+                      cursor: pointer;
+                      color: var(--text);
+                    "
+                    ><input
+                      type="radio"
+                      name="f-kepsek-id-type"
+                      value=""
+                      onchange="toggleIdInput('kepsek')"
+                    />
+                    Tidak ada</label
+                  >
+                </div>
+                <input
+                  type="text"
+                  id="f-kepsek-id"
+                  placeholder="ID Kepala Sekolah..."
+                />
+              </div>
+              <div class="fg">
+                <label>Nama Guru Pengampu</label
+                ><textarea
+                  id="f-guru"
+                  class="auto-resize"
+                  rows="1"
+                  style="resize: none; overflow: hidden"
+                >Eka Fitriansyah, S.Pd.</textarea>
+                <div
+                  style="
+                    display: flex;
+                    gap: 15px;
+                    margin-top: 4px;
+                    margin-bottom: 2px;
+                    font-size: 13px;
+                  "
+                >
+                  <label
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 4px;
+                      font-weight: normal;
+                      margin-bottom: 0;
+                      cursor: pointer;
+                      color: var(--text);
+                    "
+                    ><input
+                      type="radio"
+                      name="f-guru-id-type"
+                      value="NIP"
+                      checked
+                      onchange="toggleIdInput('guru')"
+                    />
+                    NIP</label
+                  >
+                  <label
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 4px;
+                      font-weight: normal;
+                      margin-bottom: 0;
+                      cursor: pointer;
+                      color: var(--text);
+                    "
+                    ><input
+                      type="radio"
+                      name="f-guru-id-type"
+                      value="NUPTK"
+                      onchange="toggleIdInput('guru')"
+                    />
+                    NUPTK</label
+                  >
+                  <label
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 4px;
+                      font-weight: normal;
+                      margin-bottom: 0;
+                      cursor: pointer;
+                      color: var(--text);
+                    "
+                    ><input
+                      type="radio"
+                      name="f-guru-id-type"
+                      value=""
+                      onchange="toggleIdInput('guru')"
+                    />
+                    Tidak ada</label
+                  >
+                </div>
+                <input
+                  type="text"
+                  id="f-guru-id"
+                  placeholder="ID Guru Pengampu..."
+                />
+              </div>
+              <div class="fg">
+                <label>Tempat</label
+                ><input type="text" id="f-tempat" value="Pontianak" />
+              </div>
+              <div class="fg">
+                <label>Tanggal Pengesahan</label>
+                <input type="date" id="f-tgl" value="2025-07-14" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CAPAIAN PEMBELAJARAN (was atp-input) -->
+      <div id="tab-atp-input" class="tab-pane">
+        <div
+          class="tab-header"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+          "
+        >
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h2>Capaian Pembelajaran</h2>
+            <button
+              class="header-info-tip"
+              type="button"
+              onclick="bukaModalPetunjukCP()"
+              title="Buka Petunjuk Capaian Pembelajaran"
+            >
+              <i class="material-symbols-rounded" style="font-size: 14px" data-lucide="info"></i>
+            </button>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span
+              id="cnt-atp"
+              style="font-size: var(--fs-sm); color: var(--text-light)"
+            ></span>
+            <button
+              class="btn-add"
+              onclick="addAtpElemen()"
+              style="display: flex; align-items: center; gap: 6px"
+              title="Tambah Elemen Capaian Pembelajaran"
+            >
+              <i class="material-symbols-rounded" style="font-size: 16px"
+                 data-lucide="plus"></i>
+              Tambah Elemen
+            </button>
+            <div class="header-dropdown align-right" id="dropdown-cp-menu">
+              <button
+                class="btn-add yellow header-dropdown-btn"
+                type="button"
+                onclick="toggleHeaderDropdown(event, 'dropdown-cp-menu')"
+                title="Menu Kelola & Opsi Capaian Pembelajaran"
+              >
+                <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="settings-2"></i>
+                <span>Kelola CP</span>
+                <i class="material-symbols-rounded chevron-icon" style="font-size: 15px; margin-left: 2px" data-lucide="chevron-down"></i>
+              </button>
+              <div class="header-dropdown-menu">
+                <div class="header-dropdown-group-title">Aksi Otomatis</div>
+                <button
+                  class="header-dropdown-item accent"
+                  type="button"
+                  onclick="triggerManualAutoCP(); closeAllHeaderDropdowns();"
+                >
+                  <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="pencil-sparkles"></i>
+                  <span>Isi Otomatis CP</span>
+                </button>
+                <div class="header-dropdown-divider"></div>
+                <div class="header-dropdown-group-title">Berkas &amp; Data Excel</div>
+                <button
+                  class="header-dropdown-item"
+                  type="button"
+                  onclick="downloadTemplateCP(); closeAllHeaderDropdowns();"
+                >
+                  <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="download"></i>
+                  <span>Unduh Template Excel</span>
+                </button>
+                <label class="header-dropdown-item" style="cursor: pointer; margin: 0;">
+                  <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="upload"></i>
+                  <span>Impor Data Excel</span>
+                  <input
+                    type="file"
+                    id="upload-cp-excel"
+                    accept=".xlsx,.xls,.csv"
+                    style="display: none"
+                    onchange="handleUploadCP(event); closeAllHeaderDropdowns();"
+                  />
+                </label>
+                <div class="header-dropdown-divider"></div>
+                <div class="header-dropdown-group-title">Database CP (JSON)</div>
+                <label class="header-dropdown-item" style="cursor: pointer; margin: 0; color: #10b981;">
+                  <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="file-json"></i>
+                  <span>Impor Database CP (JSON)</span>
+                  <input
+                    type="file"
+                    id="upload-cp-json"
+                    accept=".json"
+                    style="display: none"
+                    onchange="handleUploadCPJson(event); closeAllHeaderDropdowns();"
+                  />
+                </label>
+                <button
+                  class="header-dropdown-item"
+                  type="button"
+                  onclick="resetCPJsonDatabase(); closeAllHeaderDropdowns();"
+                  style="color: #ef4444;"
+                >
+                  <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="rotate-ccw"></i>
+                  <span>Reset Database Standar</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- BANNER OFFLINE / STANDALONE DATABASE CP -->
+        <div id="cp-offline-warning-banner" class="card" style="display: none; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 12px; padding: 16px; margin-bottom: 18px; align-items: flex-start; gap: 14px; flex-direction: column;">
+          <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
+            <div style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i class="material-symbols-rounded" style="font-size: 20px;" data-lucide="info"></i>
+            </div>
+            <div style="flex-grow: 1;">
+              <span style="font-size: var(--fs-md); font-weight: 600; color: #f59e0b; display: block;">Database CP Standar Belum Dimuat (Mode Standalone/Offline)</span>
+              <span style="font-size: var(--fs-sm); color: rgba(255, 255, 255, 0.7); display: block; margin-top: 2px; line-height: 1.5;">
+                Aplikasi saat ini dibuka secara offline/lokal (standalone). Untuk mengaktifkan pengisian otomatis Capaian Pembelajaran (CP) dan Alur Tujuan Pembelajaran (ATP) standar terbaru (Agama &amp; Non-Agama), Anda dapat mengunggah berkas database CP JSON secara manual.
+              </span>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-left: 46px;">
+            <label class="btn-add yellow" style="cursor: pointer; margin: 0; background: #f59e0b; color: #0f172a; border: none; font-weight: 600; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="material-symbols-rounded" style="font-size: 16px" data-lucide="upload"></i>
+              <span>Impor Database JSON</span>
+              <input
+                type="file"
+                accept=".json"
+                style="display: none"
+                onchange="handleUploadCPJson(event)"
+              />
+            </label>
+            <span style="font-size: var(--fs-xs); color: var(--text-light)">
+              Berkas database: <code>capaian_pembelajaran_bskap_046_2025.json</code> (tersedia di direktori proyek Anda).
+            </span>
+          </div>
+        </div>
+        
+        <div id="atp-autofill-suggestion"></div>
+        <div id="atp-cp-table-wrap" style="overflow-x: auto"></div>
+      </div>
+
+      <!-- TUJUAN PEMBELAJARAN (combined, baru) -->
+      <div id="tab-tp" class="tab-pane">
+        <div class="tab-header tp-header">
+          <div class="tp-header-left">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h2>Pemetaan TP</h2>
+              <button
+                class="header-info-tip"
+                type="button"
+                onclick="bukaModalPetunjukTP()"
+                title="Buka Petunjuk Pemetaan TP"
+              >
+                <i class="material-symbols-rounded" style="font-size: 14px" data-lucide="info"></i>
+              </button>
+            </div>
+            <div class="sem-toggle">
+              <button
+                class="sem-btn active"
+                id="btn-tp-sem-1"
+                onclick="switchSemContent('tp', 1)"
+              >
+                Semester Ganjil
+              </button>
+              <button
+                class="sem-btn"
+                id="btn-tp-sem-2"
+                onclick="switchSemContent('tp', 2)"
+              >
+                Semester Genap
+              </button>
+            </div>
+          </div>
+          <div class="tp-header-right">
+            <div
+              id="stats-tp-ganjil"
+              class="stats-row"
+            ></div>
+            <div
+              id="stats-tp-genap"
+              class="stats-row"
+              style="display: none"
+            ></div>
+          </div>
+        </div>
+
+        <!-- GANJIL section -->
+        <div id="tp-1-content">
+          <div
+            class="card card-tp"
+            style="
+              border-radius: 12px;
+              border: 1.5px solid var(--border);
+              margin-bottom: 18px;
+            "
+          >
+            <div class="card-header-flex">
+              <div>
+                <div class="sec-title" style="margin-bottom: 0">
+                  Semester Ganjil
+                </div>
+                <span
+                  id="cnt-tp-ganjil"
+                  style="font-size: var(--fs-xs); color: var(--text-light)"
+                ></span>
+              </div>
+              <div class="card-header-actions">
+                <div class="header-dropdown" id="dropdown-tp-menu-ganjil">
+                  <button
+                    class="btn-add yellow header-dropdown-btn"
+                    type="button"
+                    onclick="toggleHeaderDropdown(event, 'dropdown-tp-menu-ganjil')"
+                    title="Menu Kelola Tujuan Pembelajaran (Semester Ganjil)"
+                  >
+                    <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="settings-2"></i>
+                    <span>Kelola Tujuan Pembelajaran</span>
+                    <i class="material-symbols-rounded chevron-icon" style="font-size: 15px; margin-left: 2px" data-lucide="chevron-down"></i>
+                  </button>
+                  <div class="header-dropdown-menu">
+                    <div class="header-dropdown-group-title">Input &amp; Tambah</div>
+                    <button
+                      class="header-dropdown-item"
+                      type="button"
+                      onclick="addTPDropdown('ganjil'); closeAllHeaderDropdowns();"
+                    >
+                      <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="plus"></i>
+                      <span>Tambah TP</span>
+                    </button>
+                    <button
+                      class="header-dropdown-item"
+                      type="button"
+                      onclick="addEval('ganjil'); closeAllHeaderDropdowns();"
+                    >
+                      <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="plus-circle"></i>
+                      <span>Tambah Sumatif</span>
+                    </button>
+                    <div class="header-dropdown-divider"></div>
+                    <div class="header-dropdown-group-title">Aksi Otomatis</div>
+                    <button
+                      class="header-dropdown-item accent"
+                      type="button"
+                      onclick="triggerAutoPopulateTP(); closeAllHeaderDropdowns();"
+                    >
+                      <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="pencil-sparkles"></i>
+                      <span>Isi Otomatis dari CP</span>
+                    </button>
+                    <button
+                      class="header-dropdown-item accent"
+                      type="button"
+                      onclick="distributeJPProportional('ganjil'); closeAllHeaderDropdowns();"
+                    >
+                      <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="divide"></i>
+                      <span>Distribusi JP Otomatis</span>
+                    </button>
+                    <div class="header-dropdown-divider"></div>
+                    <div class="header-dropdown-group-title">Berkas &amp; Data Excel</div>
+                    <button
+                      class="header-dropdown-item"
+                      type="button"
+                      onclick="downloadTemplateTP(); closeAllHeaderDropdowns();"
+                    >
+                      <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="download"></i>
+                      <span>Unduh Template Excel</span>
+                    </button>
+                    <label class="header-dropdown-item" style="cursor: pointer; margin: 0;">
+                      <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="upload"></i>
+                      <span>Impor Data Excel</span>
+                      <input
+                        type="file"
+                        id="upload-tp-excel-ganjil"
+                        accept=".xlsx,.xls,.csv"
+                        style="display: none"
+                        onchange="handleUploadTP(event); closeAllHeaderDropdowns();"
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="overflow-x: auto">
+              <table class="dt">
+                <thead>
+                  <tr>
+                    <th style="width: 36px">No</th>
+                    <th style="width: 44px">Bab</th>
+                    <th style="width: 140px">Materi Pokok</th>
+                    <th style="width: 72px">Kode TP</th>
+                    <th>Tujuan Pembelajaran</th>
+                    <th style="width: 50px">JP</th>
+                    <th style="width: 70px">Urutan</th>
+                    <th style="width: 50px">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="body-tp-ganjil"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- GENAP section -->
+        <div id="tp-2-content" style="display: none">
+          <div
+            class="card card-tp"
+            style="border-radius: 12px; border: 1.5px solid var(--border)"
+          >
+            <div class="card-header-flex">
+              <div>
+                <div class="sec-title" style="margin-bottom: 0">
+                  Semester Genap
+                </div>
+                <span
+                  id="cnt-tp-genap"
+                  style="font-size: var(--fs-xs); color: var(--text-light)"
+                ></span>
+              </div>
+              <div class="card-header-actions">
+                <div class="header-dropdown" id="dropdown-tp-menu-genap">
+                  <button
+                    class="btn-add yellow header-dropdown-btn"
+                    type="button"
+                    onclick="toggleHeaderDropdown(event, 'dropdown-tp-menu-genap')"
+                    title="Menu Kelola Tujuan Pembelajaran (Semester Genap)"
+                  >
+                    <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="settings-2"></i>
+                    <span>Kelola Tujuan Pembelajaran</span>
+                    <i class="material-symbols-rounded chevron-icon" style="font-size: 15px; margin-left: 2px" data-lucide="chevron-down"></i>
+                  </button>
+                  <div class="header-dropdown-menu">
+                    <div class="header-dropdown-group-title">Input &amp; Tambah</div>
+                    <button
+                      class="header-dropdown-item"
+                      type="button"
+                      onclick="addTPDropdown('genap'); closeAllHeaderDropdowns();"
+                    >
+                      <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="plus"></i>
+                      <span>Tambah TP</span>
+                    </button>
+                    <button
+                      class="header-dropdown-item"
+                      type="button"
+                      onclick="addEval('genap'); closeAllHeaderDropdowns();"
+                    >
+                      <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="plus-circle"></i>
+                      <span>Tambah Sumatif</span>
+                    </button>
+                    <div class="header-dropdown-divider"></div>
+                    <div class="header-dropdown-group-title">Aksi Otomatis</div>
+                    <button
+                      class="header-dropdown-item accent"
+                      type="button"
+                      onclick="triggerAutoPopulateTP(); closeAllHeaderDropdowns();"
+                    >
+                      <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="pencil-sparkles"></i>
+                      <span>Isi Otomatis dari CP</span>
+                    </button>
+                    <button
+                      class="header-dropdown-item accent"
+                      type="button"
+                      onclick="distributeJPProportional('genap'); closeAllHeaderDropdowns();"
+                    >
+                      <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="divide"></i>
+                      <span>Distribusi JP Otomatis</span>
+                    </button>
+                    <div class="header-dropdown-divider"></div>
+                    <div class="header-dropdown-group-title">Berkas &amp; Data Excel</div>
+                    <button
+                      class="header-dropdown-item"
+                      type="button"
+                      onclick="downloadTemplateTP(); closeAllHeaderDropdowns();"
+                    >
+                      <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="download"></i>
+                      <span>Unduh Template Excel</span>
+                    </button>
+                    <label class="header-dropdown-item" style="cursor: pointer; margin: 0;">
+                      <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="upload"></i>
+                      <span>Impor Data Excel</span>
+                      <input
+                        type="file"
+                        id="upload-tp-excel-genap"
+                        accept=".xlsx,.xls,.csv"
+                        style="display: none"
+                        onchange="handleUploadTP(event); closeAllHeaderDropdowns();"
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="overflow-x: auto">
+              <table class="dt">
+                <thead>
+                  <tr>
+                    <th style="width: 36px">No</th>
+                    <th style="width: 44px">Bab</th>
+                    <th style="width: 140px">Materi Pokok</th>
+                    <th style="width: 72px">Kode TP</th>
+                    <th>Tujuan Pembelajaran</th>
+                    <th style="width: 50px">JP</th>
+                    <th style="width: 70px">Urutan</th>
+                    <th style="width: 50px">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="body-tp-genap"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- PROTA -->
+      <div id="tab-prota" class="tab-pane">
+        <div
+          class="tab-header"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          "
+        >
+          <h2>Program Tahunan</h2>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button
+              class="btn-docx"
+              id="btn-docx-prota"
+              onclick="downloadDocx('prota')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="file-text"></i> Unduh File
+            </button>
+            <button
+              class="btn-print"
+              id="btn-print-prota"
+              onclick="printTab('prota')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="printer"></i> Cetak
+            </button>
+          </div>
+        </div>
+        <div id="prota-content">
+          <div class="empty">
+            <div class="ic"><i class="material-symbols-rounded" style="font-size:48px; color:inherit" data-lucide="file-text"></i></div>
+            <h3>Belum di-generate</h3>
+            <p>
+              Klik <strong><i class="material-symbols-rounded" style="font-size:16px; vertical-align:middle;" data-lucide="zap"></i> Generate Dokumen</strong> untuk membuat Program
+              Tahunan.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROSEM -->
+      <div id="tab-prosem" class="tab-pane">
+        <div
+          class="tab-header"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          "
+        >
+          <div>
+            <h2>Program Semester</h2>
+            <div class="sem-toggle">
+              <button
+                class="sem-btn active"
+                id="btn-prosem-sem-1"
+                onclick="switchSemContent('prosem', 1)"
+              >
+                Semester Ganjil
+              </button>
+              <button
+                class="sem-btn"
+                id="btn-prosem-sem-2"
+                onclick="switchSemContent('prosem', 2)"
+              >
+                Semester Genap
+              </button>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button
+              class="btn-add yellow"
+              id="btn-toggle-prosem-jp"
+              type="button"
+              onclick="toggleProsemJPText()"
+              title="Tampilkan/Sembunyikan Angka JP pada Pekan"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="eye-off"></i>
+              <span>Sembunyikan Teks JP</span>
+            </button>
+            <button
+              class="btn-docx"
+              id="btn-docx-prosem-1"
+              onclick="downloadDocx('prosem-1')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="file-text"></i> Unduh File
+            </button>
+            <button
+              class="btn-docx"
+              id="btn-docx-prosem-2"
+              style="display: none"
+              onclick="downloadDocx('prosem-2')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="file-text"></i> Unduh File
+            </button>
+            <button
+              class="btn-print"
+              id="btn-print-prosem-1"
+              onclick="printTab('prosem-1')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="printer"></i> Cetak
+            </button>
+            <button
+              class="btn-print"
+              id="btn-print-prosem-2"
+              style="display: none"
+              onclick="printTab('prosem-2')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="printer"></i> Cetak
+            </button>
+          </div>
+        </div>
+        <div id="prosem-1-content">
+          <div class="empty">
+            <div class="ic"><i class="material-symbols-rounded" style="font-size:48px; color:inherit" data-lucide="chart-column"></i></div>
+            <h3>Belum di-generate</h3>
+            <p>Klik <strong><i class="material-symbols-rounded" style="font-size:16px; vertical-align:middle;" data-lucide="zap"></i> Generate Dokumen</strong> terlebih dahulu.</p>
+          </div>
+        </div>
+        <div id="prosem-2-content" style="display: none">
+          <div class="empty">
+            <div class="ic"><i class="material-symbols-rounded" style="font-size:48px; color:inherit" data-lucide="chart-column"></i></div>
+            <h3>Belum di-generate</h3>
+            <p>Klik <strong><i class="material-symbols-rounded" style="font-size:16px; vertical-align:middle;" data-lucide="zap"></i> Generate Dokumen</strong> terlebih dahulu.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- RPE -->
+      <div id="tab-rpe" class="tab-pane">
+        <div
+          class="tab-header"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          "
+        >
+          <div>
+            <h2>Rencana Pekan Efektif</h2>
+            <div class="sem-toggle">
+              <button
+                class="sem-btn active"
+                id="btn-rpe-sem-1"
+                onclick="switchSemContent('rpe', 1)"
+              >
+                Semester Ganjil
+              </button>
+              <button
+                class="sem-btn"
+                id="btn-rpe-sem-2"
+                onclick="switchSemContent('rpe', 2)"
+              >
+                Semester Genap
+              </button>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button
+              class="btn-docx"
+              id="btn-docx-rpe-1"
+              onclick="downloadDocx('rpe-1')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="file-text"></i> Unduh File
+            </button>
+            <button
+              class="btn-docx"
+              id="btn-docx-rpe-2"
+              style="display: none"
+              onclick="downloadDocx('rpe-2')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="file-text"></i> Unduh File
+            </button>
+            <button
+              class="btn-print"
+              id="btn-print-rpe-1"
+              onclick="printTab('rpe-1')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="printer"></i> Cetak
+            </button>
+            <button
+              class="btn-print"
+              id="btn-print-rpe-2"
+              style="display: none"
+              onclick="printTab('rpe-2')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="printer"></i> Cetak
+            </button>
+          </div>
+        </div>
+        <div id="rpe-1-content">
+          <div class="empty">
+            <div class="ic"><i class="material-symbols-rounded" style="font-size:48px; color:inherit" data-lucide="clipboard-list"></i></div>
+            <h3>Belum di-generate</h3>
+            <p>Klik <strong><i class="material-symbols-rounded" style="font-size:16px; vertical-align:middle;" data-lucide="zap"></i> Generate Dokumen</strong> terlebih dahulu.</p>
+          </div>
+        </div>
+        <div id="rpe-2-content" style="display: none">
+          <div class="empty">
+            <div class="ic"><i class="material-symbols-rounded" style="font-size:48px; color:inherit" data-lucide="clipboard-list"></i></div>
+            <h3>Belum di-generate</h3>
+            <p>Klik <strong><i class="material-symbols-rounded" style="font-size:16px; vertical-align:middle;" data-lucide="zap"></i> Generate Dokumen</strong> terlebih dahulu.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- JURNAL -->
+      <div id="tab-jurnal" class="tab-pane">
+        <div
+          class="tab-header"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          "
+        >
+          <div>
+            <h2>Jurnal Harian</h2>
+            <div class="sem-toggle">
+              <button
+                class="sem-btn active"
+                id="btn-jurnal-sem-1"
+                onclick="switchSemContent('jurnal', 1)"
+              >
+                Semester Ganjil
+              </button>
+              <button
+                class="sem-btn"
+                id="btn-jurnal-sem-2"
+                onclick="switchSemContent('jurnal', 2)"
+              >
+                Semester Genap
+              </button>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button
+              class="btn-docx"
+              id="btn-docx-jurnal-1"
+              onclick="downloadDocx('jurnal-1')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="file-text"></i> Unduh File
+            </button>
+            <button
+              class="btn-docx"
+              id="btn-docx-jurnal-2"
+              style="display: none"
+              onclick="downloadDocx('jurnal-2')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="file-text"></i> Unduh File
+            </button>
+            <button
+              class="btn-print"
+              id="btn-print-jurnal-1"
+              onclick="printTab('jurnal-1')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="printer"></i> Cetak
+            </button>
+            <button
+              class="btn-print"
+              id="btn-print-jurnal-2"
+              style="display: none"
+              onclick="printTab('jurnal-2')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="printer"></i> Cetak
+            </button>
+          </div>
+        </div>
+        <div id="jurnal-1-content">
+          <div class="empty">
+            <div class="ic"><i class="material-symbols-rounded" style="font-size:48px; color:inherit" data-lucide="file-pen"></i></div>
+            <h3>Belum di-generate</h3>
+            <p>Klik <strong><i class="material-symbols-rounded" style="font-size:16px; vertical-align:middle;" data-lucide="zap"></i> Generate Dokumen</strong> terlebih dahulu.</p>
+          </div>
+        </div>
+        <div id="jurnal-2-content" style="display: none">
+          <div class="empty">
+            <div class="ic"><i class="material-symbols-rounded" style="font-size:48px; color:inherit" data-lucide="file-pen"></i></div>
+            <h3>Belum di-generate</h3>
+            <p>Klik <strong><i class="material-symbols-rounded" style="font-size:16px; vertical-align:middle;" data-lucide="zap"></i> Generate Dokumen</strong> terlebih dahulu.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ATP OUTPUT -->
+      <div id="tab-atp" class="tab-pane">
+        <div
+          class="tab-header"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          "
+        >
+          <h2>Alur Tujuan Pembelajaran</h2>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button
+              class="btn-docx"
+              id="btn-docx-atp"
+              onclick="downloadDocx('atp')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="file-text"></i> Unduh File
+            </button>
+            <button
+              class="btn-print"
+              id="btn-print-atp"
+              onclick="printTab('atp')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="printer"></i> Cetak
+            </button>
+          </div>
+        </div>
+        <div id="atp-content">
+          <div class="empty">
+            <div class="ic"><i class="material-symbols-rounded" style="font-size:48px; color:inherit" data-lucide="file-text"></i></div>
+            <h3>Belum di-generate</h3>
+            <p>Klik <strong><i class="material-symbols-rounded" style="font-size:16px; vertical-align:middle;" data-lucide="zap"></i> Generate Dokumen</strong> terlebih dahulu.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SISWA -->
+      <div id="tab-siswa" class="tab-pane">
+        <div
+          class="tab-header"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+          "
+        >
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px">
+              <h2>Daftar Murid</h2>
+              <button
+                class="header-info-tip"
+                type="button"
+                onclick="bukaModalPetunjukSiswa()"
+                title="Buka Petunjuk Data Murid"
+              >
+                <i class="material-symbols-rounded" style="font-size: 14px" data-lucide="info"></i>
+              </button>
+            </div>
+            <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <div class="header-dropdown" id="dropdown-siswa-menu">
+                <button
+                  class="btn-add yellow header-dropdown-btn"
+                  type="button"
+                  onclick="toggleHeaderDropdown(event, 'dropdown-siswa-menu')"
+                  title="Menu Kelola & Opsi Data Murid"
+                >
+                  <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="users"></i>
+                  <span>Kelola Murid</span>
+                  <i class="material-symbols-rounded chevron-icon" style="font-size: 15px; margin-left: 2px" data-lucide="chevron-down"></i>
+                </button>
+                <div class="header-dropdown-menu">
+                  <button
+                    class="header-dropdown-item accent"
+                    type="button"
+                    onclick="addSiswa(); closeAllHeaderDropdowns();"
+                  >
+                    <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="user-plus"></i>
+                    <span>Tambah Murid</span>
+                  </button>
+                  <button
+                    class="header-dropdown-item"
+                    type="button"
+                    onclick="importSiswa(); closeAllHeaderDropdowns();"
+                  >
+                    <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="users"></i>
+                    <span>Tambah Banyak</span>
+                  </button>
+                  <div class="header-dropdown-divider"></div>
+                  <button
+                    class="header-dropdown-item danger"
+                    type="button"
+                    onclick="clearAllSiswa(); closeAllHeaderDropdowns();"
+                  >
+                    <i class="material-symbols-rounded" style="font-size: 15px" data-lucide="trash-2"></i>
+                    <span>Hapus Semua Murid</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="stats-row" id="stats-siswa">
+            <div class="stat-box">
+              <div class="stat-lbl">Jumlah Murid</div>
+              <div class="stat-val" id="cnt-siswa">0 Murid</div>
+            </div>
+          </div>
+        </div>
+        <div class="card card-siswa">
+          <div style="overflow-x: auto">
+            <table class="dt">
+              <thead>
+                <tr>
+                  <th style="width: 36px">No</th>
+                  <th style="width: 140px">NIS</th>
+                  <th style="width: 140px">NISN</th>
+                  <th>Nama Murid</th>
+                  <th style="width: 50px">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="body-siswa"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PENGATURAN PENILAIAN -->
+      <div id="tab-pengaturan-penilaian" class="tab-pane">
+        <div
+          class="tab-header"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+          "
+        >
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px">
+              <h2>Pengaturan Penilaian</h2>
+              <button
+                class="header-info-tip"
+                type="button"
+                onclick="bukaModalPetunjukPenilaian()"
+                title="Buka Petunjuk Pengaturan Penilaian"
+              >
+                <i class="material-symbols-rounded" style="font-size: 14px" data-lucide="info"></i>
+              </button>
+            </div>
+            <div class="sem-toggle" style="margin-top: 8px;">
+              <button
+                class="sem-btn active"
+                id="btn-pp-sem-1"
+                onclick="switchSemContent('pp', 1)"
+              >
+                Semester Ganjil
+              </button>
+              <button
+                class="sem-btn"
+                id="btn-pp-sem-2"
+                onclick="switchSemContent('pp', 2)"
+              >
+                Semester Genap
+              </button>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <button class="btn-add green btn-save" type="button" onclick="simpanPengaturanPenilaian()" title="Simpan Pengaturan Penilaian (Wajib Total 100%)">
+              <i class="material-symbols-rounded" style="font-size: 18px;" data-lucide="save"></i>
+              <span>Simpan Pengaturan</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- KKTP CARD -->
+        <div class="card" style="margin-bottom: 24px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <h3 style="margin:0;font-size:16px;color:var(--text);">Kriteria Ketercapaian Tujuan Pembelajaran (KKTP)</h3>
+            <button class="btn-add" onclick="addKKTP()" style="padding: 4px 10px; font-size: 12px; margin: 0;">
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="plus"></i> Tambah Interval
+            </button>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="dt">
+              <thead>
+                <tr>
+                  <th style="width:120px;">Kriteria</th>
+                  <th style="width:200px;">Interval Nilai (%)</th>
+                  <th>Keterangan</th>
+                </tr>
+              </thead>
+              <tbody id="body-kktp"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="pp-1-content" class="sem-content active">
+          <div class="card card-penilaian">
+            <div id="pp-status-banner-1" style="margin-bottom: 14px;"></div>
+            <div class="tbl-actions" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <button class="btn-add" onclick="addPengaturanPenilaian(1)">
+                <i class="material-symbols-rounded" style="font-size:16px" data-lucide="plus"></i> Tambah Penilaian
+              </button>
+              <button class="btn-add green" type="button" onclick="simpanPengaturanPenilaian(1)" title="Simpan Pengaturan Semester Ganjil">
+                <i class="material-symbols-rounded" style="font-size:16px" data-lucide="save"></i> Simpan Semester Ganjil
+              </button>
+            </div>
+            <div style="overflow-x: auto; margin-top: 12px">
+              <table class="dt">
+                <thead>
+                  <tr>
+                    <th style="width: 36px">No</th>
+                    <th style="width: 50px">Tampil</th>
+                    <th>Komponen Penilaian</th>
+                    <th style="width: 150px; text-align: center">
+                      Bobot Persentase (%)
+                    </th>
+                    <th style="width: 140px; text-align: center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="body-pengaturan-penilaian-1"></tbody>
+                <tfoot id="foot-pengaturan-penilaian-1"></tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="pp-2-content" class="sem-content" style="display: none">
+          <div class="card card-penilaian">
+            <div id="pp-status-banner-2" style="margin-bottom: 14px;"></div>
+            <div class="tbl-actions" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <button class="btn-add" onclick="addPengaturanPenilaian(2)">
+                <i class="material-symbols-rounded" style="font-size:16px" data-lucide="plus"></i> Tambah Penilaian
+              </button>
+              <button class="btn-add green" type="button" onclick="simpanPengaturanPenilaian(2)" title="Simpan Pengaturan Semester Genap">
+                <i class="material-symbols-rounded" style="font-size:16px" data-lucide="save"></i> Simpan Semester Genap
+              </button>
+            </div>
+            <div style="overflow-x: auto; margin-top: 12px">
+              <table class="dt">
+                <thead>
+                  <tr>
+                    <th style="width: 36px">No</th>
+                    <th style="width: 50px">Tampil</th>
+                    <th>Komponen Penilaian</th>
+                    <th style="width: 150px; text-align: center">
+                      Bobot Persentase (%)
+                    </th>
+                    <th style="width: 140px; text-align: center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="body-pengaturan-penilaian-2"></tbody>
+                <tfoot id="foot-pengaturan-penilaian-2"></tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABSENSI -->
+      <div id="tab-absensi" class="tab-pane">
+        <div
+          class="tab-header"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          "
+        >
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px">
+              <h2>Absensi Murid</h2>
+            </div>
+            <div class="sem-toggle">
+              <button
+                class="sem-btn active"
+                id="btn-absensi-sem-1"
+                onclick="switchSemContent('absensi', 1)"
+              >
+                Semester Ganjil
+              </button>
+              <button
+                class="sem-btn"
+                id="btn-absensi-sem-2"
+                onclick="switchSemContent('absensi', 2)"
+              >
+                Semester Genap
+              </button>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button
+              class="btn-docx"
+              id="btn-docx-absensi-1"
+              onclick="downloadDocx('absensi-1')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="file-text"></i> Unduh File
+            </button>
+            <button
+              class="btn-docx"
+              id="btn-docx-absensi-2"
+              style="display: none"
+              onclick="downloadDocx('absensi-2')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="file-text"></i> Unduh File
+            </button>
+            <button
+              class="btn-print"
+              id="btn-print-absensi-1"
+              onclick="printTab('absensi-1')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="printer"></i> Cetak
+            </button>
+            <button
+              class="btn-print"
+              id="btn-print-absensi-2"
+              style="display: none"
+              onclick="printTab('absensi-2')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="printer"></i> Cetak
+            </button>
+          </div>
+        </div>
+        <div id="absensi-1-content">
+          <div class="empty">
+            <div class="ic"><i class="material-symbols-rounded" style="font-size:48px; color:inherit" data-lucide="clipboard-list"></i></div>
+            <h3>Belum di-generate</h3>
+            <p>Klik <strong><i class="material-symbols-rounded" style="font-size:16px; vertical-align:middle;" data-lucide="zap"></i> Generate Dokumen</strong> terlebih dahulu.</p>
+          </div>
+        </div>
+        <div id="absensi-2-content" style="display: none">
+          <div class="empty">
+            <div class="ic"><i class="material-symbols-rounded" style="font-size:48px; color:inherit" data-lucide="clipboard-list"></i></div>
+            <h3>Belum di-generate</h3>
+            <p>Klik <strong><i class="material-symbols-rounded" style="font-size:16px; vertical-align:middle;" data-lucide="zap"></i> Generate Dokumen</strong> terlebih dahulu.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- NILAI -->
+      <div id="tab-nilai" class="tab-pane">
+        <div
+          class="tab-header"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          "
+        >
+          <div>
+            <h2>Daftar Nilai</h2>
+            <div class="sem-toggle">
+              <button
+                class="sem-btn active"
+                id="btn-nilai-sem-1"
+                onclick="switchSemContent('nilai', 1)"
+              >
+                Semester Ganjil
+              </button>
+              <button
+                class="sem-btn"
+                id="btn-nilai-sem-2"
+                onclick="switchSemContent('nilai', 2)"
+              >
+                Semester Genap
+              </button>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button
+              class="btn-docx"
+              id="btn-docx-nilai-1"
+              onclick="downloadDocx('nilai-1')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="file-text"></i> Unduh File
+            </button>
+            <button
+              class="btn-docx"
+              id="btn-docx-nilai-2"
+              style="display: none"
+              onclick="downloadDocx('nilai-2')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="file-text"></i> Unduh File
+            </button>
+            <button
+              class="btn-print"
+              id="btn-print-nilai-1"
+              onclick="printTab('nilai-1')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="printer"></i> Cetak
+            </button>
+            <button
+              class="btn-print"
+              id="btn-print-nilai-2"
+              style="display: none"
+              onclick="printTab('nilai-2')"
+            >
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="printer"></i> Cetak
+            </button>
+          </div>
+        </div>
+        <div id="nilai-1-content">
+          <div class="empty">
+            <div class="ic"><i class="material-symbols-rounded" style="font-size:48px; color:inherit" data-lucide="clipboard-list"></i></div>
+            <h3>Belum di-generate</h3>
+            <p>Klik <strong><i class="material-symbols-rounded" style="font-size:16px; vertical-align:middle;" data-lucide="zap"></i> Generate Dokumen</strong> terlebih dahulu.</p>
+          </div>
+        </div>
+        <div id="nilai-2-content" style="display: none">
+          <div class="empty">
+            <div class="ic"><i class="material-symbols-rounded" style="font-size:48px; color:inherit" data-lucide="clipboard-list"></i></div>
+            <h3>Belum di-generate</h3>
+            <p>Klik <strong><i class="material-symbols-rounded" style="font-size:16px; vertical-align:middle;" data-lucide="zap"></i> Generate Dokumen</strong> terlebih dahulu.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- KKTP OUTPUT -->
+      <div id="tab-kktp" class="tab-pane">
+        <div class="tab-header" style="display: flex; align-items: center; justify-content: space-between;">
+          <h2>Kriteria Ketercapaian Tujuan Pembelajaran (KKTP)</h2>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="btn-docx" id="btn-docx-kktp" onclick="downloadDocx('kktp')">
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="file-text"></i> Unduh File
+            </button>
+            <button class="btn-print" id="btn-print-kktp" onclick="printTab('kktp')">
+              <i class="material-symbols-rounded" style="font-size:16px" data-lucide="printer"></i> Cetak
+            </button>
+          </div>
+        </div>
+        <div id="kktp-content">
+          <div class="empty">
+            <div class="ic"><i class="material-symbols-rounded" style="font-size:48px; color:inherit" data-lucide="file-text"></i></div>
+            <h3>Belum di-generate</h3>
+            <p>Klik <strong><i class="material-symbols-rounded" style="font-size:16px; vertical-align:middle;" data-lucide="zap"></i> Generate Dokumen</strong> terlebih dahulu.</p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="./xlsx.full.min.js"></script>
+    <script src="./lucide.min.js"></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

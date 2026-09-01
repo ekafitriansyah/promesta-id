@@ -1,0 +1,8 @@
+{
+  "name": "Beta - Promesta.id",
+  "description": "Aplikasi penyusun perangkat ajar guru.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
