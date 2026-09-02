@@ -1794,11 +1794,29 @@
         markDirty();
       }
       function moveAtpRow(ei, ri, dir) {
+        if (!state.atpData || !state.atpData[ei] || !state.atpData[ei].rows) return;
         const rows = state.atpData[ei].rows;
         const target = ri + dir;
         if (target < 0 || target >= rows.length) return;
         [rows[ri], rows[target]] = [rows[target], rows[ri]];
-        renderAtpInput();
+        
+        const listEl = document.getElementById(`atp-tp-list-${ei}`);
+        if (listEl && typeof renderAtpRowHtml === "function") {
+          listEl.innerHTML = rows
+            .map((row, idx) => renderAtpRowHtml(ei, idx, row, rows.length, idx === target))
+            .join("");
+          if (typeof lucide !== "undefined" && lucide.createIcons) {
+            lucide.createIcons({ attrs: { class: "lucide" }, node: listEl });
+          }
+          listEl.querySelectorAll("textarea").forEach((ta) => {
+            ta.style.height = "auto";
+            ta.style.height = (ta.scrollHeight + 2) + "px";
+          });
+          const targetTa = document.getElementById(`atp-textarea-${ei}-${target}`);
+          if (targetTa) targetTa.focus();
+        } else {
+          renderAtpInput();
+        }
         scheduleSave();
         markDirty();
       }
@@ -2136,6 +2154,7 @@
         if (!sel) return;
 
         const rawVal = preserveCurrent ? getMapelValue("f-mapel", "f-mapel-manual") : "";
+        const currentSelVal = sel.value;
         const fase = document.getElementById("f-fase")?.value || "C";
         const kelas = document.getElementById("f-kelas")?.value || "Kelas V";
         const jenjang = document.getElementById("f-jenjang")?.value || "SD";
@@ -2152,10 +2171,21 @@
         } else if (rawVal && (rawVal === "Muatan Lokal" || rawVal.toLowerCase().startsWith("muatan lokal"))) {
           sel.value = "Muatan Lokal";
           if (container) container.classList.remove("hidden");
-          if (inp && rawVal !== "Muatan Lokal") inp.value = rawVal;
+          if (inp) {
+            inp.value = rawVal;
+            autoResizeTextarea(inp);
+          }
         } else if (rawVal && rawVal === "Lainnya") {
           sel.value = "Lainnya";
           if (container) container.classList.remove("hidden");
+          if (inp && inp.value === "Lainnya") inp.value = "";
+        } else if (rawVal) {
+          sel.value = (currentSelVal === "Lainnya") ? "Lainnya" : "Muatan Lokal";
+          if (container) container.classList.remove("hidden");
+          if (inp) {
+            inp.value = rawVal;
+            autoResizeTextarea(inp);
+          }
         } else {
           const defaultPai = "Pendidikan Agama Islam dan Budi Pekerti";
           const matchedPai = matchMapelOption(allOptionVals, defaultPai);
@@ -2180,6 +2210,7 @@
         if (!sel) return;
 
         const rawVal = preserveCurrent ? getMapelValue("mk-mapel", "mk-mapel-manual") : "";
+        const currentSelVal = sel.value;
         const fase = document.getElementById("mk-fase")?.value || "C";
         const kelas = document.getElementById("mk-kelas")?.value || "Kelas V";
         const jenjang = document.getElementById("mk-jenjang")?.value || "SD";
@@ -2196,10 +2227,21 @@
         } else if (rawVal && (rawVal === "Muatan Lokal" || rawVal.toLowerCase().startsWith("muatan lokal"))) {
           sel.value = "Muatan Lokal";
           if (container) container.classList.remove("hidden");
-          if (inp && rawVal !== "Muatan Lokal") inp.value = rawVal;
+          if (inp) {
+            inp.value = rawVal;
+            autoResizeTextarea(inp);
+          }
         } else if (rawVal && rawVal === "Lainnya") {
           sel.value = "Lainnya";
           if (container) container.classList.remove("hidden");
+          if (inp && inp.value === "Lainnya") inp.value = "";
+        } else if (rawVal) {
+          sel.value = (currentSelVal === "Lainnya") ? "Lainnya" : "Muatan Lokal";
+          if (container) container.classList.remove("hidden");
+          if (inp) {
+            inp.value = rawVal;
+            autoResizeTextarea(inp);
+          }
         } else {
           const defaultPai = "Pendidikan Agama Islam dan Budi Pekerti";
           const matchedPai = matchMapelOption(allOptionVals, defaultPai);
@@ -2231,22 +2273,27 @@
           sel.value = matched;
           if (container) container.classList.add("hidden");
           if (inp) inp.value = "";
-        } else if (cleanVal && cleanVal.toLowerCase().startsWith("muatan lokal")) {
+        } else if (cleanVal && (cleanVal === "Muatan Lokal" || cleanVal.toLowerCase().startsWith("muatan lokal"))) {
           sel.value = "Muatan Lokal";
           if (container) container.classList.remove("hidden");
-          if (inp) inp.value = cleanVal === "Muatan Lokal" ? "" : cleanVal;
-        } else if (cleanVal === "Muatan Lokal") {
-          sel.value = "Muatan Lokal";
-          if (container) container.classList.remove("hidden");
-          if (inp) inp.value = "";
+          if (inp) {
+            inp.value = cleanVal;
+            autoResizeTextarea(inp);
+          }
         } else if (cleanVal === "Lainnya") {
           sel.value = "Lainnya";
           if (container) container.classList.remove("hidden");
-          if (inp) inp.value = "";
+          if (inp) {
+            inp.value = "";
+            autoResizeTextarea(inp);
+          }
         } else if (cleanVal) {
-          sel.value = "Lainnya";
+          sel.value = (sel.value === "Lainnya") ? "Lainnya" : "Muatan Lokal";
           if (container) container.classList.remove("hidden");
-          if (inp) inp.value = cleanVal;
+          if (inp) {
+            inp.value = cleanVal;
+            autoResizeTextarea(inp);
+          }
         } else {
           const defaultPai = "Pendidikan Agama Islam dan Budi Pekerti";
           const matchedPai = matchMapelOption(optionVals, defaultPai);
@@ -2369,8 +2416,9 @@
         }
 
         if (rombelEl) {
-          const kelasVal = (kelasEl?.value || "").trim();
-          rombelEl.placeholder = `${kelasVal || "1"} Putra A`;
+          let kelasVal = (kelasEl?.value || "").trim();
+          kelasVal = kelasVal.replace(/^kelas\s+/i, "").trim();
+          rombelEl.placeholder = `${kelasVal || "V"} Putra`;
         }
 
         if (kepsekEl) {
@@ -2390,8 +2438,9 @@
         }
 
         if (rombelEl) {
-          const kelasVal = (kelasEl?.value || "").trim();
-          rombelEl.placeholder = `${kelasVal || "1"} Putra A`;
+          let kelasVal = (kelasEl?.value || "").trim();
+          kelasVal = kelasVal.replace(/^kelas\s+/i, "").trim();
+          rombelEl.placeholder = `${kelasVal || "V"} Putra`;
         }
       }
 
@@ -2499,19 +2548,13 @@
         if (sel.value === "Muatan Lokal") {
           container.classList.remove("hidden");
           if (inp) {
-            if (!inp.value.toLowerCase().startsWith("muatan lokal")) {
-              inp.value = "Muatan Lokal ";
-            }
-            inp.placeholder = "Tulis nama Muatan Lokal kustom...";
+            inp.placeholder = "Tulis nama Muatan Lokal kustom (contoh: Bahasa Daerah, PLH, dll)...";
             inp.focus();
             autoResizeTextarea(inp);
           }
         } else if (sel.value === "Lainnya") {
           container.classList.remove("hidden");
           if (inp) {
-            if (inp.value.toLowerCase().startsWith("muatan lokal")) {
-              inp.value = "";
-            }
             inp.placeholder = "Tulis nama mata pelajaran kustom...";
             inp.focus();
             autoResizeTextarea(inp);
@@ -2666,6 +2709,26 @@
         }
       }
 
+      function toggleLoginPasswordVisibility() {
+        const passInp = document.getElementById("login-password");
+        const toggleBtn = document.getElementById("login-password-toggle");
+        if (!passInp) return;
+        const isPassword = passInp.type === "password";
+        passInp.type = isPassword ? "text" : "password";
+
+        if (toggleBtn) {
+          toggleBtn.title = isPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi";
+          toggleBtn.setAttribute("aria-label", isPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi");
+          toggleBtn.innerHTML = `<i class="material-symbols-rounded" style="font-size: 17px;" data-lucide="${isPassword ? "eye-off" : "eye"}"></i>`;
+          if (typeof lucide !== "undefined" && lucide.createIcons) {
+            lucide.createIcons({
+              attrs: { class: "lucide" },
+              node: toggleBtn
+            });
+          }
+        }
+      }
+
       async function doLogin() {
         let nama = (document.getElementById("login-nama")?.value || "").trim();
         const pass = document.getElementById("login-password")?.value || "";
@@ -2780,61 +2843,77 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            width: 100vw;
+            height: 100vh;
+            background: rgba(8, 13, 24, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 10000;
+            z-index: 100000;
             opacity: 0;
-            transition: opacity 0.2s ease;
+            transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
           `;
 
           const isSuccess = type === 'success';
           const isError = type === 'error';
-          let icon = 'info';
-          let iconColor = '#3b82f6';
+          const isWarning = type === 'warning';
+          
+          let iconColor = '#60a5fa'; // info blue
+          let iconBg = 'rgba(59, 130, 246, 0.15)';
+          let svgPath = '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>';
+          
           if (isSuccess) {
-            icon = 'check_circle';
-            iconColor = '#10b981';
+            iconColor = '#4ade80';
+            iconBg = 'rgba(74, 222, 128, 0.15)';
+            svgPath = '<path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>';
           } else if (isError) {
-            icon = 'error';
-            iconColor = '#ef4444';
+            iconColor = '#f87171';
+            iconBg = 'rgba(248, 113, 113, 0.15)';
+            svgPath = '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>';
+          } else if (isWarning) {
+            iconColor = '#facc15';
+            iconBg = 'rgba(250, 204, 21, 0.15)';
+            svgPath = '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>';
           }
 
           modal.innerHTML = `
             <div style="
-              background: #1e293b;
-              border: 1px solid rgba(255, 255, 255, 0.1);
+              background: #0c1527;
+              border: 1px solid rgba(255, 255, 255, 0.15);
               border-radius: 16px;
               width: 90%;
               max-width: 400px;
               padding: 24px;
-              box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
-              transform: scale(0.9);
-              transition: transform 0.2s ease;
+              box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+              transform: scale(0.92);
+              transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
               text-align: center;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
             ">
-              <div style="display: flex; justify-content: center; margin-bottom: 16px;">
-                <span class="material-symbols-rounded" style="font-size: 48px; color: ${iconColor};">${icon}</span>
+              <div style="width: 48px; height: 48px; border-radius: 50%; background: ${iconBg}; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2.5">
+                  ${svgPath}
+                </svg>
               </div>
-              <h4 style="color: #f8fafc; font-size: 18px; font-weight: 600; margin-bottom: 8px; font-family: system-ui, sans-serif;">${title}</h4>
-              <p style="color: #94a3b8; font-size: 14px; line-height: 1.5; margin-bottom: 24px; font-family: system-ui, sans-serif;">${text}</p>
+              <h4 style="color: #f8fafc; font-size: 16px; font-weight: 700; margin-bottom: 8px; font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.01em;">${title}</h4>
+              <p style="color: #94a3b8; font-size: 13px; line-height: 1.6; margin-bottom: 24px; font-family: 'Plus Jakarta Sans', sans-serif; white-space: pre-line;">${text}</p>
               <button id="custom-alert-ok" style="
-                background: #3b82f6;
-                color: white;
+                background: ${isSuccess ? '#10b981' : (isError ? '#ef4444' : 'var(--accent, #facc15)')};
+                color: ${isSuccess || isError ? '#ffffff' : '#0c1527'};
                 border: none;
-                border-radius: 8px;
+                border-radius: 10px;
                 padding: 10px 24px;
-                font-weight: 500;
-                font-size: 14px;
+                font-weight: 700;
+                font-size: 13px;
                 cursor: pointer;
-                transition: background 0.15s;
+                transition: all 0.2s;
                 width: 100%;
-                font-family: system-ui, sans-serif;
+                font-family: 'Plus Jakarta Sans', sans-serif;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.25);
               ">OK</button>
             </div>
           `;
@@ -2843,25 +2922,33 @@
 
           setTimeout(() => {
             modal.style.opacity = '1';
-            modal.firstElementChild.style.transform = 'scale(1)';
-          }, 50);
+            if (modal.firstElementChild) modal.firstElementChild.style.transform = 'scale(1)';
+          }, 10);
 
           const closeBtn = modal.querySelector("#custom-alert-ok");
-          closeBtn.focus();
+          if (closeBtn) closeBtn.focus();
 
           const closeModal = () => {
             modal.style.opacity = '0';
-            modal.firstElementChild.style.transform = 'scale(0.9)';
+            if (modal.firstElementChild) modal.firstElementChild.style.transform = 'scale(0.92)';
             setTimeout(() => {
               modal.remove();
               resolve();
             }, 200);
           };
 
-          closeBtn.addEventListener("click", closeModal);
+          if (closeBtn) closeBtn.addEventListener("click", closeModal);
           modal.addEventListener("click", (e) => {
             if (e.target === modal) closeModal();
           });
+
+          const handleKey = (e) => {
+            if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+              document.removeEventListener('keydown', handleKey);
+              closeModal();
+            }
+          };
+          document.addEventListener('keydown', handleKey);
         });
       }
 
@@ -3220,7 +3307,22 @@
           btn.textContent = "Masuk";
         }
         const passInput = document.getElementById("login-password");
-        if (passInput) passInput.value = "";
+        if (passInput) {
+          passInput.value = "";
+          passInput.type = "password";
+        }
+        const passToggleBtn = document.getElementById("login-password-toggle");
+        if (passToggleBtn) {
+          passToggleBtn.title = "Tampilkan kata sandi";
+          passToggleBtn.setAttribute("aria-label", "Tampilkan kata sandi");
+          passToggleBtn.innerHTML = `<i class="material-symbols-rounded" style="font-size: 17px;" data-lucide="eye"></i>`;
+          if (typeof lucide !== "undefined" && lucide.createIcons) {
+            lucide.createIcons({
+              attrs: { class: "lucide" },
+              node: passToggleBtn
+            });
+          }
+        }
         const errEl = document.getElementById("login-err");
         if (errEl) errEl.textContent = "";
 
@@ -3469,7 +3571,7 @@ state.jadwal =
             (k, idx) => {
               const isIndigo = idx % 2 === 0;
               const iconClass = isIndigo ? "indigo" : "blue";
-              const faseClass = (k.fase || "F").toLowerCase() === "c" ? "fase-c" : "fase-f";
+              const faseClass = `fase-${(k.fase || "c").toLowerCase().trim()}`;
               return `
       <div class="dashboard-kelas-row-card" onclick="bukaKelas('${k.id}')">
         <div class="dashboard-kelas-row-left">
@@ -3481,7 +3583,7 @@ state.jadwal =
             <div class="dashboard-kelas-row-meta">
               <div class="dashboard-kelas-row-meta-item">
                 <i data-lucide="square-library" style="width: 13px; height: 13px;"></i>
-                <span>Kelas ${escH(k.kelas || " - ")}</span>
+                <span>${escH(k.rombel || (k.kelas ? `Kelas ${k.kelas}` : " - "))}</span>
               </div>
               <div class="dashboard-kelas-row-meta-item">
                 <i data-lucide="graduation-cap" style="width: 13px; height: 13px;"></i>
@@ -3703,6 +3805,8 @@ state.jadwal =
         }
       }
 
+
+
       async function simpanModalKelas() {
         const jenjang = document.getElementById("mk-jenjang")?.value || "SD";
         const mapel = getMapelValue("mk-mapel", "mk-mapel-manual");
@@ -3897,16 +4001,22 @@ state.jadwal =
         const reader = new FileReader();
         reader.onload = async (ev) => {
           try {
-            const importedData = JSON.parse(ev.target.result);
+            let importedData = JSON.parse(ev.target.result);
             if (!Array.isArray(importedData)) {
-              throw new Error("Format tidak valid (harus array JSON).");
+              if (importedData && typeof importedData === "object" && (importedData.mapel || importedData.kelas || importedData.sekolah || importedData.id)) {
+                importedData = [importedData];
+              } else {
+                throw new Error("Format tidak valid (harus array JSON data kelas atau objek data mata pelajaran).");
+              }
             }
             const ok = await confirmAsync(`Ditemukan ${importedData.length} data kelas. Apakah Anda yakin ingin mengimpor ini? Data dengan ID yang sama akan ditimpa.`);
             if (!ok) {
               e.target.value = "";
               return;
             }
-            document.getElementById("fb-loading").classList.remove("hidden");
+            const fbLoading = document.getElementById("fb-loading");
+            if (fbLoading) fbLoading.classList.remove("hidden");
+            
             for (const k of importedData) {
               const dataToSave = { ...k };
               const id = dataToSave.id;
@@ -3923,14 +4033,25 @@ state.jadwal =
                 daftarKelas.push(dataToSave);
               }
             }
-            localStorage.setItem("perangkat_guru_data_" + currentUser.uid, JSON.stringify(daftarKelas));
-            await loadDaftarKelas(currentUser.uid);
+            const uid = (currentUser && currentUser.uid) ? currentUser.uid : "local_user";
+            localStorage.setItem("perangkat_guru_data_" + uid, JSON.stringify(daftarKelas));
+            await loadDaftarKelas(uid);
             renderDaftarKelas();
-            await alert("Data berhasil diimpor.");
+            if (typeof showCustomAlert === "function") {
+              await showCustomAlert("Impor Berhasil", `Berhasil mengimpor ${importedData.length} data kelas ke dashboard.`, "success");
+            } else {
+              alert(`Data berhasil diimpor (${importedData.length} kelas).`);
+            }
           } catch (err) {
-            await alert("Gagal mengimpor data: " + err.message);
+            console.error("importAllData error:", err);
+            if (typeof showCustomAlert === "function") {
+              await showCustomAlert("Gagal Mengimpor Data", err.message || "Format file tidak dikenali.", "error");
+            } else {
+              alert("Gagal mengimpor data: " + err.message);
+            }
           } finally {
-            document.getElementById("fb-loading").classList.add("hidden");
+            const fbLoading = document.getElementById("fb-loading");
+            if (fbLoading) fbLoading.classList.add("hidden");
             e.target.value = "";
           }
         };
@@ -6812,6 +6933,30 @@ state.jadwal =
         return s;
       }
 
+      function renderAtpRowHtml(ei, ri, row, totalRows, isNew = false) {
+        return `
+          <div class="atp-tp-row ${isNew ? "tp-row-new" : ""}" id="atp-row-${ei}-${ri}">
+            <span style="font-size:var(--fs-sm);color:var(--text-light);min-width:24px;text-align:right;font-weight:600;">${ri + 1}.</span>
+            <textarea rows="1"
+              id="atp-textarea-${ei}-${ri}"
+              placeholder="Tujuan Pembelajaran..."
+              oninput="this.style.height='auto';this.style.height=(this.scrollHeight+2)+'px';"
+              onchange="state.atpData[${ei}].rows[${ri}].tp=this.value;state.atpData[${ei}].rows[${ri}].atp=this.value;scheduleSave();markDirty();"
+              style="flex:1;resize:none;overflow:hidden;line-height:1.4;">${escH(row.tp)}</textarea>
+            
+            <button type="button" onclick="moveAtpRow(${ei},${ri},-1)" ${ri === 0 ? "disabled" : ""} title="Naik" class="btn-sm" style="flex:unset;width:28px;height:28px;padding:0;">
+              <i class="material-symbols-rounded" style="font-size:18px;" data-lucide="arrow-up"></i>
+            </button>
+            <button type="button" onclick="moveAtpRow(${ei},${ri},1)" ${ri === totalRows - 1 ? "disabled" : ""} title="Turun" class="btn-sm" style="flex:unset;width:28px;height:28px;padding:0;">
+              <i class="material-symbols-rounded" style="font-size:18px;" data-lucide="arrow-down"></i>
+            </button>
+            <button type="button" onclick="removeAtpRow(${ei},${ri})" title="Hapus TP" class="btn-del">
+              <i class="material-symbols-rounded" style="font-size:18px;" data-lucide="trash"></i>
+            </button>
+          </div>
+        `;
+      }
+
       function renderAtpInput() {
         const kelas = currentKelasId ? daftarKelas.find((k) => k.id === currentKelasId) : null;
         const mapel = getMapelValue("f-mapel", "f-mapel-manual") || (kelas ? kelas.mapel : "");
@@ -6914,32 +7059,14 @@ state.jadwal =
           <div class="fg">
             <label>Tujuan Pembelajaran (TP)</label>
             <div style="display:flex;flex-direction:column;gap:8px;background:rgba(255,255,255,0.02);padding:14px;border-radius:10px;border:1px dashed rgba(255,255,255,0.15);">
-              ${el.rows
-                .map(
-                  (row, ri) => `
-                <div style="display:flex;align-items:center;gap:6px;">
-                  <span style="font-size:var(--fs-sm);color:var(--text-light);min-width:24px;text-align:right;font-weight:600;">${ri + 1}.</span>
-                  <textarea rows="1"
-                    placeholder="Tujuan Pembelajaran..."
-                    oninput="this.style.height='auto';this.style.height=(this.scrollHeight+2)+'px';"
-                    onchange="state.atpData[${ei}].rows[${ri}].tp=this.value;state.atpData[${ei}].rows[${ri}].atp=this.value;scheduleSave();markDirty();"
-                    style="flex:1;resize:none;overflow:hidden;line-height:1.4;">${escH(row.tp)}</textarea>
-                  
-                  <button onclick="moveAtpRow(${ei},${ri},-1)" ${ri === 0 ? "disabled" : ""} title="Naik" class="btn-sm" style="flex:unset;width:28px;height:28px;padding:0;">
-                    <i class="material-symbols-rounded" style="font-size:18px;" data-lucide="arrow-up"></i>
-                  </button>
-                  <button onclick="moveAtpRow(${ei},${ri},1)" ${ri === el.rows.length - 1 ? "disabled" : ""} title="Turun" class="btn-sm" style="flex:unset;width:28px;height:28px;padding:0;">
-                    <i class="material-symbols-rounded" style="font-size:18px;" data-lucide="arrow-down"></i>
-                  </button>
-                  <button onclick="removeAtpRow(${ei},${ri})" title="Hapus" class="btn-del">
-                    <i class="material-symbols-rounded" style="font-size:18px;" data-lucide="trash"></i>
-                  </button>
-                </div>
-              `,
-                )
-                .join("")}
-              <button onclick="addAtpRow(${ei})" class="btn-add" style="align-self:flex-start;margin-top:4px;display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);">
-                <i class="material-symbols-rounded" style="font-size:16px;" data-lucide="plus"></i> Tambah TP
+              <div id="atp-tp-list-${ei}" style="display:flex;flex-direction:column;gap:8px;">
+                ${el.rows
+                  .map((row, ri) => renderAtpRowHtml(ei, ri, row, el.rows.length))
+                  .join("")}
+              </div>
+              <button type="button" onclick="addAtpRow(${ei})" class="btn-add-tp" title="Tambah Tujuan Pembelajaran baru">
+                <i class="material-symbols-rounded" style="font-size:16px;" data-lucide="plus"></i>
+                <span>Tambah TP</span>
               </button>
             </div>
           </div>
@@ -7787,16 +7914,82 @@ state.jadwal =
       }
 
       function addAtpRow(ei) {
+        if (!state.atpData || !state.atpData[ei]) return;
+        if (!state.atpData[ei].rows) state.atpData[ei].rows = [];
         state.atpData[ei].rows.push({ tp: "", atp: "" });
-        renderAtpInput();
+        const newRi = state.atpData[ei].rows.length - 1;
+        const listEl = document.getElementById(`atp-tp-list-${ei}`);
+
+        if (listEl && typeof renderAtpRowHtml === "function") {
+          listEl.innerHTML = state.atpData[ei].rows
+            .map((row, ri) => renderAtpRowHtml(ei, ri, row, state.atpData[ei].rows.length, ri === newRi))
+            .join("");
+
+          if (typeof lucide !== "undefined" && lucide.createIcons) {
+            lucide.createIcons({
+              attrs: { class: "lucide" },
+              node: listEl
+            });
+          }
+
+          let totalRows = state.atpData.reduce((s, e) => s + (e.rows ? e.rows.length : 0), 0);
+          const cntEl = document.getElementById("cnt-atp");
+          if (cntEl) cntEl.textContent = state.atpData.length + " elemen | " + totalRows + " TP";
+
+          setTimeout(() => {
+            const newTa = document.getElementById(`atp-textarea-${ei}-${newRi}`);
+            if (newTa) {
+              newTa.focus();
+              newTa.style.height = "auto";
+              newTa.style.height = (newTa.scrollHeight + 2) + "px";
+            }
+          }, 40);
+        } else {
+          renderAtpInput();
+        }
+
         scheduleSave();
         markDirty();
       }
+
       function removeAtpRow(ei, ri) {
-        state.atpData[ei].rows.splice(ri, 1);
-        renderAtpInput();
-        scheduleSave();
-        markDirty();
+        if (!state.atpData || !state.atpData[ei] || !state.atpData[ei].rows) return;
+        const rowEl = document.getElementById(`atp-row-${ei}-${ri}`);
+        const listEl = document.getElementById(`atp-tp-list-${ei}`);
+
+        if (rowEl && listEl && typeof renderAtpRowHtml === "function") {
+          rowEl.classList.add("tp-row-removing");
+          setTimeout(() => {
+            state.atpData[ei].rows.splice(ri, 1);
+            listEl.innerHTML = state.atpData[ei].rows
+              .map((row, idx) => renderAtpRowHtml(ei, idx, row, state.atpData[ei].rows.length))
+              .join("");
+
+            if (typeof lucide !== "undefined" && lucide.createIcons) {
+              lucide.createIcons({
+                attrs: { class: "lucide" },
+                node: listEl
+              });
+            }
+
+            listEl.querySelectorAll("textarea").forEach((ta) => {
+              ta.style.height = "auto";
+              ta.style.height = (ta.scrollHeight + 2) + "px";
+            });
+
+            let totalRows = state.atpData.reduce((s, e) => s + (e.rows ? e.rows.length : 0), 0);
+            const cntEl = document.getElementById("cnt-atp");
+            if (cntEl) cntEl.textContent = state.atpData.length + " elemen | " + totalRows + " TP";
+
+            scheduleSave();
+            markDirty();
+          }, 200);
+        } else {
+          state.atpData[ei].rows.splice(ri, 1);
+          renderAtpInput();
+          scheduleSave();
+          markDirty();
+        }
       }
 
       function renderATP(du) {
@@ -10695,17 +10888,18 @@ function toggleSidebar() {
         }
 
         // liburWkSet = weeks with ZERO active teaching JP where holidays occurred (full non-effective week)
-        // partialWkSet = weeks with active teaching JP (>0) BUT also having holiday dates
+        // partialWkSet = weeks with active teaching JP (>0) BUT also having holiday dates on scheduled teaching days
         const liburWkSet = new Set();
         const partialWkSet = new Set();
         months.forEach((m, mi) => {
           for (let w = 1; w <= monthWeeksArr[mi]; w++) {
             const key = `${mi}-${w}`;
             const hasActive = (jpMap[key] || 0) > 0;
-            const hasLibur = (jpLiburMap[key] || 0) > 0 || calendarLiburWkSet.has(key);
-            if (!hasActive && hasLibur) {
+            const hasLiburScheduled = (jpLiburMap[key] || 0) > 0;
+            const hasGeneralLibur = calendarLiburWkSet.has(key);
+            if (!hasActive && (hasLiburScheduled || hasGeneralLibur)) {
               liburWkSet.add(key);
-            } else if (hasActive && hasLibur) {
+            } else if (hasActive && hasLiburScheduled) {
               partialWkSet.add(key);
             }
           }
@@ -10733,7 +10927,8 @@ function toggleSidebar() {
               const key = `${cell.mi}-${cell.wk}`;
               if (
                 liburWkMap[key] &&
-                liburWkMap[key].has(ket)
+                liburWkMap[key].has(ket) &&
+                (liburWkSet.has(key) || partialWkSet.has(key))
               )
                 grp.wkLabels.add(key);
             }
@@ -14788,7 +14983,11 @@ xmlns="http://www.w3.org/TR/REC-html40">
           const r = new FileReader();
           r.onload = async (ev) => {
             try {
-              const d = JSON.parse(ev.target.result);
+              let d = JSON.parse(ev.target.result);
+              if (Array.isArray(d)) {
+                if (d.length === 0) throw new Error("File backup kosong.");
+                d = d[0];
+              }
               if (d.jadwal) state.jadwal = d.jadwal;
               if (d.tpGanjil) state.tpGanjil = d.tpGanjil;
               if (d.tpGenap) state.tpGenap = d.tpGenap;
@@ -14838,34 +15037,53 @@ xmlns="http://www.w3.org/TR/REC-html40">
               }
 
               if (d.atpData) state.atpData = d.atpData;
+              if (d.modulAjar) state.modulAjar = d.modulAjar;
               if (d.imgTtdKepsek) state.imgTtdKepsek = d.imgTtdKepsek;
               if (d.imgCapSekolah) state.imgCapSekolah = d.imgCapSekolah;
               if (d.imgTtdGuru) state.imgTtdGuru = d.imgTtdGuru;
 
               const setVal = (id, v) => {
-                if (v !== undefined) document.getElementById(id).value = v;
+                const el = document.getElementById(id);
+                if (el && v !== undefined && v !== null) el.value = v;
               };
               setVal("f-jenjang", d.jenjang || "SD");
-              updateFaseOptions(false);
+              if (typeof updateFaseOptions === "function") updateFaseOptions(false);
               setVal("f-fase", d.fase);
-              updateKelasSuggestions(false, d.kelas);
+              if (typeof updateKelasSuggestions === "function") updateKelasSuggestions(false, d.kelas);
               setVal("f-kelas", d.kelas);
               setVal("f-rombel", d.rombel || "");
-              loadMapelUI("f-mapel", "f-mapel-manual-container", "f-mapel-manual", d.mapel, d.fase, d.kelas, d.jenjang || "SD");
-              checkDataUmumMapelLock();
+              if (typeof loadMapelUI === "function") loadMapelUI("f-mapel", "f-mapel-manual-container", "f-mapel-manual", d.mapel, d.fase, d.kelas, d.jenjang || "SD");
+              if (typeof checkDataUmumMapelLock === "function") checkDataUmumMapelLock();
               setVal("f-tahun", d.tahun);
               setVal("f-sekolah", d.sekolah);
               setVal("f-kepsek", d.kepsek);
               setVal("f-tempat", d.tempat);
               setVal("f-tgl", d.tgl);
               setVal("f-guru", d.guru);
-              if (d.firstDay !== undefined)
-                document.getElementById("f-first-day").value = d.firstDay;
-              refreshAll();
-              if (currentUser) await saveUserData(currentUser.uid);
-              alert("Backup berhasil dimuat!");
+              if (d.firstDay !== undefined) {
+                const fd = document.getElementById("f-first-day");
+                if (fd) fd.value = d.firstDay;
+              }
+              if (typeof refreshAll === "function") refreshAll();
+              
+              if (currentUser && currentKelasId && typeof saveKelasData === "function") {
+                await saveKelasData(currentUser.uid, currentKelasId);
+              } else if (typeof scheduleSave === "function") {
+                scheduleSave();
+              }
+              
+              if (typeof showCustomAlert === "function") {
+                await showCustomAlert("Backup Berhasil Dimuat", "Seluruh data mata pelajaran berhasil diimpor dan diperbarui.", "success");
+              } else {
+                alert("Backup berhasil dimuat!");
+              }
             } catch (err) {
-              alert("Gagal membaca file backup.");
+              console.error("loadData error:", err);
+              if (typeof showCustomAlert === "function") {
+                await showCustomAlert("Gagal Membaca File", err.message || "File backup tidak valid atau rusak.", "error");
+              } else {
+                alert("Gagal membaca file backup: " + (err.message || ""));
+              }
             }
           };
           r.readAsText(f);
@@ -14989,11 +15207,17 @@ xmlns="http://www.w3.org/TR/REC-html40">
 
         let iconHtml = '';
         if (type === "success") {
-          iconHtml = `<div style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: rgba(34, 197, 94, 0.15); color: #4ade80; border-radius: 50%;"><i class="material-symbols-rounded" style="font-size: 16px;" data-lucide="check-circle"></i></div>`;
+          iconHtml = `<div style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: rgba(34, 197, 94, 0.15); color: #4ade80; border-radius: 50%;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>`;
         } else if (type === "error") {
-          iconHtml = `<div style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: rgba(239, 68, 68, 0.15); color: #f87171; border-radius: 50%;"><i class="material-symbols-rounded" style="font-size: 16px;" data-lucide="cloud-off"></i></div>`;
+          iconHtml = `<div style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: rgba(239, 68, 68, 0.15); color: #f87171; border-radius: 50%;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>`;
         } else {
-          iconHtml = `<div style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-radius: 50%;"><i class="material-symbols-rounded" style="font-size: 16px;" data-lucide="info"></i></div>`;
+          iconHtml = `<div style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-radius: 50%;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          </div>`;
         }
 
         const title = msg || "Perubahan Disimpan";
@@ -15298,6 +15522,7 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "executeSystemPrint",
   "expandRange",
   "exportKalender",
+  "extractTPFromCPText",
   "fi",
   "findUserKey",
   "fmtD",
@@ -15355,6 +15580,7 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "moveAtpRow",
   "movePengaturanPenilaian",
   "moveTPRow",
+  "muatContohCPModal",
   "normalizeFase",
   "onCPDatabaseFailed",
   "onCPDatabaseLoaded",
@@ -15369,6 +15595,7 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "partitionColumnsEqually",
   "pd",
   "printTab",
+  "prosesUraiCPModal",
   "refreshAll",
   "removeAtpElemen",
   "removeAtpRow",
@@ -15382,6 +15609,7 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "renderATP",
   "renderAbsensi",
   "renderAtpInput",
+  "renderAtpRowHtml",
   "renderDUSignHTML",
   "renderDaftarKelas",
   "renderEditSubKomponentsList",
@@ -15412,6 +15640,7 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "resetData",
   "resizeAllAutoTextareas",
   "runAbsensiPrint",
+  "salinHasilUraiTP",
   "saveData",
   "saveEditLibur",
   "saveEditTP",
@@ -15440,8 +15669,10 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "submitImporSiswa",
   "submitTPForm",
   "summaryRows",
+  "switchPanduanRTPTab",
   "switchSemContent",
   "syncTempSubKomponentsFromDOM",
+  "terapkanUraiTPKeElemen",
   "thStyleFor",
   "toggleAbsensi",
   "toggleActivePenilaian",
@@ -15450,6 +15681,7 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "toggleHeaderDropdown",
   "toggleIdInput",
   "toggleJadwalHari",
+  "toggleLoginPasswordVisibility",
   "toggleMapelManual",
   "toggleProsemJPText",
   "toggleSidebar",
@@ -15460,6 +15692,7 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "tutupModalEditKomponen",
   "tutupModalKelas",
   "tutupModalOnboarding",
+  "tutupModalPanduanRumusTP",
   "tutupModalPetunjukCP",
   "tutupModalPetunjukLibur",
   "tutupModalPetunjukPenilaian",
