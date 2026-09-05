@@ -219,11 +219,11 @@
             </div>
             <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 700; color: #f8fafc; margin: 0 0 8px 0; letter-spacing: -0.01em;">Konfirmasi</h3>
             <p style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 500; color: #94a3b8; line-height: 1.6; margin: 0 0 20px 0; white-space: pre-line;">${message}</p>
-            <div style="display: flex; gap: 12px; width: 100%;">
-              <button id="custom-confirm-cancel-btn" style="flex: 1; padding: 10px 16px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #94a3b8; border-radius: 10px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+            <div class="modal-actions" style="margin-top: 20px;">
+              <button id="custom-confirm-cancel-btn" class="btn-modal-cancel">
                 Batal
               </button>
-              <button id="custom-confirm-ok-btn" style="flex: 1; padding: 10px 16px; background: var(--accent, #facc15); color: #0c1527; border: none; border-radius: 10px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(250, 204, 21, 0.2);">
+              <button id="custom-confirm-ok-btn" class="btn-modal-ok">
                 Ya, Lanjutkan
               </button>
             </div>
@@ -3007,31 +3007,9 @@
                 font-family: system-ui, sans-serif;
               " />
 
-              <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                <button id="custom-prompt-cancel" style="
-                  background: transparent;
-                  color: #94a3b8;
-                  border: 1px solid rgba(255, 255, 255, 0.1);
-                  border-radius: 8px;
-                  padding: 8px 16px;
-                  font-weight: 500;
-                  font-size: 14px;
-                  cursor: pointer;
-                  transition: background 0.15s;
-                  font-family: system-ui, sans-serif;
-                ">Batal</button>
-                <button id="custom-prompt-confirm" style="
-                  background: #3b82f6;
-                  color: white;
-                  border: none;
-                  border-radius: 8px;
-                  padding: 8px 20px;
-                  font-weight: 500;
-                  font-size: 14px;
-                  cursor: pointer;
-                  transition: background 0.15s;
-                  font-family: system-ui, sans-serif;
-                ">Lanjutkan</button>
+              <div class="modal-actions">
+                <button id="custom-prompt-cancel" class="btn-modal-cancel">Batal</button>
+                <button id="custom-prompt-confirm" class="btn-modal-ok">Lanjutkan</button>
               </div>
             </div>
           `;
@@ -3442,57 +3420,48 @@ state.jadwal =
         state.nilaiGenap = kelas.nilaiGenap || {};
 
         let defPengaturanGanjil = [
-          { id: "nr", name: "Nilai Rataan TP", bobot: 50, fixed: true },
+          { id: "slm", name: "Sumatif Lingkup Materi", code: "SLM", bobot: 50, fixed: true, active: true, subKomponents: [] },
+          { id: "sas", name: "Sumatif Akhir Semester", code: "SAS", bobot: 50, fixed: true, active: true, subKomponents: [{ id: "sasnt", name: "Nontes", code: "Nontes" }, { id: "sast", name: "Tes", code: "Tes" }] },
         ];
         let defPengaturanGenap = [
-          { id: "nr", name: "Nilai Rataan TP", bobot: 50, fixed: true },
+          { id: "slm", name: "Sumatif Lingkup Materi", code: "SLM", bobot: 50, fixed: true, active: true, subKomponents: [] },
+          { id: "sas", name: "Sumatif Akhir Semester", code: "SAS", bobot: 50, fixed: true, active: true, subKomponents: [{ id: "sasnt", name: "Nontes", code: "Nontes" }, { id: "sast", name: "Tes", code: "Tes" }] },
         ];
 
-        let legacyColsGanjil = kelas.customColsGanjil || ["Keterampilan"];
-        legacyColsGanjil.forEach((colName, idx) => {
-          defPengaturanGanjil.push({
-            id: String(idx),
-            name: colName,
-            bobot: 50,
-            fixed: false,
+        if (kelas.customColsGanjil && Array.isArray(kelas.customColsGanjil)) {
+          kelas.customColsGanjil.forEach((colName, idx) => {
+            defPengaturanGanjil.push({
+              id: String(idx),
+              name: colName,
+              bobot: 50,
+              fixed: false,
+              active: true,
+            });
           });
-        });
-        let legacyColsGenap = kelas.customColsGenap || ["Keterampilan"];
-        legacyColsGenap.forEach((colName, idx) => {
-          defPengaturanGenap.push({
-            id: String(idx),
-            name: colName,
-            bobot: 50,
-            fixed: false,
+        }
+        if (kelas.customColsGenap && Array.isArray(kelas.customColsGenap)) {
+          kelas.customColsGenap.forEach((colName, idx) => {
+            defPengaturanGenap.push({
+              id: String(idx),
+              name: colName,
+              bobot: 50,
+              fixed: false,
+              active: true,
+            });
           });
-        });
+        }
 
-        // Migrate from single pengaturanPenilaian if exists
-        state.pengaturanPenilaianGanjil =
+        // Migrate and load pengaturanPenilaian preserving user-saved bobot
+        state.pengaturanPenilaianGanjil = migratePengaturan(
           kelas.pengaturanPenilaianGanjil ||
           kelas.pengaturanPenilaian ||
-          defPengaturanGanjil;
-        state.pengaturanPenilaianGenap =
+          defPengaturanGanjil
+        );
+        state.pengaturanPenilaianGenap = migratePengaturan(
           kelas.pengaturanPenilaianGenap ||
           kelas.pengaturanPenilaian ||
-          defPengaturanGenap;
-
-        if (!state.pengaturanPenilaianGanjil.find((p) => p.id === "nr")) {
-          state.pengaturanPenilaianGanjil.unshift({
-            id: "nr",
-            name: "Nilai Rataan TP",
-            bobot: 50,
-            fixed: true,
-          });
-        }
-        if (!state.pengaturanPenilaianGenap.find((p) => p.id === "nr")) {
-          state.pengaturanPenilaianGenap.unshift({
-            id: "nr",
-            name: "Nilai Rataan TP",
-            bobot: 50,
-            fixed: true,
-          });
-        }
+          defPengaturanGenap
+        );
 
         state.atpData =
           kelas.atpData || [];
@@ -4112,8 +4081,8 @@ state.jadwal =
           absensiGenap: JSON.parse(JSON.stringify(state.absensiGenap || {})),
           nilaiGanjil: JSON.parse(JSON.stringify(state.nilaiGanjil || {})),
           nilaiGenap: JSON.parse(JSON.stringify(state.nilaiGenap || {})),
-          pengaturanPenilaianGanjil: state.pengaturanPenilaianGanjil || {},
-          pengaturanPenilaianGenap: state.pengaturanPenilaianGenap || {},
+          pengaturanPenilaianGanjil: JSON.parse(JSON.stringify(state.pengaturanPenilaianGanjil || [])),
+          pengaturanPenilaianGenap: JSON.parse(JSON.stringify(state.pengaturanPenilaianGenap || [])),
           atpData: state.atpData || [],
           modulAjar: JSON.parse(JSON.stringify(state.modulAjar || {})),
           kalenderGanjil: kalender?.ganjil || [],
@@ -4811,9 +4780,9 @@ state.jadwal =
         <input type="checkbox" id="kr-penting" style="width:16px;height:16px;accent-color:var(--accent);">
         <label for="kr-penting" style="font-size:var(--fs-xs);font-weight:600;cursor:pointer;color:var(--text);">Tandai Penting</label>
       </div>
-      <div style="display:flex;gap:10px;margin-top:12px;">
-        <button id="kr-batal" class="btn-modal-cancel" style="flex:1;">Batal</button>
-        <button id="kr-ok" class="btn-modal-ok" style="flex:1;">OK</button>
+      <div class="modal-actions" style="margin-top:12px;">
+        <button id="kr-batal" class="btn-modal-cancel">Batal</button>
+        <button id="kr-ok" class="btn-modal-ok">OK</button>
       </div>
     </div>`;
         document.body.appendChild(modal);
@@ -4915,9 +4884,9 @@ state.jadwal =
         <label for="ke-penting" style="font-size:var(--fs-xs);font-weight:600;cursor:pointer;color:var(--text);">Tandai Penting</label>
       </div>
 
-      <div style="display:flex;gap:10px;margin-top:8px;">
-        <button id="ke-batal" class="btn-modal-cancel" style="flex:1;">Batal</button>
-        <button id="ke-ok" class="btn-modal-ok btn-save" style="flex:1;">Simpan</button>
+      <div class="modal-actions" style="margin-top:8px;">
+        <button id="ke-batal" class="btn-modal-cancel">Batal</button>
+        <button id="ke-ok" class="btn-modal-ok btn-save">Simpan</button>
       </div>
     </div>`;
         document.body.appendChild(modal);
@@ -5058,9 +5027,9 @@ state.jadwal =
         <label for="kd-yakin" style="font-size:11.5px; font-weight:600; cursor:pointer; color:var(--text); user-select:none;">Ya, saya yakin ingin menghapus seluruh data rentang ini.</label>
       </div>
 
-      <div style="display:flex;gap:10px;margin-top:10px;">
-        <button id="kd-batal" class="btn-modal-cancel" style="flex:1;">Batal</button>
-        <button id="kd-hapus" class="btn-modal-ok" style="flex:1; background:#EF4444; border-color:#EF4444; color:#fff; opacity:0.5; cursor:not-allowed;" disabled>Hapus</button>
+      <div class="modal-actions" style="margin-top:10px;">
+        <button id="kd-batal" class="btn-modal-cancel">Batal</button>
+        <button id="kd-hapus" class="btn-modal-ok" style="background:#EF4444; border-color:#EF4444; color:#fff; opacity:0.5; cursor:not-allowed;" disabled>Hapus</button>
       </div>
     </div>`;
         document.body.appendChild(modal);
@@ -5239,9 +5208,9 @@ state.jadwal =
       <div id="hk-checkboxes-container" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         ${checksHtml}
       </div>
-      <div style="display:flex;gap:10px;margin-top:6px;">
-        <button id="hk-batal" class="btn-modal-cancel" style="flex:1;">Batal</button>
-        <button id="hk-simpan" class="btn-modal-ok btn-save" style="flex:1;">Simpan</button>
+      <div class="modal-actions" style="margin-top:10px;">
+        <button id="hk-batal" class="btn-modal-cancel">Batal</button>
+        <button id="hk-simpan" class="btn-modal-ok btn-save">Simpan</button>
       </div>
     </div>`;
         document.body.appendChild(modal);
@@ -5410,10 +5379,10 @@ state.jadwal =
         if(document.getElementById("kal-tahun-label")) document.getElementById("kal-tahun-label").textContent = ta;
 
         const titleHeader = `
-          <div id="kal-title-header" style="text-align: center; margin-bottom: 24px;">
-            <div style="font-weight: 700; font-size: 15pt; color: var(--text, #1E293B); line-height: 1.3;">Kalender Pendidikan</div>
-            <div style="font-weight: 700; font-size: 15pt; color: var(--text, #1E293B); line-height: 1.3;">${escH(du.sekolah || "promesta.id")}</div>
-            <div style="font-weight: 700; font-size: 15pt; color: var(--text, #1E293B); line-height: 1.3;">Tahun Ajaran ${escH(ta)}</div>
+          <div id="kal-title-header" style="text-align: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1.5px solid #254b77;">
+            <div style="font-weight: 800; font-size: 15pt; color: #0f172a; line-height: 1.3; text-transform: uppercase; letter-spacing: 0.5px;">KALENDER PENDIDIKAN</div>
+            <div style="font-weight: 800; font-size: 15pt; color: #0f172a; line-height: 1.3; text-transform: uppercase; letter-spacing: 0.5px;">${escH(du.sekolah || "promesta.id")}</div>
+            <div style="font-weight: 800; font-size: 15pt; color: #0f172a; line-height: 1.3; text-transform: uppercase; letter-spacing: 0.5px;">TAHUN AJARAN ${escH(ta)}</div>
           </div>`;
 
         const fdw = parseInt(
@@ -5692,6 +5661,7 @@ state.jadwal =
       }
 
       const HARI_LIST = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+      const HARI_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
       const HARI_DOW = {
         Senin: 1,
         Selasa: 2,
@@ -5749,6 +5719,15 @@ state.jadwal =
         if (!iso) return "-";
         const [y, m, d] = iso.split("-").map(Number);
         return `${d} ${BULAN[m - 1]} ${y}`;
+      }
+      function fmtJurnalDate(iso, jp) {
+        if (!iso) return "-";
+        const dt = pd(iso);
+        const [y, m, d] = iso.split("-").map(Number);
+        const dayName = HARI_NAMES[dt.getUTCDay()] || "";
+        const monthShort = BULAN_S[m - 1] || "";
+        const jpSuffix = jp ? ` (${jp} JP)` : "";
+        return `${dayName}, ${d} ${monthShort} ${y}${jpSuffix}`;
       }
       
       
@@ -5821,10 +5800,12 @@ state.jadwal =
         nilaiGanjil: {},
         nilaiGenap: {},
         pengaturanPenilaianGanjil: [
-          { id: "nr", name: "Nilai Rataan TP", bobot: 50, fixed: true },
+          { id: "slm", name: "Sumatif Lingkup Materi", code: "SLM", bobot: 50, fixed: true, active: true, subKomponents: [] },
+          { id: "sas", name: "Sumatif Akhir Semester", code: "SAS", bobot: 50, fixed: true, active: true, subKomponents: [{ id: "sasnt", name: "Nontes", code: "Nontes" }, { id: "sast", name: "Tes", code: "Tes" }] },
         ],
         pengaturanPenilaianGenap: [
-          { id: "nr", name: "Nilai Rataan TP", bobot: 50, fixed: true },
+          { id: "slm", name: "Sumatif Lingkup Materi", code: "SLM", bobot: 50, fixed: true, active: true, subKomponents: [] },
+          { id: "sas", name: "Sumatif Akhir Semester", code: "SAS", bobot: 50, fixed: true, active: true, subKomponents: [{ id: "sasnt", name: "Nontes", code: "Nontes" }, { id: "sast", name: "Tes", code: "Tes" }] },
         ],
         customColsGanjil: ["Keterampilan"],
         customColsGenap: ["Keterampilan"],
@@ -7057,17 +7038,33 @@ state.jadwal =
           </div>
           
           <div class="fg">
-            <label>Tujuan Pembelajaran (TP)</label>
+            <div class="atp-tp-card-header">
+              <label style="margin-bottom:0;font-weight:600;">Tujuan Pembelajaran (TP)</label>
+              <div class="atp-tp-btn-group" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <button type="button" onclick="addAtpRow(${ei})" class="btn-add-tp" title="Tambah 1 Tujuan Pembelajaran baru">
+                  <i class="material-symbols-rounded" style="font-size:15px;" data-lucide="plus"></i>
+                  <span>Tambah TP</span>
+                </button>
+                <button type="button" onclick="openBulkAddTPModal(${ei})" class="btn-add-tp btn-add-tp-bulk" title="Tambah banyak Tujuan Pembelajaran sekaligus per baris">
+                  <i class="material-symbols-rounded" style="font-size:15px;" data-lucide="list-plus"></i>
+                  <span>Tambah Sekaligus</span>
+                </button>
+                <button type="button" onclick="clearAtpRows(${ei})" class="btn-add-tp btn-add-tp-del" title="Hapus semua TP pada elemen ini untuk menginput TP kustom sendiri">
+                  <i class="material-symbols-rounded" style="font-size:15px;" data-lucide="trash-2"></i>
+                  <span>Hapus TP</span>
+                </button>
+              </div>
+            </div>
             <div style="display:flex;flex-direction:column;gap:8px;background:rgba(255,255,255,0.02);padding:14px;border-radius:10px;border:1px dashed rgba(255,255,255,0.15);">
               <div id="atp-tp-list-${ei}" style="display:flex;flex-direction:column;gap:8px;">
-                ${el.rows
-                  .map((row, ri) => renderAtpRowHtml(ei, ri, row, el.rows.length))
-                  .join("")}
+                ${el.rows && el.rows.length > 0
+                  ? el.rows.map((row, ri) => renderAtpRowHtml(ei, ri, row, el.rows.length)).join("")
+                  : `<div class="atp-tp-empty-msg" style="font-size:var(--fs-sm);color:var(--text-light);padding:8px 4px;font-style:italic;display:flex;align-items:center;gap:6px;">
+                      <i class="material-symbols-rounded" style="font-size:16px;opacity:0.7;" data-lucide="info"></i>
+                      <span>Belum ada Tujuan Pembelajaran. Klik <strong>Tambah TP</strong> atau <strong>Tambah Sekaligus</strong> untuk mengisi TP kustom Anda.</span>
+                    </div>`
+                }
               </div>
-              <button type="button" onclick="addAtpRow(${ei})" class="btn-add-tp" title="Tambah Tujuan Pembelajaran baru">
-                <i class="material-symbols-rounded" style="font-size:16px;" data-lucide="plus"></i>
-                <span>Tambah TP</span>
-              </button>
             </div>
           </div>
         </div>
@@ -7087,6 +7084,12 @@ state.jadwal =
                 ta.style.height = ta.scrollHeight + 2 + "px";
               }
             });
+          if (typeof lucide !== "undefined" && lucide.createIcons) {
+            lucide.createIcons({
+              attrs: { class: "lucide" },
+              node: wrap
+            });
+          }
         }, 0);
       }
 
@@ -7631,9 +7634,9 @@ state.jadwal =
         </select>
       </div>
 
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
-        <button onclick="document.getElementById('tp-picker-modal').remove()" style="padding:10px 16px;background:rgba(255,255,255,0.1);color:var(--text);border:none;border-radius:8px;cursor:pointer;font-family:var(--f);font-size:var(--fs);font-weight:600;">Batal</button>
-        <button class="btn-save" onclick="submitTPForm('${sem}')">Simpan</button>
+      <div class="modal-actions" style="margin-top:12px;">
+        <button onclick="document.getElementById('tp-picker-modal').remove()" class="btn-modal-cancel">Batal</button>
+        <button class="btn-modal-ok btn-save" onclick="submitTPForm('${sem}')">Simpan</button>
       </div>
     </div>`;
         document.body.appendChild(modal);
@@ -7768,8 +7771,18 @@ state.jadwal =
                 (o) => o.label === t.tp || !usedTPs.has(o.label),
               );
               return `
-      <tr style="${t.ev ? "background:rgba(245, 158, 11, 0.1)" : ""}">
-        <td class="td-ctr">${i + 1}</td>
+      <tr draggable="true"
+          ondragstart="handleTPRowDragStart(event, '${sem}', ${i})"
+          ondragover="handleTPRowDragOver(event)"
+          ondragenter="handleTPRowDragEnter(event)"
+          ondragleave="handleTPRowDragLeave(event)"
+          ondrop="handleTPRowDrop(event, '${sem}', ${i})"
+          ondragend="handleTPRowDragEnd(event)"
+          style="${t.ev ? "background:rgba(245, 158, 11, 0.1)" : ""}">
+        <td class="td-ctr">
+          <span class="tp-drag-handle" title="Tarik / Geser baris untuk mengubah urutan"><i class="material-symbols-rounded" style="font-size:14px;" data-lucide="grip-vertical"></i></span>
+          ${i + 1}
+        </td>
         <td><input type="text" style="width:38px;text-align:center" value="${escH(t.bab)}"
           onchange="state.${stateKey}[${i}].bab=this.value;renderTPCombined();renderTP('${sem}');syncATPFromTPOrder();scheduleSave();markDirty();" placeholder="-"></td>
         <td><input type="text" value="${escH(t.mp)}"
@@ -7811,11 +7824,398 @@ state.jadwal =
         });
       }
 
+      // ============================================================
+      // FITUR AUTO URUT NOMOR KODE TP & DRAG-AND-DROP REORDERING
+      // ============================================================
+      function isEvalRow(t) {
+        if (!t) return false;
+        if (t.ev === true) return true;
+        const k = String(t.kode || "").trim().toUpperCase();
+        if (/^S\s*\d*$/.test(k)) return true;
+        if (/^(STS|SAS|PTS|PAS|PAT|PSAS|PSAT)$/.test(k)) return true;
+        if (/^SUMATIF/i.test(t.tp || "")) return true;
+        return false;
+      }
+
+      function formatSumatifKode(existingKode, counter) {
+        const k = String(existingKode || "").trim().toUpperCase();
+        if (/^(STS|SAS|PTS|PAS|PAT|PSAS|PSAT)$/.test(k)) {
+          return existingKode;
+        }
+        if (/^S\s*\d*$/i.test(k)) {
+          return `S${counter}`;
+        }
+        return existingKode || `S${counter}`;
+      }
+
+      function detectTPPrefixStyle() {
+        const allTps = [...(state.tpGanjil || []), ...(state.tpGenap || [])].filter(t => !isEvalRow(t) && t.kode);
+        if (allTps.length === 0) return "TP ";
+
+        let countSpace = 0; // "TP 1"
+        let countDot = 0;   // "TP.1"
+        let countClassDot = 0; // "7.1"
+        let sampleClassDot = "";
+
+        allTps.forEach(t => {
+          const k = String(t.kode || "").trim();
+          if (/^TP\s+\d+$/i.test(k)) countSpace++;
+          else if (/^TP\.\d+$/i.test(k)) countDot++;
+          else if (/^(\d+)\.\d+$/.test(k)) {
+            countClassDot++;
+            sampleClassDot = k.split(".")[0] + ".";
+          }
+        });
+
+        if (countClassDot > countSpace && countClassDot > countDot) {
+          return sampleClassDot || "7.";
+        }
+        if (countDot > countSpace) {
+          return "TP.";
+        }
+        return "TP ";
+      }
+
+      function formatTPKode(prefix, num) {
+        let p = prefix;
+        if (p === "TP") p = "TP ";
+        return `${p}${num}`;
+      }
+
+      function isAutoUrutKodeTPEnabled() {
+        if (typeof state.autoUrutKodeTP === "boolean") {
+          return state.autoUrutKodeTP;
+        }
+        const stored = localStorage.getItem("promesta_auto_urut_tp");
+        if (stored !== null) {
+          return stored === "true";
+        }
+        return true; // Default aktif
+      }
+
+      function toggleAutoUrutKodeTP(enabled) {
+        state.autoUrutKodeTP = !!enabled;
+        localStorage.setItem("promesta_auto_urut_tp", String(state.autoUrutKodeTP));
+        if (state.autoUrutKodeTP) {
+          autoUrutKodeTP("all");
+          renderTPCombined();
+          renderTP("ganjil");
+          renderTP("genap");
+          syncATPFromTPOrder();
+          scheduleSave();
+          markDirty();
+          if (typeof showSaveIndicator === "function") {
+            showSaveIndicator("Auto Urut Kode TP Diaktifkan ✨", "success", "Nomor kode TP otomatis teratur berurutan saat urutan dipindahkan.");
+          }
+        } else {
+          if (typeof showSaveIndicator === "function") {
+            showSaveIndicator("Auto Urut Kode TP Dinonaktifkan", "info", "Nomor kode TP tidak akan diubah otomatis saat memindahkan urutan.");
+          }
+        }
+        updateAutoUrutCheckboxes();
+      }
+
+      function updateAutoUrutCheckboxes() {
+        const checked = isAutoUrutKodeTPEnabled();
+        document.querySelectorAll(".tp-auto-urut-toggle, #toggle-auto-urut-tp, #modal-cb-auto-urut").forEach((cb) => {
+          if (cb && cb.checked !== checked) {
+            cb.checked = checked;
+          }
+        });
+      }
+
+      function autoUrutKodeTP(targetSem = "all", customOptions = {}) {
+        if (!state.tpGanjil) state.tpGanjil = [];
+        if (!state.tpGenap) state.tpGenap = [];
+
+        const mode = customOptions.mode || state.autoUrutTPMode || "auto";
+        let prefix = customOptions.prefix;
+        if (!prefix && prefix !== "") {
+          prefix = detectTPPrefixStyle();
+        }
+
+        let isContinuous = true;
+        if (mode === "semester") {
+          isContinuous = false;
+        } else if (mode === "annual") {
+          isContinuous = true;
+        } else {
+          const nonEvalGanjil = state.tpGanjil.filter(t => !isEvalRow(t));
+          const nonEvalGenap = state.tpGenap.filter(t => !isEvalRow(t));
+          if (nonEvalGenap.length > 0 && nonEvalGanjil.length > 0) {
+            const matchFirst = String(nonEvalGenap[0].kode || "").match(/(\d+)$/);
+            if (matchFirst && parseInt(matchFirst[1], 10) === 1) {
+              isContinuous = false;
+            }
+          }
+        }
+
+        // 1. Ganjil renumbering
+        let nextGanjilNum = (typeof customOptions.startNumber === "number" && targetSem === "ganjil") 
+          ? customOptions.startNumber 
+          : 1;
+        let sGanjilCount = 1;
+
+        if (targetSem === "ganjil" || targetSem === "all" || isContinuous) {
+          state.tpGanjil.forEach(t => {
+            if (isEvalRow(t)) {
+              t.kode = formatSumatifKode(t.kode, sGanjilCount++);
+            } else {
+              t.kode = formatTPKode(prefix, nextGanjilNum++);
+            }
+          });
+        }
+
+        // 2. Genap renumbering
+        let nextGenapNum = 1;
+        if (isContinuous) {
+          const totalGanjilNonEval = state.tpGanjil.filter(t => !isEvalRow(t)).length;
+          nextGenapNum = totalGanjilNonEval + 1;
+        }
+        if (typeof customOptions.startNumber === "number" && targetSem === "genap") {
+          nextGenapNum = customOptions.startNumber;
+        }
+
+        let sGenapCount = 1;
+        if (targetSem === "genap" || targetSem === "all" || isContinuous) {
+          state.tpGenap.forEach(t => {
+            if (isEvalRow(t)) {
+              t.kode = formatSumatifKode(t.kode, sGenapCount++);
+            } else {
+              t.kode = formatTPKode(prefix, nextGenapNum++);
+            }
+          });
+        }
+      }
+
+      function swapStudentScoresForTP(sem, i, t) {
+        const semNum = (sem === "ganjil" || sem === 1) ? 1 : 2;
+        const obj = semNum === 1 ? state.nilaiGanjil : state.nilaiGenap;
+        if (!obj || !state.siswa || !Array.isArray(state.siswa) || state.siswa.length === 0) return;
+
+        for (let si = 0; si < state.siswa.length; si++) {
+          const keyI = `tp_${i}_${si}`;
+          const keyT = `tp_${t}_${si}`;
+          const hasI = Object.prototype.hasOwnProperty.call(obj, keyI);
+          const hasT = Object.prototype.hasOwnProperty.call(obj, keyT);
+          const valI = obj[keyI];
+          const valT = obj[keyT];
+
+          if (hasI) obj[keyT] = valI;
+          else delete obj[keyT];
+
+          if (hasT) obj[keyI] = valT;
+          else delete obj[keyI];
+        }
+      }
+
+      function remapStudentScoresOnMove(sem, fromIdx, toIdx) {
+        if (fromIdx === toIdx) return;
+        const semNum = (sem === "ganjil" || sem === 1) ? 1 : 2;
+        const obj = semNum === 1 ? state.nilaiGanjil : state.nilaiGenap;
+        if (!obj || !state.siswa || !Array.isArray(state.siswa) || state.siswa.length === 0) return;
+
+        const mapOldToNew = {};
+        const maxLen = 120;
+        for (let k = 0; k < maxLen; k++) {
+          if (k === fromIdx) {
+            mapOldToNew[k] = toIdx;
+          } else if (fromIdx < toIdx && k > fromIdx && k <= toIdx) {
+            mapOldToNew[k] = k - 1;
+          } else if (fromIdx > toIdx && k >= toIdx && k < fromIdx) {
+            mapOldToNew[k] = k + 1;
+          } else {
+            mapOldToNew[k] = k;
+          }
+        }
+
+        const backup = {};
+        Object.keys(obj).forEach(key => {
+          if (key.startsWith("tp_")) {
+            backup[key] = obj[key];
+            delete obj[key];
+          }
+        });
+
+        Object.keys(backup).forEach(key => {
+          const parts = key.split("_");
+          if (parts.length === 3) {
+            const oldIdx = parseInt(parts[1], 10);
+            const si = parts[2];
+            const newIdx = mapOldToNew[oldIdx] !== undefined ? mapOldToNew[oldIdx] : oldIdx;
+            obj[`tp_${newIdx}_${si}`] = backup[key];
+          } else {
+            obj[key] = backup[key];
+          }
+        });
+      }
+
+      function removeStudentScoresOnDelete(sem, deletedIdx) {
+        const semNum = (sem === "ganjil" || sem === 1) ? 1 : 2;
+        const obj = semNum === 1 ? state.nilaiGanjil : state.nilaiGenap;
+        if (!obj) return;
+
+        const backup = {};
+        Object.keys(obj).forEach(key => {
+          if (key.startsWith("tp_")) {
+            backup[key] = obj[key];
+            delete obj[key];
+          }
+        });
+
+        Object.keys(backup).forEach(key => {
+          const parts = key.split("_");
+          if (parts.length === 3) {
+            const idx = parseInt(parts[1], 10);
+            const si = parts[2];
+            if (idx < deletedIdx) {
+              obj[`tp_${idx}_${si}`] = backup[key];
+            } else if (idx > deletedIdx) {
+              obj[`tp_${idx - 1}_${si}`] = backup[key];
+            }
+          } else {
+            obj[key] = backup[key];
+          }
+        });
+      }
+
+      // Drag and Drop state
+      let tpDragState = {
+        sem: null,
+        fromIndex: null
+      };
+
+      function handleTPRowDragStart(e, sem, index) {
+        tpDragState.sem = sem;
+        tpDragState.fromIndex = index;
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", `${sem}:${index}`);
+        }
+        const tr = e.target.closest("tr");
+        if (tr) {
+          setTimeout(() => tr.classList.add("tp-row-dragging"), 10);
+        }
+      }
+
+      function handleTPRowDragOver(e) {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+        const tr = e.target.closest("tr");
+        if (tr && !tr.classList.contains("tp-row-drag-over")) {
+          document.querySelectorAll(".tp-row-drag-over").forEach(el => el.classList.remove("tp-row-drag-over"));
+          tr.classList.add("tp-row-drag-over");
+        }
+      }
+
+      function handleTPRowDragEnter(e) {
+        e.preventDefault();
+      }
+
+      function handleTPRowDragLeave(e) {
+        const tr = e.target.closest("tr");
+        if (tr && !tr.contains(e.relatedTarget)) {
+          tr.classList.remove("tp-row-drag-over");
+        }
+      }
+
+      function handleTPRowDragEnd(e) {
+        document.querySelectorAll(".tp-row-dragging").forEach(el => el.classList.remove("tp-row-dragging"));
+        document.querySelectorAll(".tp-row-drag-over").forEach(el => el.classList.remove("tp-row-drag-over"));
+        tpDragState.sem = null;
+        tpDragState.fromIndex = null;
+      }
+
+      function handleTPRowDrop(e, sem, toIndex) {
+        e.preventDefault();
+        document.querySelectorAll(".tp-row-dragging").forEach(el => el.classList.remove("tp-row-dragging"));
+        document.querySelectorAll(".tp-row-drag-over").forEach(el => el.classList.remove("tp-row-drag-over"));
+
+        if (tpDragState.sem !== sem || tpDragState.fromIndex === null) return;
+        const fromIndex = tpDragState.fromIndex;
+        if (fromIndex === toIndex) return;
+
+        const arr = sem === "ganjil" ? state.tpGanjil : state.tpGenap;
+        const [movedItem] = arr.splice(fromIndex, 1);
+        arr.splice(toIndex, 0, movedItem);
+
+        remapStudentScoresOnMove(sem, fromIndex, toIndex);
+
+        if (isAutoUrutKodeTPEnabled()) {
+          autoUrutKodeTP(sem);
+        }
+
+        renderTPCombined();
+        renderTP(sem);
+        syncATPFromTPOrder();
+        scheduleSave();
+        markDirty();
+
+        if (typeof showSaveIndicator === "function") {
+          showSaveIndicator("Urutan TP dipindahkan & nomor kode TP otomatis diurutkan! ✨", "success");
+        }
+
+        tpDragState.sem = null;
+        tpDragState.fromIndex = null;
+      }
+
+      function pindahSemesterTP(fromSem, index) {
+        const toSem = fromSem === "ganjil" ? "genap" : "ganjil";
+        const fromArr = fromSem === "ganjil" ? state.tpGanjil : state.tpGenap;
+        const toArr = toSem === "ganjil" ? state.tpGanjil : state.tpGenap;
+
+        if (!fromArr || !fromArr[index]) return;
+        const [item] = fromArr.splice(index, 1);
+        toArr.push(item);
+
+        if (isAutoUrutKodeTPEnabled()) {
+          autoUrutKodeTP("all");
+        }
+
+        renderTPCombined();
+        renderTP("ganjil");
+        renderTP("genap");
+        syncATPFromTPOrder();
+        scheduleSave();
+        markDirty();
+
+        if (typeof showSaveIndicator === "function") {
+          showSaveIndicator(`TP dipindahkan ke Semester ${toSem === "ganjil" ? "Ganjil" : "Genap"} & kode diperbarui! ✨`, "success");
+        }
+      }
+
       function moveTPRow(sem, i, dir) {
         const arr = sem === "ganjil" ? state.tpGanjil : state.tpGenap;
         const t = i + dir;
         if (t < 0 || t >= arr.length) return;
         [arr[i], arr[t]] = [arr[t], arr[i]];
+
+        swapStudentScoresForTP(sem, i, t);
+
+        if (isAutoUrutKodeTPEnabled()) {
+          autoUrutKodeTP(sem);
+        }
+
+        renderTPCombined();
+        renderTP(sem);
+        syncATPFromTPOrder();
+        scheduleSave();
+        markDirty();
+
+        if (isAutoUrutKodeTPEnabled() && typeof showSaveIndicator === "function") {
+          showSaveIndicator("Urutan TP diubah & kode TP otomatis diurutkan! ✨", "success");
+        }
+      }
+
+      function removeTPCombined(sem, i) {
+        const semNum = (sem === "ganjil" || sem === 1) ? 1 : 2;
+        removeStudentScoresOnDelete(semNum, i);
+        (sem === "ganjil" ? state.tpGanjil : state.tpGenap).splice(i, 1);
+
+        if (isAutoUrutKodeTPEnabled()) {
+          autoUrutKodeTP(sem);
+        }
+
         renderTPCombined();
         renderTP(sem);
         syncATPFromTPOrder();
@@ -7823,13 +8223,192 @@ state.jadwal =
         markDirty();
       }
 
-      function removeTPCombined(sem, i) {
-        (sem === "ganjil" ? state.tpGanjil : state.tpGenap).splice(i, 1);
+      // Modal Format & Pengaturan Urut Kode TP
+      function openModalUrutKodeTP(sem = "ganjil") {
+        let existing = document.getElementById("modal-urut-tp");
+        if (existing) existing.remove();
+
+        const detectedPrefix = detectTPPrefixStyle();
+        const nonEvalGanjil = (state.tpGanjil || []).filter(t => !isEvalRow(t)).length;
+        const nonEvalGenap = (state.tpGenap || []).filter(t => !isEvalRow(t)).length;
+        const isCurrentlyContinuous = state.autoUrutTPMode === "annual" || (state.autoUrutTPMode !== "semester");
+        const autoUrutChecked = isAutoUrutKodeTPEnabled();
+
+        const rawKelas = (state && state.kelas) || document.getElementById("f-kelas")?.value || "7";
+        const cleanKelas = String(rawKelas).replace(/\D/g, "") || "7";
+
+        const modal = document.createElement("div");
+        modal.id = "modal-urut-tp";
+        modal.className = "modal-overlay";
+        modal.innerHTML = `
+          <div class="modal-box" style="max-width: 540px; width: 95vw;">
+            <div class="modal-title" style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="material-symbols-rounded" style="color: #38bdf8; font-size: 22px;" data-lucide="arrow-down-1-0"></i>
+                <span>Pengaturan &amp; Urutkan Nomor Kode TP</span>
+              </div>
+              <button onclick="tutupModalUrutKodeTP()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-light);"><i class="material-symbols-rounded" data-lucide="x"></i></button>
+            </div>
+
+            <p style="font-size: var(--fs-xs, 12px); color: var(--text-light); line-height: 1.5; margin: 0 0 14px 0;">
+              Atur format kode TP dan aktifkan pengurutan nomor kode otomatis setiap kali baris TP dipindahkan (tombol naik/turun atau geser baris).
+            </p>
+
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;">
+              <div style="font-size: var(--fs-xs, 12px); font-weight: 600; color: var(--text); margin-bottom: 6px;">Ringkasan TP Saat Ini:</div>
+              <div style="display: flex; gap: 16px; font-size: var(--fs-xs, 12px); color: var(--text-light); flex-wrap: wrap;">
+                <div>Semester Ganjil: <strong style="color: #38bdf8;">${nonEvalGanjil} TP</strong></div>
+                <div>Semester Genap: <strong style="color: #a78bfa;">${nonEvalGenap} TP</strong></div>
+                <div>Total: <strong style="color: var(--text);">${nonEvalGanjil + nonEvalGenap} TP</strong></div>
+              </div>
+            </div>
+
+            <div class="tp-config-section">
+              <div class="tp-config-title">Format Penomoran Kode TP:</div>
+              <div class="tp-radio-list">
+                <label class="tp-radio-row">
+                  <input type="radio" name="format-tp-kode" value="TP " ${detectedPrefix === "TP " ? "checked" : ""} onchange="updateModalUrutPreview()">
+                  <span class="tp-radio-label"><strong>TP [No]</strong> (Contoh: TP 1, TP 2, TP 3...) &mdash; <em style="color: var(--text-light);">Standar</em></span>
+                </label>
+                <label class="tp-radio-row">
+                  <input type="radio" name="format-tp-kode" value="TP." ${detectedPrefix === "TP." ? "checked" : ""} onchange="updateModalUrutPreview()">
+                  <span class="tp-radio-label"><strong>TP.[No]</strong> (Contoh: TP.1, TP.2, TP.3...)</span>
+                </label>
+                <label class="tp-radio-row">
+                  <input type="radio" name="format-tp-kode" value="${cleanKelas}." ${detectedPrefix.startsWith(cleanKelas) ? "checked" : ""} onchange="updateModalUrutPreview()">
+                  <span class="tp-radio-label"><strong>${cleanKelas}.[No]</strong> (Contoh: ${cleanKelas}.1, ${cleanKelas}.2...) &mdash; <em style="color: var(--text-light);">Berdasarkan Kelas</em></span>
+                </label>
+                <label class="tp-radio-row">
+                  <input type="radio" name="format-tp-kode" value="" ${detectedPrefix === "" ? "checked" : ""} onchange="updateModalUrutPreview()">
+                  <span class="tp-radio-label"><strong>[No]</strong> (Contoh: 1, 2, 3...) &mdash; <em style="color: var(--text-light);">Hanya Nomor</em></span>
+                </label>
+                <label class="tp-radio-row">
+                  <input type="radio" name="format-tp-kode" value="custom" id="radio-format-custom" onchange="updateModalUrutPreview()">
+                  <span class="tp-radio-label" style="display: inline-flex; align-items: center;">
+                    <strong>Format Kustom:</strong>
+                    <input type="text" id="input-prefix-custom" class="tp-custom-prefix-input" placeholder="Awalan kode..." oninput="document.getElementById('radio-format-custom').checked=true; updateModalUrutPreview();">
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div class="tp-config-section">
+              <div class="tp-config-title">Mode Kelanjutan Semester:</div>
+              <div class="tp-radio-list">
+                <label class="tp-radio-row align-top">
+                  <input type="radio" name="mode-tp-continuity" value="annual" ${isCurrentlyContinuous ? "checked" : ""} onchange="updateModalUrutPreview()">
+                  <div class="tp-radio-label">
+                    <strong>Lanjut Tahunan (Ganjil &rarr; Genap)</strong>
+                    <div style="font-size: 11px; color: var(--text-light); margin-top: 1px;">Nomor TP Semester Genap berlanjut setelah Semester Ganjil</div>
+                  </div>
+                </label>
+                <label class="tp-radio-row align-top">
+                  <input type="radio" name="mode-tp-continuity" value="semester" ${!isCurrentlyContinuous ? "checked" : ""} onchange="updateModalUrutPreview()">
+                  <div class="tp-radio-label">
+                    <strong>Reset Tiap Semester (Per Semester)</strong>
+                    <div style="font-size: 11px; color: var(--text-light); margin-top: 1px;">Tiap semester dimulai dari nomor 1</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 10px 12px; margin-bottom: 16px;">
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: var(--fs-sm, 13px); font-weight: 600; color: var(--text); margin: 0;">
+                <input type="checkbox" id="modal-cb-auto-urut" style="width: 17px; height: 17px; accent-color: #38bdf8; margin: 0; flex-shrink: 0;" ${autoUrutChecked ? "checked" : ""}>
+                <span>Aktifkan Auto Urut Nomor Kode TP saat memindahkan baris TP</span>
+              </label>
+            </div>
+
+            <div id="modal-urut-preview-box" style="background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 12px; font-family: monospace;">
+            </div>
+
+            <div class="modal-actions">
+              <button type="button" class="btn-modal-cancel" onclick="tutupModalUrutKodeTP()">Batal</button>
+              <button type="button" class="btn-modal-ok btn-save" onclick="terapkanUrutKodeTPModal('${sem}')">
+                <i class="material-symbols-rounded" style="font-size: 16px;" data-lucide="check"></i>
+                <span>Terapkan Urutan Kode TP</span>
+              </button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+          window.lucide.createIcons();
+        }
+        updateModalUrutPreview();
+      }
+
+      function tutupModalUrutKodeTP() {
+        const m = document.getElementById("modal-urut-tp");
+        if (m) m.remove();
+      }
+
+      function updateModalUrutPreview() {
+        const box = document.getElementById("modal-urut-preview-box");
+        if (!box) return;
+
+        let prefix = "TP ";
+        const radioChecked = document.querySelector('input[name="format-tp-kode"]:checked');
+        if (radioChecked) {
+          if (radioChecked.value === "custom") {
+            prefix = document.getElementById("input-prefix-custom")?.value || "TP ";
+          } else {
+            prefix = radioChecked.value;
+          }
+        }
+
+        const modeChecked = document.querySelector('input[name="mode-tp-continuity"]:checked')?.value || "annual";
+        const isAnnual = modeChecked === "annual";
+
+        const nonEvalGanjil = (state.tpGanjil || []).filter(t => !isEvalRow(t)).length || 4;
+        const nonEvalGenap = (state.tpGenap || []).filter(t => !isEvalRow(t)).length || 4;
+
+        const ganjilSamp = [1, 2, 3].map(n => formatTPKode(prefix, n)).join(", ") + ` ... ${formatTPKode(prefix, nonEvalGanjil)}`;
+        const genapStart = isAnnual ? (nonEvalGanjil + 1) : 1;
+        const genapSamp = [genapStart, genapStart + 1, genapStart + 2].map(n => formatTPKode(prefix, n)).join(", ") + ` ... ${formatTPKode(prefix, genapStart + nonEvalGenap - 1)}`;
+
+        box.innerHTML = `
+          <div style="color: #94a3b8; margin-bottom: 4px; font-weight: bold;">Contoh Hasil Penomoran:</div>
+          <div><span style="color: #38bdf8;">Ganjil:</span> ${ganjilSamp}</div>
+          <div style="margin-top: 2px;"><span style="color: #a78bfa;">Genap:</span> &nbsp;${genapSamp}</div>
+        `;
+      }
+
+      function terapkanUrutKodeTPModal(sem = "all") {
+        let prefix = "TP ";
+        const radioChecked = document.querySelector('input[name="format-tp-kode"]:checked');
+        if (radioChecked) {
+          if (radioChecked.value === "custom") {
+            prefix = document.getElementById("input-prefix-custom")?.value || "TP ";
+          } else {
+            prefix = radioChecked.value;
+          }
+        }
+
+        const mode = document.querySelector('input[name="mode-tp-continuity"]:checked')?.value || "annual";
+        state.autoUrutTPMode = mode;
+
+        const autoUrutCb = document.getElementById("modal-cb-auto-urut");
+        if (autoUrutCb) {
+          state.autoUrutKodeTP = autoUrutCb.checked;
+          localStorage.setItem("promesta_auto_urut_tp", String(state.autoUrutKodeTP));
+          updateAutoUrutCheckboxes();
+        }
+
+        autoUrutKodeTP("all", { prefix, mode });
+
         renderTPCombined();
-        renderTP(sem);
+        renderTP("ganjil");
+        renderTP("genap");
         syncATPFromTPOrder();
         scheduleSave();
         markDirty();
+
+        tutupModalUrutKodeTP();
+
+        if (typeof showSaveIndicator === "function") {
+          showSaveIndicator("Nomor Kode TP Berhasil Diurutkan! ✨", "success", `Format: ${prefix || "Nomor"} (${mode === "annual" ? "Lanjut Tahunan" : "Per Semester"})`);
+        }
       }
 
       function distributeJPProportional(sem) {
@@ -7851,50 +8430,76 @@ state.jadwal =
           return;
         }
 
-        // Standard Hare-Niemeyer / Largest Remainder Method for Integer Proportional Distribution
-        const weights = tpArr.map(t => (+t.jp > 0 ? +t.jp : 1));
-        const totalWeight = weights.reduce((a, b) => a + b, 0);
-
-        const exacts = weights.map(w => (w / totalWeight) * totalAvailJP);
-
-        let floors = exacts.map(e => Math.floor(e));
-        if (totalAvailJP >= tpArr.length) {
-          floors = floors.map(f => Math.max(1, f));
-        }
-
-        let currentSum = floors.reduce((a, b) => a + b, 0);
-        let diff = totalAvailJP - currentSum;
-
-        if (diff > 0) {
-          const remainders = exacts.map((e, idx) => ({
-            index: idx,
-            rem: e - Math.floor(e)
-          }));
-          remainders.sort((a, b) => b.rem - a.rem || a.index - b.index);
-
-          for (let i = 0; i < diff; i++) {
-            floors[remainders[i].index]++;
-          }
-        } else if (diff < 0) {
-          const remainders = exacts.map((e, idx) => ({
-            index: idx,
-            rem: e - Math.floor(e)
-          }));
-          remainders.sort((a, b) => a.rem - b.rem || a.index - b.index);
-
-          let reduced = 0;
-          for (let i = 0; i < remainders.length && reduced < Math.abs(diff); i++) {
-            const idx = remainders[i].index;
-            if (floors[idx] > 1) {
-              floors[idx]--;
-              reduced++;
-            }
-          }
-        }
+        // Pisahkan item khusus sumatif / evaluasi dan item TP reguler
+        // Khusus baris sumatif: JP harus tetap bernilai 2 JP saat distribusi otomatis,
+        // namun tetap bisa dicustom secara manual oleh pengguna setelahnya.
+        const evalItems = [];
+        const regularItems = [];
 
         tpArr.forEach((t, idx) => {
-          t.jp = floors[idx];
+          if (isEvalRow(t)) {
+            evalItems.push({ item: t, index: idx });
+          } else {
+            regularItems.push({ item: t, index: idx });
+          }
         });
+
+        // Setel setiap baris sumatif menjadi tepat 2 JP
+        evalItems.forEach(({ item }) => {
+          item.jp = 2;
+        });
+
+        const totalSumatifJP = evalItems.length * 2;
+        const targetRegularJP = Math.max(0, totalAvailJP - totalSumatifJP);
+
+        if (regularItems.length > 0) {
+          // Standard Hare-Niemeyer / Largest Remainder Method untuk distribusi proporsional bilangan bulat pada TP reguler
+          const weights = regularItems.map(({ item }) => (+item.jp > 0 ? +item.jp : 1));
+          const totalWeight = weights.reduce((a, b) => a + b, 0) || 1;
+
+          // Alokasikan JP yang tersisa untuk TP reguler (minimal 1 JP jika memungkinkan)
+          const availForRegular = targetRegularJP > 0 ? targetRegularJP : regularItems.length;
+          const exacts = weights.map(w => (w / totalWeight) * availForRegular);
+
+          let floors = exacts.map(e => Math.floor(e));
+          if (availForRegular >= regularItems.length) {
+            floors = floors.map(f => Math.max(1, f));
+          }
+
+          let currentSum = floors.reduce((a, b) => a + b, 0);
+          let diff = availForRegular - currentSum;
+
+          if (diff > 0) {
+            const remainders = exacts.map((e, idx) => ({
+              index: idx,
+              rem: e - Math.floor(e)
+            }));
+            remainders.sort((a, b) => b.rem - a.rem || a.index - b.index);
+
+            for (let i = 0; i < diff; i++) {
+              floors[remainders[i % remainders.length].index]++;
+            }
+          } else if (diff < 0) {
+            const remainders = exacts.map((e, idx) => ({
+              index: idx,
+              rem: e - Math.floor(e)
+            }));
+            remainders.sort((a, b) => a.rem - b.rem || a.index - b.index);
+
+            let reduced = 0;
+            for (let i = 0; i < remainders.length && reduced < Math.abs(diff); i++) {
+              const idx = remainders[i].index;
+              if (floors[idx] > 1) {
+                floors[idx]--;
+                reduced++;
+              }
+            }
+          }
+
+          regularItems.forEach(({ item }, idx) => {
+            item.jp = floors[idx];
+          });
+        }
 
         renderTPCombined();
         renderTP("ganjil");
@@ -7904,7 +8509,8 @@ state.jadwal =
         markDirty();
 
         if (typeof showSaveIndicator === "function") {
-          showSaveIndicator(`Distribusi JP Otomatis ${semName} Berhasil! (${totalAvailJP} JP terbagi ke ${tpArr.length} item) ✨`, "success");
+          const evalMsg = evalItems.length > 0 ? ` (${evalItems.length} Sumatif tetap 2 JP)` : "";
+          showSaveIndicator(`Distribusi JP Otomatis ${semName} Berhasil! Total ${totalAvailJP} JP terbagi.${evalMsg} ✨`, "success");
         }
       }
 
@@ -7952,6 +8558,219 @@ state.jadwal =
         markDirty();
       }
 
+      function openBulkAddTPModal(targetEi) {
+        if (!state.atpData || state.atpData.length === 0) {
+          if (typeof showSaveIndicator === "function") {
+            showSaveIndicator("Belum ada elemen Capaian Pembelajaran. Silakan buat elemen terlebih dahulu.", "error");
+          }
+          return;
+        }
+
+        const existing = document.getElementById("bulk-add-tp-modal");
+        if (existing) existing.remove();
+
+        const selectedEi = (typeof targetEi === "number" && targetEi >= 0 && targetEi < state.atpData.length) ? targetEi : 0;
+        const currentEl = state.atpData[selectedEi];
+
+        let elemenSelectHtml = "";
+        if (state.atpData.length > 1) {
+          elemenSelectHtml = `
+            <div class="modal-field" style="margin-bottom: 12px;">
+              <label style="font-weight:600; font-size:var(--fs-sm); color:var(--text); margin-bottom:6px; display:block;">Pilih Elemen Tujuan</label>
+              <select id="bulk-tp-elemen-select" style="width:100%; padding:9px 12px; background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--f); font-size:var(--fs); outline:none;">
+                ${state.atpData.map((el, idx) => `
+                  <option value="${idx}" ${idx === selectedEi ? "selected" : ""}>
+                    Elemen ${idx + 1}: ${escH(el.elemen || "Tanpa Nama")} (${el.rows ? el.rows.length : 0} TP)
+                  </option>
+                `).join("")}
+              </select>
+            </div>
+          `;
+        } else {
+          elemenSelectHtml = `
+            <input type="hidden" id="bulk-tp-elemen-select" value="${selectedEi}">
+            <div style="font-size:var(--fs-sm); color:var(--text-light); margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+              <i class="material-symbols-rounded" style="font-size:16px; color:#38bdf8;" data-lucide="layers"></i>
+              <span>Target: <strong>Elemen ${selectedEi + 1} (${escH(currentEl.elemen || "Tanpa Nama")})</strong></span>
+            </div>
+          `;
+        }
+
+        const modal = document.createElement("div");
+        modal.id = "bulk-add-tp-modal";
+        modal.className = "modal-overlay";
+        modal.innerHTML = `
+          <div class="modal-box" style="max-width: 580px; width: 92%; max-height: 90vh; overflow-y: auto;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:34px; height:34px; border-radius:8px; background:rgba(56, 189, 248, 0.15); display:flex; align-items:center; justify-content:center; color:#38bdf8;">
+                  <i class="material-symbols-rounded" style="font-size:20px;" data-lucide="list-plus"></i>
+                </div>
+                <div>
+                  <div class="modal-title" style="margin-bottom:0; font-size:16.5px; font-weight:700;">Tambah TP Sekaligus</div>
+                  <div style="font-size:11.5px; color:var(--text-light);">Tambahkan banyak butir Tujuan Pembelajaran per baris</div>
+                </div>
+              </div>
+              <button type="button" onclick="closeBulkAddTPModal()" style="background:none; border:none; color:var(--text-light); cursor:pointer; padding:4px; display:flex; align-items:center; border-radius:6px;" title="Tutup">
+                <i class="material-symbols-rounded" style="font-size:20px;" data-lucide="x"></i>
+              </button>
+            </div>
+
+            ${elemenSelectHtml}
+
+            <div class="modal-field" style="margin-bottom:12px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                <label style="font-weight:600; font-size:var(--fs-sm); color:var(--text);">Daftar Tujuan Pembelajaran</label>
+                <span id="bulk-tp-counter" style="font-size:11.5px; font-weight:600; color:var(--text-light); background:rgba(255,255,255,0.06); padding:2px 8px; border-radius:9999px;">0 butir terdeteksi</span>
+              </div>
+              <textarea id="bulk-tp-textarea" rows="7" 
+                placeholder="Ketik atau tempel (paste) butir-butir Tujuan Pembelajaran di sini, satu TP per baris...&#10;&#10;Contoh:&#10;1. Mengidentifikasi pola bilangan sederhana&#10;2. Menentukan rumus suku ke-n pada barisan aritmetika&#10;3. Menyelesaikan masalah nyata yang berkaitan dengan deret aritmetika"
+                style="width:100%; box-sizing:border-box; padding:10px 12px; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:var(--text); font-family:var(--f); font-size:var(--fs-sm); line-height:1.5; resize:vertical; outline:none;"></textarea>
+            </div>
+
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 12px; margin-bottom:16px; display:flex; flex-direction:column; gap:8px;">
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; color:var(--text); user-select:none;">
+                <input type="checkbox" id="bulk-tp-clean-prefix" checked style="accent-color:#38bdf8; width:15px; height:15px;">
+                <span>Hapus nomor urut / tanda bullet di awal baris secara otomatis (misal: <em>1.</em>, <em>1)</em>, <em>-</em>, <em>•</em>)</span>
+              </label>
+              <div style="font-size:11px; color:var(--text-light); line-height:1.4; display:flex; align-items:flex-start; gap:6px;">
+                <i class="material-symbols-rounded" style="font-size:14px; color:#facc15; flex-shrink:0; margin-top:1px;" data-lucide="sparkles"></i>
+                <span>Tip: Anda dapat langsung menyalin (Copy) butir-butir TP dari dokumen silabus / modul ajar Word atau PDF lalu Tempel (Paste) di atas.</span>
+              </div>
+            </div>
+
+            <div class="modal-actions">
+              <button type="button" class="btn-modal-cancel" onclick="closeBulkAddTPModal()">Batal</button>
+              <button type="button" class="btn-modal-ok btn-save" onclick="executeBulkAddTP()">
+                <i class="material-symbols-rounded" style="font-size:17px;" data-lucide="plus-circle"></i>
+                <span>Tambahkan ke Elemen</span>
+              </button>
+            </div>
+          </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        const textarea = document.getElementById("bulk-tp-textarea");
+        const counter = document.getElementById("bulk-tp-counter");
+        const cleanCheckbox = document.getElementById("bulk-tp-clean-prefix");
+
+        function updateCounter() {
+          const text = textarea ? textarea.value : "";
+          const clean = cleanCheckbox ? cleanCheckbox.checked : true;
+          const lines = text.split(/\r?\n/)
+            .map(line => {
+              let l = line.trim();
+              if (clean) {
+                l = l.replace(/^\s*(?:[0-9]+[\.\)]|[a-zA-Z][\.\)]|[-*•–—])\s+/, "").trim();
+              }
+              return l;
+            })
+            .filter(l => l.length > 0);
+          
+          if (counter) {
+            counter.textContent = `${lines.length} butir terdeteksi`;
+            if (lines.length > 0) {
+              counter.style.color = "#38bdf8";
+              counter.style.background = "rgba(56,189,248,0.15)";
+            } else {
+              counter.style.color = "var(--text-light)";
+              counter.style.background = "rgba(255,255,255,0.06)";
+            }
+          }
+        }
+
+        if (textarea) {
+          textarea.addEventListener("input", updateCounter);
+          setTimeout(() => {
+            textarea.focus();
+          }, 50);
+        }
+        if (cleanCheckbox) {
+          cleanCheckbox.addEventListener("change", updateCounter);
+        }
+
+        if (typeof lucide !== "undefined" && lucide.createIcons) {
+          lucide.createIcons({
+            attrs: { class: "lucide" },
+            node: modal
+          });
+        }
+      }
+
+      function closeBulkAddTPModal() {
+        const modal = document.getElementById("bulk-add-tp-modal");
+        if (modal) modal.remove();
+      }
+
+      function executeBulkAddTP() {
+        const selectEl = document.getElementById("bulk-tp-elemen-select");
+        const textarea = document.getElementById("bulk-tp-textarea");
+        const cleanCheckbox = document.getElementById("bulk-tp-clean-prefix");
+
+        if (!textarea || !selectEl) return;
+        const targetEi = parseInt(selectEl.value, 10);
+        if (isNaN(targetEi) || !state.atpData || !state.atpData[targetEi]) {
+          if (typeof showSaveIndicator === "function") {
+            showSaveIndicator("Elemen tujuan tidak valid.", "error");
+          }
+          return;
+        }
+
+        const clean = cleanCheckbox ? cleanCheckbox.checked : true;
+        const rawText = textarea.value;
+        const lines = rawText.split(/\r?\n/)
+          .map(line => {
+            let l = line.trim();
+            if (clean) {
+              l = l.replace(/^\s*(?:[0-9]+[\.\)]|[a-zA-Z][\.\)]|[-*•–—])\s+/, "").trim();
+            }
+            return l;
+          })
+          .filter(l => l.length > 0);
+
+        if (lines.length === 0) {
+          if (typeof showSaveIndicator === "function") {
+            showSaveIndicator("Silakan masukkan minimal satu butir Tujuan Pembelajaran.", "error");
+          }
+          textarea.focus();
+          return;
+        }
+
+        if (!state.atpData[targetEi].rows) {
+          state.atpData[targetEi].rows = [];
+        } else if (state.atpData[targetEi].rows.length === 1 && (!state.atpData[targetEi].rows[0].tp || state.atpData[targetEi].rows[0].tp.trim() === "")) {
+          state.atpData[targetEi].rows = [];
+        }
+
+        lines.forEach(item => {
+          state.atpData[targetEi].rows.push({
+            tp: item,
+            atp: item
+          });
+        });
+
+        closeBulkAddTPModal();
+        renderAtpInput();
+        scheduleSave();
+        markDirty();
+
+        if (typeof showSaveIndicator === "function") {
+          showSaveIndicator(`Berhasil menambahkan ${lines.length} Tujuan Pembelajaran sekaligus! ✨`, "success");
+        }
+
+        setTimeout(() => {
+          const listEl = document.getElementById(`atp-tp-list-${targetEi}`);
+          if (listEl) {
+            listEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+        }, 120);
+      }
+
+      window.openBulkAddTPModal = openBulkAddTPModal;
+      window.closeBulkAddTPModal = closeBulkAddTPModal;
+      window.executeBulkAddTP = executeBulkAddTP;
+
       function removeAtpRow(ei, ri) {
         if (!state.atpData || !state.atpData[ei] || !state.atpData[ei].rows) return;
         const rowEl = document.getElementById(`atp-row-${ei}-${ri}`);
@@ -7961,9 +8780,16 @@ state.jadwal =
           rowEl.classList.add("tp-row-removing");
           setTimeout(() => {
             state.atpData[ei].rows.splice(ri, 1);
-            listEl.innerHTML = state.atpData[ei].rows
-              .map((row, idx) => renderAtpRowHtml(ei, idx, row, state.atpData[ei].rows.length))
-              .join("");
+            if (state.atpData[ei].rows.length > 0) {
+              listEl.innerHTML = state.atpData[ei].rows
+                .map((row, idx) => renderAtpRowHtml(ei, idx, row, state.atpData[ei].rows.length))
+                .join("");
+            } else {
+              listEl.innerHTML = `<div class="atp-tp-empty-msg" style="font-size:var(--fs-sm);color:var(--text-light);padding:8px 4px;font-style:italic;display:flex;align-items:center;gap:6px;">
+                <i class="material-symbols-rounded" style="font-size:16px;opacity:0.7;" data-lucide="info"></i>
+                <span>Belum ada Tujuan Pembelajaran. Klik <strong>Tambah TP</strong> atau <strong>Tambah Sekaligus</strong> untuk mengisi TP kustom Anda.</span>
+              </div>`;
+            }
 
             if (typeof lucide !== "undefined" && lucide.createIcons) {
               lucide.createIcons({
@@ -7991,6 +8817,76 @@ state.jadwal =
           markDirty();
         }
       }
+
+      async function clearAtpRows(ei) {
+        if (!state.atpData || !state.atpData[ei]) return;
+        const currentRows = state.atpData[ei].rows || [];
+        if (currentRows.length === 0) {
+          if (typeof showSaveIndicator === "function") {
+            showSaveIndicator("Daftar TP pada elemen ini sudah kosong.", "info");
+          }
+          return;
+        }
+        const elemenName = state.atpData[ei].elemen ? ` "${state.atpData[ei].elemen}"` : ` Elemen ${ei + 1}`;
+        const ok = await confirmAsync(
+          `Hapus semua (${currentRows.length}) Tujuan Pembelajaran pada${elemenName}? Anda dapat menginput TP kustom Anda sendiri setelahnya.`
+        );
+        if (!ok) return;
+
+        state.atpData[ei].rows = [];
+        const listEl = document.getElementById(`atp-tp-list-${ei}`);
+        if (listEl) {
+          listEl.innerHTML = `<div class="atp-tp-empty-msg" style="font-size:var(--fs-sm);color:var(--text-light);padding:8px 4px;font-style:italic;display:flex;align-items:center;gap:6px;">
+            <i class="material-symbols-rounded" style="font-size:16px;opacity:0.7;" data-lucide="info"></i>
+            <span>Belum ada Tujuan Pembelajaran. Klik <strong>Tambah TP</strong> atau <strong>Tambah Sekaligus</strong> untuk mengisi TP kustom Anda.</span>
+          </div>`;
+          if (typeof lucide !== "undefined" && lucide.createIcons) {
+            lucide.createIcons({
+              attrs: { class: "lucide" },
+              node: listEl
+            });
+          }
+          let totalRows = state.atpData.reduce((s, e) => s + (e.rows ? e.rows.length : 0), 0);
+          const cntEl = document.getElementById("cnt-atp");
+          if (cntEl) cntEl.textContent = state.atpData.length + " elemen | " + totalRows + " TP";
+        } else {
+          renderAtpInput();
+        }
+
+        scheduleSave();
+        markDirty();
+        if (typeof showSaveIndicator === "function") {
+          showSaveIndicator("TP pada elemen ini berhasil dihapus. Silakan input TP kustom Anda! ✨", "success");
+        }
+      }
+
+      async function clearAllAtpTP() {
+        if (!state.atpData || state.atpData.length === 0) return;
+        const totalRows = state.atpData.reduce((s, e) => s + (e.rows ? e.rows.length : 0), 0);
+        if (totalRows === 0) {
+          if (typeof showSaveIndicator === "function") {
+            showSaveIndicator("Semua TP pada semua elemen sudah kosong.", "info");
+          }
+          return;
+        }
+        const ok = await confirmAsync(
+          `Hapus semua (${totalRows}) Tujuan Pembelajaran di seluruh elemen? Seluruh TP akan dikosongkan agar Anda leluasa menginput TP kustom sendiri.`
+        );
+        if (!ok) return;
+
+        state.atpData.forEach((el) => {
+          el.rows = [];
+        });
+        renderAtpInput();
+        scheduleSave();
+        markDirty();
+        if (typeof showSaveIndicator === "function") {
+          showSaveIndicator("Semua TP berhasil dihapus. Silakan input TP kustom Anda! ✨", "success");
+        }
+      }
+
+      window.clearAtpRows = clearAtpRows;
+      window.clearAllAtpTP = clearAllAtpTP;
 
       function renderATP(du) {
         const arr = state.atpData;
@@ -8258,6 +9154,33 @@ function toggleSidebar() {
         closeAllHeaderDropdowns();
         if (!wasOpen) {
           dropdown.classList.add("open");
+          const menu = dropdown.querySelector(".header-dropdown-menu");
+          if (menu) {
+            menu.style.left = "";
+            menu.style.right = "";
+            
+            const rect = menu.getBoundingClientRect();
+            const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+            
+            // If flagged as align-right or if opening to the right would overflow the viewport
+            if (dropdown.classList.contains("align-right") || rect.right > viewportWidth - 16) {
+              menu.style.left = "auto";
+              menu.style.right = "0px";
+            }
+            
+            // Ensure menu stays within visible boundaries without causing horizontal scroll
+            const updatedRect = menu.getBoundingClientRect();
+            if (updatedRect.right > viewportWidth - 12) {
+              const overflowRight = updatedRect.right - (viewportWidth - 12);
+              const currentRight = parseFloat(menu.style.right) || 0;
+              menu.style.right = `${currentRight + overflowRight}px`;
+            }
+            const finalRect = menu.getBoundingClientRect();
+            if (finalRect.left < 12) {
+              const currentRight = parseFloat(menu.style.right) || 0;
+              menu.style.right = `${Math.max(0, currentRight - (12 - finalRect.left))}px`;
+            }
+          }
           if (typeof lucide !== "undefined" && lucide.createIcons) {
             lucide.createIcons();
           }
@@ -8267,6 +9190,11 @@ function toggleSidebar() {
       function closeAllHeaderDropdowns() {
         document.querySelectorAll(".header-dropdown.open").forEach((d) => {
           d.classList.remove("open");
+          const menu = d.querySelector(".header-dropdown-menu");
+          if (menu) {
+            menu.style.left = "";
+            menu.style.right = "";
+          }
         });
       }
 
@@ -8457,17 +9385,27 @@ function toggleSidebar() {
           }
 
           return `
-    <tr style="${t.ev ? "background:rgba(245, 158, 11, 0.1)" : ""}">
-      <td class="td-ctr">${i + 1}</td>
+    <tr draggable="true"
+        ondragstart="handleTPRowDragStart(event, '${sem}', ${i})"
+        ondragover="handleTPRowDragOver(event)"
+        ondragenter="handleTPRowDragEnter(event)"
+        ondragleave="handleTPRowDragLeave(event)"
+        ondrop="handleTPRowDrop(event, '${sem}', ${i})"
+        ondragend="handleTPRowDragEnd(event)"
+        style="${t.ev ? "background:rgba(245, 158, 11, 0.1)" : ""}">
+      <td class="td-ctr">
+        <span class="tp-drag-handle" title="Tarik / Geser baris untuk mengubah urutan"><i class="material-symbols-rounded" style="font-size:14px;" data-lucide="grip-vertical"></i></span>
+        ${i + 1}
+      </td>
       <td><input type="text" style="width:40px;text-align:center" value="${escH(t.bab)}" onchange="updateTP('${sem}',${i},'bab',this.value)" placeholder="-"></td>
       <td><input type="text" value="${escH(t.mp)}" onchange="updateTP('${sem}',${i},'mp',this.value)" placeholder="Materi pokok..."></td>
       <td><input type="text" style="width:72px" value="${escH(t.kode)}" onchange="updateTP('${sem}',${i},'kode',this.value)"></td>
       <td>${tpInput}</td>
       <td><input type="number" min="1" max="30" value="${t.jp}" onchange="updateTP('${sem}',${i},'jp',+this.value||1)"></td>
       <td style="text-align:center;white-space:nowrap;">
-        <button onclick="moveTPRow('${sem}',${i},-1)" ${i === 0 ? "disabled" : ""} title="Naik"
+        <button onclick="moveTPRow('${sem}',${i},-1)" ${i === 0 ? "disabled" : ""} title="Naik (Auto Urut)"
           style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:none;border:none;border-radius:6px;color:${i === 0 ? "rgba(255,255,255,0.2)" : "var(--text)"};cursor:${i === 0 ? "default" : "pointer"};" onmouseover="if(${i !== 0})this.style.background='rgba(255,255,255,0.1)'" onmouseout="if(${i !== 0})this.style.background='none'"><i class="material-symbols-rounded" style="font-size:18px;" data-lucide="arrow-up"></i></button>
-        <button onclick="moveTPRow('${sem}',${i},1)" ${i === arr.length - 1 ? "disabled" : ""} title="Turun"
+        <button onclick="moveTPRow('${sem}',${i},1)" ${i === arr.length - 1 ? "disabled" : ""} title="Turun (Auto Urut)"
           style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:none;border:none;border-radius:6px;color:${i === arr.length - 1 ? "rgba(255,255,255,0.2)" : "var(--text)"};cursor:${i === arr.length - 1 ? "default" : "pointer"};" onmouseover="if(${i !== arr.length - 1})this.style.background='rgba(255,255,255,0.1)'" onmouseout="if(${i !== arr.length - 1})this.style.background='none'"><i class="material-symbols-rounded" style="font-size:18px;" data-lucide="arrow-down"></i></button>
       </td>
       <td style="text-align:center;white-space:nowrap;">
@@ -8480,6 +9418,10 @@ function toggleSidebar() {
         if (document.getElementById("body-tp-" + sem)) {
           document.getElementById("body-tp-" + sem).innerHTML = html;
         }
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
+        updateAutoUrutCheckboxes();
       }
       function updateTP(sem, i, f, v) {
         (sem === "ganjil" ? state.tpGanjil : state.tpGenap)[i][f] = v;
@@ -8490,10 +9432,24 @@ function toggleSidebar() {
         markDirty();
       }
       function addTP(sem) {
+        let defaultKode = "TP";
+        if (isAutoUrutKodeTPEnabled()) {
+          const nonEvalGanjil = (state.tpGanjil || []).filter(t => !isEvalRow(t)).length;
+          const nonEvalGenap = (state.tpGenap || []).filter(t => !isEvalRow(t)).length;
+          const prefix = detectTPPrefixStyle();
+          let nextNum = 1;
+          if (sem === "ganjil") {
+            nextNum = nonEvalGanjil + 1;
+          } else {
+            const isContinuous = state.autoUrutTPMode !== "semester";
+            nextNum = isContinuous ? (nonEvalGanjil + nonEvalGenap + 1) : (nonEvalGenap + 1);
+          }
+          defaultKode = formatTPKode(prefix, nextNum);
+        }
         (sem === "ganjil" ? state.tpGanjil : state.tpGenap).push({
           bab: "",
           mp: "",
-          kode: "TP",
+          kode: defaultKode,
           tp: "",
           jp: 2,
           ev: false,
@@ -8505,11 +9461,14 @@ function toggleSidebar() {
         markDirty();
       }
       function addEval(sem) {
+        const arr = sem === "ganjil" ? state.tpGanjil : state.tpGenap;
+        const evalCount = (arr || []).filter(t => isEvalRow(t)).length;
+        const nextNum = evalCount + 1;
         (sem === "ganjil" ? state.tpGanjil : state.tpGenap).push({
           bab: "",
           mp: "",
-          kode: "S",
-          tp: "Sumatif",
+          kode: `S${nextNum}`,
+          tp: `Sumatif ${nextNum}`,
           jp: 2,
           ev: true,
         });
@@ -8521,7 +9480,12 @@ function toggleSidebar() {
         markDirty();
       }
       function removeTP(sem, i) {
+        const semNum = (sem === "ganjil" || sem === 1) ? 1 : 2;
+        removeStudentScoresOnDelete(semNum, i);
         (sem === "ganjil" ? state.tpGanjil : state.tpGenap).splice(i, 1);
+        if (isAutoUrutKodeTPEnabled()) {
+          autoUrutKodeTP(sem);
+        }
         renderTPCombined();
         renderTP(sem);
         syncATPFromTPOrder();
@@ -8586,13 +9550,20 @@ function toggleSidebar() {
               <label>Alokasi Waktu (JP)</label>
               <input type="number" id="edit-tp-jp" min="1" max="30" value="${tpData.jp}">
             </div>
-            <div class="modal-actions">
-              <button class="btn-modal-cancel" onclick="document.getElementById('edit-tp-modal').remove()">Batal</button>
-              <button class="btn-modal-ok btn-save" onclick="saveEditTP('${sem}', ${index})">Simpan</button>
+            <div class="modal-actions" style="display: flex; align-items: center; justify-content: space-between;">
+              <button type="button" class="btn-modal-cancel" onclick="document.getElementById('edit-tp-modal').remove()">Batal</button>
+              <button type="button" class="btn-modal-cancel" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;" onclick="document.getElementById('edit-tp-modal').remove(); pindahSemesterTP('${sem}', ${index})">
+                <i class="material-symbols-rounded" style="font-size: 14px;" data-lucide="arrow-right-left"></i>
+                <span>Pindah ke Sem. ${sem === 'ganjil' ? 'Genap' : 'Ganjil'}</span>
+              </button>
+              <button type="button" class="btn-modal-ok btn-save" onclick="saveEditTP('${sem}', ${index})">Simpan</button>
             </div>
           </div>
         `;
         document.body.appendChild(modal);
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
       }
       
       function saveEditTP(sem, index) {
@@ -8708,26 +9679,41 @@ function toggleSidebar() {
           let need = +tp.jp;
           let tMul = null,
             tSel = null;
+          const pertemuanList = [];
           while (need > 0 && hi < hariEfektif.length) {
             const h = hariEfektif[hi];
             const avail = h.jp - jpUsed;
             if (!tMul) tMul = h.tanggal;
             if (need <= avail) {
+              const allocated = need;
               jpUsed += need;
               tSel = h.tanggal;
               need = 0;
+              const existing = pertemuanList.find((p) => p.tanggal === h.tanggal);
+              if (existing) {
+                existing.jp += allocated;
+              } else {
+                pertemuanList.push({ tanggal: h.tanggal, jp: allocated });
+              }
               if (jpUsed >= h.jp) {
                 hi++;
                 jpUsed = 0;
               }
             } else {
+              const allocated = avail;
               need -= avail;
               tSel = h.tanggal;
+              const existing = pertemuanList.find((p) => p.tanggal === h.tanggal);
+              if (existing) {
+                existing.jp += allocated;
+              } else {
+                pertemuanList.push({ tanggal: h.tanggal, jp: allocated });
+              }
               hi++;
               jpUsed = 0;
             }
           }
-          result.push({ ...tp, tMul, tSel });
+          result.push({ ...tp, tMul, tSel, pertemuanList });
         }
         return result;
       }
@@ -8958,7 +9944,7 @@ function toggleSidebar() {
         const yr = du.tahun.split("/");
         const semYear = sem === 1 ? yr[0] : yr[1] || parseInt(yr[0]) + 1;
 
-        const thStyle = `style="background:#BDD7EE;color:#000;padding:6px 8px;font-size:var(--fs);font-weight:700;text-align:center;border:1px solid #1E3A5F;"`;
+        const thStyle = `style="background:#BDD7EE;color:#000;padding:6px 8px;font-size:var(--fs);font-weight:700;text-align:center;border:1px solid #1E3A5F;white-space:nowrap;"`;
         const thL = `style="background:#BDD7EE;color:#000;padding:6px 8px;font-size:var(--fs);font-weight:700;text-align:center;border:1px solid #1E3A5F;"`;
         const tdC = `style="padding:5px 8px;border:1px solid #1E3A5F;text-align:center;font-size:var(--fs);"`;
         const tdL = `style="padding:5px 8px;border:1px solid #1E3A5F;font-size:var(--fs);"`;
@@ -9196,14 +10182,35 @@ function toggleSidebar() {
             (item, i) => {
               const isSumatif = item.ev || /sumatif/i.test(item.tp || "");
               const asesmenText = isSumatif ? "Sumatif" : "Formatif";
+              const pertemuanCount =
+                item.pertemuanList && item.pertemuanList.length > 0
+                  ? item.pertemuanList.length
+                  : item.tMul
+                    ? 1
+                    : " - ";
+
+              let tanggalCellHtml = " - ";
+              if (item.pertemuanList && item.pertemuanList.length > 0) {
+                const listItems = item.pertemuanList
+                  .map((p) => {
+                    const dateStr = fmtJurnalDate(p.tanggal, p.jp);
+                    return `<li style="margin-bottom:2px;line-height:1.35;white-space:nowrap;">${dateStr}</li>`;
+                  })
+                  .join("");
+                tanggalCellHtml = `<ul style="margin:0;padding-left:16px;text-align:left;list-style-type:disc;">${listItems}</ul>`;
+              } else if (item.tMul) {
+                tanggalCellHtml = fmtRange(item.tMul, item.tSel);
+              }
+
               return `
     <tr class="${item.ev ? "eval-row" : ""}${i % 2 === 1 ? " zebra" : ""}">
-      <td style="padding:5px 8px;border:1px solid #1E3A5F;text-align:center;vertical-align:top;">${i + 1}</td>
+      <td style="padding:5px 4px;border:1px solid #1E3A5F;text-align:center;vertical-align:top;white-space:nowrap;">${i + 1}</td>
       <td style="padding:5px 8px;border:1px solid #1E3A5F;text-align:center;font-weight:normal;vertical-align:top;">${item.kode}</td>
       <td style="padding:5px 8px;border:1px solid #1E3A5F;text-align:left;vertical-align:top;">${item.tp}</td>
       <td style="padding:5px 8px;border:1px solid #1E3A5F;text-align:left;vertical-align:top;">${item.mp || " - "}</td>
-      <td style="padding:5px 8px;border:1px solid #1E3A5F;text-align:left;vertical-align:top;">${asesmenText}</td>
-      <td style="padding:5px 8px;border:1px solid #1E3A5F;text-align:left;vertical-align:top;white-space:nowrap;">${fmtRange(item.tMul, item.tSel)}</td>
+      <td style="padding:5px 6px;border:1px solid #1E3A5F;text-align:center;vertical-align:top;white-space:nowrap;">${pertemuanCount}</td>
+      <td style="padding:5px 8px;border:1px solid #1E3A5F;text-align:center;vertical-align:top;white-space:nowrap;">${asesmenText}</td>
+      <td style="padding:5px 8px;border:1px solid #1E3A5F;text-align:left;vertical-align:top;">${tanggalCellHtml}</td>
     </tr>`;
             },
           )
@@ -9228,12 +10235,13 @@ function toggleSidebar() {
     <table style="width:100%;border-collapse:collapse;font-size:var(--fs);margin-bottom:0;">
       <thead>
         <tr>
-          <th style="background:#BDD7EE;color:#000;padding:6px 8px;border:1px solid #1E3A5F;font-weight:700;text-align:center;width:36px;">No.</th>
-          <th style="background:#BDD7EE;color:#000;padding:6px 8px;border:1px solid #1E3A5F;font-weight:700;text-align:center;width:72px;">Kode TP</th>
+          <th style="background:#BDD7EE;color:#000;padding:6px 4px;border:1px solid #1E3A5F;font-weight:700;text-align:center;width:40px;min-width:40px;white-space:nowrap;">No.</th>
+          <th style="background:#BDD7EE;color:#000;padding:6px 8px;border:1px solid #1E3A5F;font-weight:700;text-align:center;width:65px;min-width:60px;">Kode TP</th>
           <th style="background:#BDD7EE;color:#000;padding:6px 8px;border:1px solid #1E3A5F;font-weight:700;text-align:center;">Alur Tujuan Pembelajaran</th>
-          <th style="background:#BDD7EE;color:#000;padding:6px 8px;border:1px solid #1E3A5F;font-weight:700;text-align:center;width:180px;">Materi</th>
-          <th style="background:#BDD7EE;color:#000;padding:6px 8px;border:1px solid #1E3A5F;font-weight:700;text-align:center;width:85px;">Asesmen</th>
-          <th style="background:#BDD7EE;color:#000;padding:6px 8px;border:1px solid #1E3A5F;font-weight:700;text-align:center;width:120px;">Tanggal</th>
+          <th style="background:#BDD7EE;color:#000;padding:6px 8px;border:1px solid #1E3A5F;font-weight:700;text-align:center;width:170px;">Materi</th>
+          <th style="background:#BDD7EE;color:#000;padding:6px 6px;border:1px solid #1E3A5F;font-weight:700;text-align:center;width:75px;min-width:70px;white-space:nowrap;">Jml Pertemuan</th>
+          <th style="background:#BDD7EE;color:#000;padding:6px 8px;border:1px solid #1E3A5F;font-weight:700;text-align:center;width:80px;white-space:nowrap;">Asesmen</th>
+          <th style="background:#BDD7EE;color:#000;padding:6px 8px;border:1px solid #1E3A5F;font-weight:700;text-align:center;width:220px;min-width:200px;">Tanggal Pelaksanaan</th>
         </tr>
       </thead>
       <tbody>
@@ -9386,21 +10394,74 @@ function toggleSidebar() {
         return (arr || []).filter(p => p.active !== false).reduce((sum, p) => sum + (parseFloat(p.bobot) || 0), 0);
       }
 
-      function updateBobotPenilaian(sem, idx, val) {
+      function updatePengaturanPenilaianSummary(sem) {
+        const totalBobot = calculateTotalBobot(sem);
+        const semName = sem === 1 ? "Ganjil" : "Genap";
+
+        const bannerEl = document.getElementById(`pp-status-banner-${sem}`);
+        if (bannerEl) {
+          if (totalBobot === 100) {
+            bannerEl.innerHTML = `
+              <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(34,197,94,0.12); border:1px solid #22c55e; color:#166534; padding:10px 14px; border-radius:8px; font-size:13px; font-weight:500;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <i class="material-symbols-rounded" style="font-size:20px; color:#22c55e;" data-lucide="check-circle"></i>
+                  <span>Total bobot komponen aktif Semester ${semName}: <b>100%</b> (Tepat &amp; Sesuai Standar Penilaian).</span>
+                </div>
+                <span style="background:#22c55e; color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px;">Valid 100%</span>
+              </div>
+            `;
+          } else {
+            const diffText = totalBobot < 100 ? `Kurang ${(100 - totalBobot).toFixed(0)}%` : `Kelebihan ${(totalBobot - 100).toFixed(0)}%`;
+            bannerEl.innerHTML = `
+              <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(239,68,68,0.1); border:1px solid #ef4444; color:#991b1b; padding:10px 14px; border-radius:8px; font-size:13px; font-weight:500;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <i class="material-symbols-rounded" style="font-size:20px; color:#ef4444;" data-lucide="alert-circle"></i>
+                  <span>Total bobot komponen aktif Semester ${semName}: <b>${totalBobot}%</b> (${diffText}). Total harus tepat <b>100%</b> sebelum disimpan.</span>
+                </div>
+                <span style="background:#ef4444; color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px;">${diffText}</span>
+              </div>
+            `;
+          }
+        }
+
+        const tfootEl = document.getElementById(`foot-pengaturan-penilaian-${sem}`);
+        if (tfootEl) {
+          tfootEl.innerHTML = `
+            <tr style="background: rgba(0,0,0,0.04); font-weight: 700;">
+              <td colspan="3" style="text-align: right; padding: 10px 14px; font-size: 13px; color: var(--text);">Total Bobot Komponen Aktif:</td>
+              <td style="text-align: center; padding: 10px 14px; font-size: 14px; font-weight: 700; ${totalBobot === 100 ? 'color: #16a34a;' : 'color: #dc2626;'}">
+                ${totalBobot}%
+              </td>
+              <td style="text-align: center; padding: 10px 8px;">
+                ${totalBobot === 100 
+                  ? '<span style="color:#16a34a; font-size:12px; font-weight:600; display:inline-flex; align-items:center; gap:4px;"><i class="material-symbols-rounded" style="font-size:16px;" data-lucide="check"></i> 100%</span>' 
+                  : `<span style="color:#dc2626; font-size:11px; font-weight:600; display:inline-flex; align-items:center; gap:2px;"><i class="material-symbols-rounded" style="font-size:15px;" data-lucide="alert-triangle"></i> ${totalBobot < 100 ? '-' + (100 - totalBobot) + '%' : '+' + (totalBobot - 100) + '%'}</span>`
+                }
+              </td>
+            </tr>
+          `;
+        }
+        if (typeof lucide !== "undefined") lucide.createIcons();
+      }
+
+      function updateBobotPenilaian(sem, idx, val, isLiveInput = false) {
         const targetKey = sem === 1 ? "pengaturanPenilaianGanjil" : "pengaturanPenilaianGenap";
         if (state[targetKey] && state[targetKey][idx]) {
-          const numVal = parseFloat(val);
-          state[targetKey][idx].bobot = isNaN(numVal) ? 0 : Math.max(0, numVal);
-          renderPengaturanPenilaian();
-          renderNilai(1);
-          renderNilai(2);
-          const total = calculateTotalBobot(sem);
-          if (total === 100) {
-            scheduleSave();
-            markDirty();
+          let numVal = parseFloat(val);
+          if (isNaN(numVal)) numVal = 0;
+          numVal = Math.max(0, Math.min(100, numVal));
+          state[targetKey][idx].bobot = numVal;
+          if (isLiveInput) {
+            updatePengaturanPenilaianSummary(sem);
           } else {
-            markDirty();
+            renderPengaturanPenilaian();
           }
+          if (typeof renderNilai === "function") {
+            renderNilai(1);
+            renderNilai(2);
+          }
+          scheduleSave();
+          markDirty();
         }
       }
 
@@ -9411,13 +10472,8 @@ function toggleSidebar() {
           renderPengaturanPenilaian();
           renderNilai(1);
           renderNilai(2);
-          const total = calculateTotalBobot(sem);
-          if (total === 100) {
-            scheduleSave();
-            markDirty();
-          } else {
-            markDirty();
-          }
+          scheduleSave();
+          markDirty();
         }
       }
 
@@ -9466,40 +10522,8 @@ function toggleSidebar() {
             sem === 1
               ? state.pengaturanPenilaianGanjil
               : state.pengaturanPenilaianGenap;
-          const targetKey =
-            sem === 1
-              ? "pengaturanPenilaianGanjil"
-              : "pengaturanPenilaianGenap";
 
-          const totalBobot = calculateTotalBobot(sem);
-          const semName = sem === 1 ? "Ganjil" : "Genap";
-
-          // Update status indicator banner if exists
-          const bannerEl = document.getElementById(`pp-status-banner-${sem}`);
-          if (bannerEl) {
-            if (totalBobot === 100) {
-              bannerEl.innerHTML = `
-                <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(34,197,94,0.12); border:1px solid #22c55e; color:#166534; padding:10px 14px; border-radius:8px; font-size:13px; font-weight:500;">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <i class="material-symbols-rounded" style="font-size:20px; color:#22c55e;" data-lucide="check-circle"></i>
-                    <span>Total bobot komponen aktif Semester ${semName}: <b>100%</b> (Tepat &amp; Sesuai Standar Penilaian).</span>
-                  </div>
-                  <span style="background:#22c55e; color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px;">Valid 100%</span>
-                </div>
-              `;
-            } else {
-              const diffText = totalBobot < 100 ? `Kurang ${(100 - totalBobot).toFixed(0)}%` : `Kelebihan ${(totalBobot - 100).toFixed(0)}%`;
-              bannerEl.innerHTML = `
-                <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(239,68,68,0.1); border:1px solid #ef4444; color:#991b1b; padding:10px 14px; border-radius:8px; font-size:13px; font-weight:500;">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <i class="material-symbols-rounded" style="font-size:20px; color:#ef4444;" data-lucide="alert-circle"></i>
-                    <span>Total bobot komponen aktif Semester ${semName}: <b>${totalBobot}%</b> (${diffText}). Total harus tepat <b>100%</b> sebelum disimpan.</span>
-                  </div>
-                  <span style="background:#ef4444; color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px;">${diffText}</span>
-                </div>
-              `;
-            }
-          }
+          updatePengaturanPenilaianSummary(sem);
 
           const tbodyEl = document.getElementById(`body-pengaturan-penilaian-${sem}`);
           if (tbodyEl) {
@@ -9528,7 +10552,7 @@ function toggleSidebar() {
           </td>
           <td class="td-ctr">
             <div style="display:flex; align-items:center; justify-content:center; gap:4px;">
-              <input type="number" min="0" max="100" style="width:70px; text-align:center;" value="${p.bobot}" placeholder="Bobot" onchange="updateBobotPenilaian(${sem}, ${i}, this.value)">
+              <input type="number" min="0" max="100" style="width:70px; text-align:center;" value="${p.bobot}" placeholder="Bobot" oninput="updateBobotPenilaian(${sem}, ${i}, this.value, true)" onchange="updateBobotPenilaian(${sem}, ${i}, this.value, false)">
               <span style="font-weight:600; font-size:13px; color:var(--text-light);">%</span>
             </div>
           </td>
@@ -9550,25 +10574,6 @@ function toggleSidebar() {
                 }
               )
               .join("");
-          }
-
-          // Render tfoot with summary
-          const tfootEl = document.getElementById(`foot-pengaturan-penilaian-${sem}`);
-          if (tfootEl) {
-            tfootEl.innerHTML = `
-              <tr style="background: rgba(0,0,0,0.04); font-weight: 700;">
-                <td colspan="3" style="text-align: right; padding: 10px 14px; font-size: 13px; color: var(--text);">Total Bobot Komponen Aktif:</td>
-                <td style="text-align: center; padding: 10px 14px; font-size: 14px; font-weight: 700; ${totalBobot === 100 ? 'color: #16a34a;' : 'color: #dc2626;'}">
-                  ${totalBobot}%
-                </td>
-                <td style="text-align: center; padding: 10px 8px;">
-                  ${totalBobot === 100 
-                    ? '<span style="color:#16a34a; font-size:12px; font-weight:600; display:inline-flex; align-items:center; gap:4px;"><i class="material-symbols-rounded" style="font-size:16px;" data-lucide="check"></i> 100%</span>' 
-                    : `<span style="color:#dc2626; font-size:11px; font-weight:600; display:inline-flex; align-items:center; gap:2px;"><i class="material-symbols-rounded" style="font-size:15px;" data-lucide="alert-triangle"></i> ${totalBobot < 100 ? '-' + (100 - totalBobot) + '%' : '+' + (totalBobot - 100) + '%'}</span>`
-                  }
-                </td>
-              </tr>
-            `;
           }
         };
         renderForSem(1);
@@ -13654,6 +14659,21 @@ function toggleSidebar() {
             });
           }
 
+          // Jurnal Specific Adjustments: Ensure header has proper light background and explicitly black text
+          if (type === "jurnal-1" || type === "jurnal-2") {
+            clone.querySelectorAll("table").forEach((tbl) => {
+              tbl.querySelectorAll("th").forEach((th) => {
+                th.setAttribute("bgcolor", "#BDD7EE");
+                th.style.backgroundColor = "#BDD7EE";
+                th.style.color = "#000000";
+                th.style.cssText += "; background-color: #BDD7EE !important; background: #BDD7EE !important; mso-pattern: auto none; mso-shading: #BDD7EE; color: #000000 !important; font-weight: bold; text-align: center;";
+                th.querySelectorAll("*").forEach((c) => {
+                  c.style.color = "#000000";
+                });
+              });
+            });
+          }
+
           // Ensure all data tables have explicit Word-friendly border, zero paragraph spacing, single line-height, and minimal list indentation
           clone.querySelectorAll("table").forEach((tbl) => {
             if (tbl.classList.contains("sign-table-doc") || tbl.classList.contains("doc-meta-doc-tbl")) {
@@ -13700,12 +14720,15 @@ function toggleSidebar() {
             // Format cells
             tbl.querySelectorAll("th, td").forEach((cell) => {
               const isTh = cell.tagName.toLowerCase() === "th";
-              const isDarkHeader = isTh && (
+              const isJurnal = type === "jurnal-1" || type === "jurnal-2";
+              const styleAttr = cell.getAttribute("style") || "";
+              const hasDarkBg = !isJurnal && (
+                /background(-color)?\s*:\s*(#1E3A5F|rgb\(30,\s*58,\s*95\))/i.test(styleAttr) ||
                 cell.style.backgroundColor === "#1E3A5F" ||
-                (cell.getAttribute("style") || "").includes("#1E3A5F") ||
                 cell.getAttribute("bgcolor") === "#1E3A5F"
               );
-              const cellColor = isDarkHeader ? "#ffffff" : "#000000";
+              const isDarkHeader = isTh && hasDarkBg;
+              const cellColor = (isJurnal && isTh) ? "#000000" : (isDarkHeader ? "#ffffff" : "#000000");
 
               cell.style.fontFamily = "'Times New Roman', serif";
               cell.style.fontSize = isDense ? "9.5pt" : "11pt";
@@ -13715,15 +14738,23 @@ function toggleSidebar() {
               cell.style.color = cellColor;
               cell.style.verticalAlign = isTh ? "middle" : "top";
 
+              // Clean any existing conflicting color in style attribute before appending explicit color
+              let cleanStyle = cell.getAttribute("style") || "";
+              if (isJurnal && isTh) {
+                cleanStyle = cleanStyle.replace(/color\s*:\s*[^;]+;?/gi, "");
+              }
+
               cell.setAttribute(
                 "style",
-                (cell.getAttribute("style") || "") +
+                cleanStyle +
                   `; padding: ${isDense ? "0.5pt 2pt" : "0.75pt 3pt"} !important; mso-padding-alt: ${isDense ? "0.5pt 1.5pt 0.5pt 1.5pt" : "0.75pt 2.5pt 0.75pt 2.5pt"} !important; font-size: ${isDense ? "9.5pt" : "11pt"} !important; font-family: 'Times New Roman', serif !important; line-height: 1.0 !important; mso-line-height-rule: exactly !important; margin: 0 !important; mso-margin-top-alt: 0pt !important; mso-margin-bottom-alt: 0pt !important; color: ${cellColor} !important;`
               );
 
               // Clear any accidental white text on child elements inside cells
               cell.querySelectorAll("p, span, div, b, strong, i, em, li, ul, ol").forEach((child) => {
-                if (child.style && child.style.color) {
+                if (isJurnal && isTh) {
+                  child.style.color = "#000000";
+                } else if (child.style && child.style.color) {
                   if (child.style.color === "rgb(255, 255, 255)" || child.style.color === "#ffffff" || child.style.color === "#fff") {
                     child.style.color = cellColor;
                   }
@@ -14000,6 +15031,7 @@ xmlns="http://www.w3.org/TR/REC-html40">
   }
   th {
     background-color: #f2f2f2 !important;
+    color: #000000 !important;
     font-weight: bold;
     text-align: center;
     font-size: ${isDense ? "9.5pt" : "11pt"};
@@ -14258,8 +15290,8 @@ xmlns="http://www.w3.org/TR/REC-html40">
         .printing .kal-outer { padding:0; }
         .printing .kal-legend { display:none!important; }
         .printing .kal-notes-legend { display:none!important; }
-        .printing #kal-title-header { display: block !important; margin-bottom: 8px !important; }
-        .printing #kal-title-header div { font-size: 11pt !important; line-height: 1.3 !important; color: #000000 !important; }
+        .printing #kal-title-header { display: block !important; margin-bottom: 12px !important; padding-bottom: 6px !important; border-bottom: 1pt solid #254b77 !important; }
+        .printing #kal-title-header div { font-size: 11pt !important; line-height: 1.3 !important; color: #0f172a !important; font-weight: 800 !important; text-transform: uppercase !important; letter-spacing: 0.5px !important; }
         #kal-print-footer-wrap { display:none; }
         .printing #kal-print-footer-wrap { display:block!important; }
         .printing .kal-tbl thead { display:table-row-group!important; }
@@ -15526,6 +16558,7 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "fi",
   "findUserKey",
   "fmtD",
+  "fmtJurnalDate",
   "fmtNoteDate",
   "fmtNoteDateShort",
   "fmtRange",
@@ -15715,6 +16748,26 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "updateProsemJpVisibility",
   "updateTP",
   "updateTPStatsOnly",
+  "autoUrutKodeTP",
+  "detectTPPrefixStyle",
+  "formatTPKode",
+  "handleTPRowDragEnd",
+  "handleTPRowDragEnter",
+  "handleTPRowDragLeave",
+  "handleTPRowDragOver",
+  "handleTPRowDragStart",
+  "handleTPRowDrop",
+  "isAutoUrutKodeTPEnabled",
+  "isEvalRow",
+  "openModalUrutKodeTP",
+  "pindahSemesterTP",
+  "terapkanUrutKodeTPModal",
+  "toggleAutoUrutKodeTP",
+  "tutupModalUrutKodeTP",
+  "clearAtpRows",
+  "clearAllAtpTP",
+  "updateAutoUrutCheckboxes",
+  "updateModalUrutPreview",
 ].forEach((fnName) => {
   try {
     const fn = eval(fnName);
