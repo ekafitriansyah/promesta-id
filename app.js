@@ -9015,7 +9015,7 @@ function toggleSidebar() {
           toggleSidebar();
         }
 
-        const outputTabs = ["kalender", "atp", "rpe", "jurnal", "prota", "prosem", "absensi", "kktp", "nilai"];
+        const outputTabs = ["kalender", "atp", "rpe", "jurnal", "prota", "prosem", "absensi", "kktp", "nilai", "ekstra-ai"];
         if (outputTabs.includes(id) && (!isGenerated || (typeof isGenerated !== "undefined" && !isGenerated))) {
           id = "data-umum";
         }
@@ -9042,6 +9042,9 @@ function toggleSidebar() {
           if (id === "atp") {
             const du = typeof getDU === "function" ? getDU() : {};
             renderATP(du);
+          }
+          if (id === "ekstra-ai") {
+            renderEkstraAIPage();
           }
           if (id === "prosem") {
             updateProsemJpVisibility();
@@ -9589,6 +9592,1761 @@ function toggleSidebar() {
         markDirty();
       }
 
+      // ============================================================
+      // DATA LENGKAP TP & GENERATOR PROMPT AI LESSON PLAN
+      // ============================================================
+      function copyTextToClipboard(text, onSuccess, onError) {
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text).then(() => {
+            if (onSuccess) onSuccess();
+          }).catch(() => {
+            fallbackCopyText(text, onSuccess, onError);
+          });
+        } else {
+          fallbackCopyText(text, onSuccess, onError);
+        }
+      }
+
+      function fallbackCopyText(text, onSuccess, onError) {
+        try {
+          const textArea = document.createElement("textarea");
+          textArea.value = text;
+          textArea.style.position = "fixed";
+          textArea.style.left = "-999999px";
+          textArea.style.top = "-999999px";
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          const successful = document.execCommand("copy");
+          textArea.remove();
+          if (successful) {
+            if (onSuccess) onSuccess();
+          } else {
+            if (onError) onError();
+          }
+        } catch (err) {
+          if (onError) onError(err);
+        }
+      }
+
+      function findCPForTP(tpText) {
+        if (!state.atpData || state.atpData.length === 0 || !tpText) return null;
+        const clean = String(tpText).trim().toLowerCase();
+
+        // 1. Exact match in row.tp
+        for (const el of state.atpData) {
+          if (el.rows && el.rows.length > 0) {
+            for (const row of el.rows) {
+              if (row.tp && String(row.tp).trim().toLowerCase() === clean) {
+                return {
+                  elemen: el.elemen || "Capaian Pembelajaran",
+                  subElemen: el.subElemen || "",
+                  cp: el.cp || ""
+                };
+              }
+            }
+          }
+        }
+
+        // 2. Substring match
+        for (const el of state.atpData) {
+          if (el.rows && el.rows.length > 0) {
+            for (const row of el.rows) {
+              if (row.tp) {
+                const rClean = String(row.tp).trim().toLowerCase();
+                if (clean.includes(rClean) || rClean.includes(clean)) {
+                  return {
+                    elemen: el.elemen || "Capaian Pembelajaran",
+                    subElemen: el.subElemen || "",
+                    cp: el.cp || ""
+                  };
+                }
+              }
+            }
+          }
+        }
+
+        // 3. Fallback to first available element with CP
+        for (const el of state.atpData) {
+          if (el.cp && String(el.cp).trim()) {
+            return {
+              elemen: el.elemen || "Capaian Pembelajaran",
+              subElemen: el.subElemen || "",
+              cp: String(el.cp).trim()
+            };
+          }
+        }
+
+        return null;
+      }
+
+      function getTPDetailsData(sem, index = 0) {
+        const semNum = (sem === "genap" || sem === 2 || sem === "tpGenap") ? 2 : 1;
+        const semKey = semNum === 1 ? "tpGanjil" : "tpGenap";
+        const semCode = semNum === 1 ? "ganjil" : "genap";
+        const semLabel = semNum === 1 ? "Semester Ganjil" : "Semester Genap";
+        const tpArr = state[semKey] || [];
+
+        if (!tpArr || tpArr.length === 0) {
+          return null;
+        }
+
+        const safeIdx = Math.max(0, Math.min(index, tpArr.length - 1));
+        const tpItem = tpArr[safeIdx];
+        if (!tpItem) return null;
+
+        const du = typeof getDU === "function" ? getDU() : {};
+        let h = [];
+        try {
+          if (typeof buildHariEfektif === "function") {
+            h = buildHariEfektif(semNum);
+          }
+        } catch (e) {
+          console.warn("buildHariEfektif error in getTPDetailsData", e);
+        }
+
+        let dist = [];
+        try {
+          if (typeof distributeTP === "function") {
+            dist = distributeTP(tpArr, h);
+          }
+        } catch (e) {
+          console.warn("distributeTP error in getTPDetailsData", e);
+        }
+
+        const tpDist = (dist && dist[safeIdx]) ? dist[safeIdx] : tpItem;
+
+        // Build Pertemuan List
+        let pertemuanList = [];
+        if (tpDist.pertemuanList && tpDist.pertemuanList.length > 0) {
+          pertemuanList = tpDist.pertemuanList.map((p, pIdx) => {
+            const formatted = typeof fmtJurnalDate === "function"
+              ? fmtJurnalDate(p.tanggal, p.jp)
+              : `${p.tanggal} (${p.jp} JP)`;
+            return {
+              no: pIdx + 1,
+              tanggal: p.tanggal,
+              jp: p.jp,
+              formatted: formatted
+            };
+          });
+        } else if (tpDist.tMul) {
+          const formatted = typeof fmtJurnalDate === "function"
+            ? fmtJurnalDate(tpDist.tMul, tpItem.jp || 2)
+            : `${tpDist.tMul} (${tpItem.jp || 2} JP)`;
+          pertemuanList = [{
+            no: 1,
+            tanggal: tpDist.tMul,
+            jp: tpItem.jp || 2,
+            formatted: formatted
+          }];
+        }
+
+        const hasRealSchedule = pertemuanList.length > 0;
+        const jpPerMeet = (state.jadwal && state.jadwal.length > 0 && state.jadwal[0].jp) ? +state.jadwal[0].jp : 2;
+        const estimatedMeetings = Math.max(1, Math.round((tpItem.jp || 2) / Math.max(1, jpPerMeet)));
+
+        if (pertemuanList.length === 0) {
+          let remainingJP = tpItem.jp || 2;
+          for (let m = 1; m <= estimatedMeetings; m++) {
+            const meetJP = m === estimatedMeetings ? remainingJP : Math.min(jpPerMeet, remainingJP);
+            pertemuanList.push({
+              no: m,
+              tanggal: null,
+              jp: meetJP,
+              formatted: `Pertemuan ke-${m} (${meetJP} JP)`
+            });
+            remainingJP -= meetJP;
+            if (remainingJP <= 0) break;
+          }
+        }
+
+        const cpInfo = findCPForTP(tpItem.tp) || {
+          elemen: "Capaian Pembelajaran (Umum)",
+          subElemen: "",
+          cp: "Peserta didik memahami konsep esensial dan mencapai tujuan pembelajaran sesuai target fase."
+        };
+
+        const totalJP = tpItem.jp || 2;
+        const jumlahPertemuan = pertemuanList.length;
+
+        const rawGuruId = (du.guruId || "").trim();
+        const guruIdType = (du.guruIdType !== undefined && du.guruIdType !== "Tanpa ID") ? du.guruIdType : (du.guruIdType === "Tanpa ID" ? "" : "NIP");
+        const hasGuruId = !!guruIdType;
+        const guruNip = (hasGuruId && rawGuruId && rawGuruId !== "-") ? rawGuruId : "";
+        const guruIdLabel = hasGuruId ? guruIdType : "";
+        let guruTtdId = "";
+        if (guruIdType === "NIP") {
+          guruTtdId = guruNip ? `NIP. ${guruNip}` : "NIP. ....................................";
+        } else if (guruIdType === "NUPTK") {
+          guruTtdId = guruNip ? `NUPTK. ${guruNip}` : "NUPTK. ....................................";
+        }
+
+        const rawKepsekId = (du.kepsekId || "").trim();
+        const kepsekIdType = (du.kepsekIdType !== undefined && du.kepsekIdType !== "Tanpa ID") ? du.kepsekIdType : (du.kepsekIdType === "Tanpa ID" ? "" : "NIP");
+        const hasKepsekId = !!kepsekIdType;
+        const kepsekNip = (hasKepsekId && rawKepsekId && rawKepsekId !== "-") ? rawKepsekId : "";
+        const kepsekIdLabel = hasKepsekId ? kepsekIdType : "";
+        let kepsekTtdId = "";
+        if (kepsekIdType === "NIP") {
+          kepsekTtdId = kepsekNip ? `NIP. ${kepsekNip}` : "NIP. ....................................";
+        } else if (kepsekIdType === "NUPTK") {
+          kepsekTtdId = kepsekNip ? `NUPTK. ${kepsekNip}` : "NUPTK. ....................................";
+        }
+
+        const tempatStr = du.tempat || "Pontianak";
+        const tglDocStr = du.tgl ? (typeof fmtD === "function" ? fmtD(du.tgl) : du.tgl) : "13 Juli 2026";
+        const colPad = 44;
+        const padText = (s, len = colPad) => {
+          const str = s || "";
+          return str.length >= len ? str + "    " : str.padEnd(len, " ");
+        };
+        const signLine1 = padText("Mengetahui,") + `${tempatStr}, ${tglDocStr}`;
+        const signLine2 = padText("Kepala Satuan Pendidikan") + "Guru Mata Pelajaran";
+        const signLine3 = padText(du.kepsek || "-") + (du.guru || "-");
+        const signLine4 = (kepsekTtdId || guruTtdId)
+          ? (padText(kepsekTtdId || "") + (guruTtdId || ""))
+          : "";
+        const blokTandaTanganText = `${signLine1}\n${signLine2}\n\n\n\n${signLine3}${signLine4 ? "\n" + signLine4 : ""}`;
+
+        const faseClean = String(du.fase || "").trim().replace(/^Fase\s+/i, "");
+        const rombelClean = String(du.rombel || du.kelas || "").trim().replace(/^(Kelas\s*)+/i, "");
+        const faseKelasFormatted = (faseClean && rombelClean) ? `${faseClean} / ${rombelClean}` : (faseClean || rombelClean || "-");
+
+        const jenjangVal = du.jenjang || "SD";
+        const kelasFormatted = rombelClean || (typeof formatKelas === "function" ? formatKelas(du.kelas) : (du.kelas || "-"));
+        const jenjangKelas = `${jenjangVal} / ${kelasFormatted}`;
+
+        return {
+          semNum,
+          semKey,
+          semCode,
+          isGanjil: semNum === 1,
+          isGenap: semNum === 2,
+          semLabel,
+          index: safeIdx,
+          totalCount: tpArr.length,
+          allTPs: tpArr,
+
+          // Identitas
+          sekolah: du.sekolah || "-",
+          mapel: du.mapel || "-",
+          jenjang: jenjangVal,
+          kelas: rombelClean || kelasFormatted,
+          jenjangKelas,
+          fase: faseClean || du.fase || "-",
+          faseKelas: faseKelasFormatted,
+          semesterText: semNum === 1 ? "1 (Ganjil)" : "2 (Genap)",
+          tahun: du.tahun || "-",
+          guru: du.guru || "-",
+          guruIdType,
+          guruIdLabel,
+          nipGuru: guruNip,
+          guruTtdId,
+          kepsek: du.kepsek || "-",
+          kepsekIdType,
+          kepsekIdLabel,
+          nipKepsek: kepsekNip,
+          kepsekTtdId,
+          blokTandaTangan: blokTandaTanganText,
+          tempat: tempatStr,
+          tanggalDokumen: tglDocStr,
+          jpPerPekan: state.jadwal ? state.jadwal.reduce((s, j) => s + (+j.jp || 0), 0) : 0,
+
+          // CP & TP
+          elemen: cpInfo.elemen || "-",
+          subElemen: cpInfo.subElemen || "",
+          cp: cpInfo.cp || "-",
+          kode: tpItem.kode || `TP ${safeIdx + 1}`,
+          tp: tpItem.tp || "-",
+          mp: tpItem.mp || "-",
+          bab: tpItem.bab || "",
+          isSumatif: !!tpItem.ev || /sumatif/i.test(tpItem.tp || ""),
+
+          // JP & Pertemuan
+          totalJP,
+          jumlahPertemuan,
+          hasRealSchedule,
+          pertemuanList,
+
+          // KKTP
+          kktpList: (() => {
+            const rawKktp = (state.kktp && state.kktp.length > 0) ? state.kktp : (DEFAULT_STATE.kktp || [
+              { val: "0 - 40", desc: "Belum Mencapai, remedial di seluruh bagian" },
+              { val: "41 - 65", desc: "Belum Mencapai Ketuntasan, remedial di bagian yang diperlukan" },
+              { val: "66 - 85", desc: "Sudah Mencapai Ketuntasan, tidak perlu remedial" },
+              { val: "86 - 100", desc: "Sangat Baik, perlu pengayaan atau tantangan lebih" }
+            ]);
+            return rawKktp.map((k, idx) => {
+              let kat = k.kategori || "";
+              if (!kat) {
+                const descLower = (k.desc || "").toLowerCase();
+                if (descLower.includes("sangat baik") || idx === 3) {
+                  kat = "Sangat Baik (Mahir)";
+                } else if (descLower.includes("sudah mencapai") || descLower.includes("tidak perlu remedial") || idx === 2) {
+                  kat = "Baik (Tuntas)";
+                } else if (descLower.includes("belum mencapai ketuntasan") || idx === 1) {
+                  kat = "Cukup (Belum Tuntas)";
+                } else if (descLower.includes("belum mencapai") || idx === 0) {
+                  kat = "Perlu Bimbingan (Belum Tuntas)";
+                } else {
+                  kat = `Kategori ${idx + 1}`;
+                }
+              }
+              return {
+                val: k.val || "",
+                desc: k.desc || "",
+                kategori: kat
+              };
+            });
+          })(),
+          get kktpText() {
+            return this.kktpList.map((k, idx) => `  * Rentang ${idx + 1} (${k.val}%): Kategori "${k.kategori}" — Keterangan: ${k.desc}`).join("\n");
+          },
+          get kktpInline() {
+            return this.kktpList.map(k => `${k.val}% [Kategori: ${k.kategori}] (${k.desc})`).join("; ");
+          }
+        };
+      }
+
+      function generateAIPromptText(data, formatType = "rpm-lengkap") {
+        if (!data) return "";
+
+        const rincianText = data.pertemuanList.map((p) => {
+          if (p.tanggal) {
+            return `  * Pertemuan ${p.no}: ${p.formatted} (${p.jp} JP)`;
+          } else {
+            return `  * Pertemuan ${p.no}: ${p.jp} JP (Jadwal reguler pembelajaran mingguan)`;
+          }
+        }).join("\n");
+
+        const normalizedFormat = (formatType === "lengkap" || formatType === "rpm-lengkap") ? "rpm-lengkap"
+          : (formatType === "ringkas" || formatType === "rpm-ringkas") ? "rpm-ringkas"
+          : formatType;
+
+        // 1. FORMAT: RPM LENGKAP + INSTRUMEN (Pembelajaran Mendalam)
+        if (normalizedFormat === "rpm-lengkap") {
+          return `Bertindaklah sebagai asisten ahli penyusun Rencana Pembelajaran Mendalam (RPM) Kurikulum Merdeka untuk guru di Indonesia.
+Dokumen yang Anda hasilkan harus SIAP PAKAI (bahasa Indonesia baku, format administrasi sekolah rapi persis seperti template resmi, komprehensif, bukan draf/outline, font Times New Roman 12pt jika diekspor ke Word).
+
+Berikut adalah FORM ISIAN RESMI yang telah terisi 100% lengkap dan akurat dari basis data kurikulum sekolah saya:
+
+══════════════════════════════════════════════════════════
+HEADER IDENTITAS (DATA RESMI SEKOLAH)
+══════════════════════════════════════════════════════════
+RENCANA PEMBELAJARAN MENDALAM
+Satuan Pendidikan : ${data.sekolah}
+Mata Pelajaran    : ${data.mapel}
+Fase/Kelas        : ${data.faseKelas}
+Semester          : ${data.semesterText}
+Tahun Ajaran      : ${data.tahun}
+Materi Pokok      : ${data.mp}${data.bab ? ' (Bab: ' + data.bab + ')' : ''}
+Alokasi Waktu     : ${data.totalJP} JP (${data.jumlahPertemuan} kali pertemuan)
+*(Catatan: Nama guru pengampu tidak dicantumkan pada header identitas, melainkan dicantumkan pada Blok Tanda Tangan sebelum Lampiran).*
+
+Capaian Pembelajaran (CP) [Elemen: ${data.elemen}${data.subElemen ? ' | Sub: ' + data.subElemen : ''}]:
+"${data.cp}"
+
+Tujuan Pembelajaran (TP):
+[${data.kode}] ${data.tp}
+
+Rincian Jadwal Distribusi Pertemuan (${data.jumlahPertemuan} Sesi Pertemuan Riil):
+${rincianText}
+
+Kriteria Ketercapaian Tujuan Pembelajaran (KKTP) Satuan Pendidikan:
+${data.kktpText}
+
+Komponen Pilihan:
+[x] A.1 Peserta Didik & A.2 Materi Pelajaran
+[x] A.3 8 Dimensi Profil Lulusan Resmi (Checkbox: font Wingdings 254 untuk simbol cek box, font Wingdings 168 untuk simbol box kosong)
+[x] B.2 Lintas Disiplin Ilmu (STEM/Interdisipliner)
+[x] B.5 Praktik Pedagogis (1 Model Utama Bersintaks Resmi)
+[x] B.6 Kemitraan Pembelajaran & B.7 Lingkungan Belajar
+[x] B.8 Pemanfaatan Digital
+[x] C. Pengalaman Belajar 3 Tahap (Memahami - Mengaplikasi - Merefleksi) & Wajib Memilih Prinsip Relevan (Berkesadaran, Bermakna, dan/atau Menggembirakan) di Tiap Langkah (Awal, Inti, Penutup)
+[x] D. Asesmen 3 Tahap (Awal, Proses per Pertemuan, Akhir) & Rubrik Ketercapaian TP (KKTP) Sesuai Rentang Interval dan Kategori Resmi Sekolah (${data.kktpInline})
+[x] Header Identitas Dokumen: Format Tabel 3 Kolom dengan Hidden Borderline (Kolom 1: Label, Kolom 2: ":", Kolom 3: Info Data)
+[x] Blok Tanda Tangan: Format Tabel 3 Kolom dengan Hidden Borderline (Kolom 1: Kepala Sekolah, Kolom 2: Kosong Pengatur Jarak, Kolom 3: Guru Mata Pelajaran)
+[x] Format Dokumen docx: Seluruh Tabel Wajib "Autofit to window" (ngepas ke lebar halaman docx dan rapi) & Tata Letak "Satu Halaman Satu Lampiran" (jangan digabung satu halaman lebih dari satu lampiran, wajib Page Break)
+[x] Lampiran Lengkap: Kisi-kisi Asesmen, Naskah Instrumen Asesmen Riil (disajikan langsung setelah kisi-kisi), LKPD Kontekstual, Instrumen Non-Tes, dan Rubrik Analitik
+
+══════════════════════════════════════════════════════════
+ALUR KERJA WAJIB (URUTAN TIDAK BOLEH DILOMPAT):
+══════════════════════════════════════════════════════════
+1. Kumpulkan & gunakan info dasar dari FORM ISIAN di atas (sudah terisi 100% lengkap & akurat dari data kurikulum sekolah).
+2. Status CP & TP sudah terisi pasti: gunakan teks CP dan target TP [${data.kode}] apa adanya.
+3. Dimensi Profil Lulusan: Pilih beberapa dimensi (2-4 dimensi) dari 8 dimensi resmi Kementerian Pendidikan Dasar dan Menengah RI yang paling selaras dengan target TP dan aktivitas (jangan memilih ke-8 dimensi sekaligus). Format penandaan WAJIB menggunakan simbol checkbox: font Wingdings 254 (simbol ) untuk simbol cek box pada dimensi terpilih, dan font Wingdings 168 (simbol ) untuk simbol box kosong pada dimensi yang tidak terpilih.
+4. Model Pembelajaran: Pilih SATU model pembelajaran utama bersintaks baku menggunakan panduan BAGIAN C di bawah.
+5. Pengalaman Belajar: Susun alur untuk seluruh pertemuan (${data.jumlahPertemuan} sesi pertemuan riil) mengikuti sintaks model terpilih yang dipetakan ke 3 tahap (Memahami - Mengaplikasi - Merefleksi).
+   * ATURAN WAJIB PEMILIHAN PRINSIP: Di setiap langkah pembelajaran pada tiap pertemuan—baik Kegiatan Awal, Kegiatan Inti, maupun Kegiatan Penutup—AI WAJIB memilih salah satu atau beberapa yang paling relevan dengan konteks kegiatan dari 3 prinsip: Berkesadaran, Bermakna, dan/atau Menggembirakan. Tuliskan prinsip terpilih tersebut dalam tanda kurung di samping nama langkah kegiatan, contoh: Kegiatan Awal (Berkesadaran), Kegiatan Inti (Bermakna, Menggembirakan), Kegiatan Penutup (Berkesadaran, Bermakna), dan sebagainya. Terapkan diferensiasi pembelajaran (BAGIAN F).
+6. Asesmen Pembelajaran: Susun asesmen 3 tahap (Awal, Proses per Pertemuan, Akhir) menggunakan panduan BAGIAN D dan susun rubrik KKTP konkret dengan WAJIB MENGGUNAKAN DATA RENTANG KKTP DAN KETERANGAN/KATEGORINYA RESMI SEKOLAH di atas (${data.kktpInline}) (BAGIAN E). Seluruh deskriptor ketercapaian dan rekomendasi tindak lanjut intervensi/remedial/pengayaan wajib diturunkan secara presisi dari rentang dan kategori tersebut agar hasil generate RPM sesuai. Dilarang keras membuat rentang angka rekaan sendiri!
+7. Blok Tanda Tangan: Cantumkan blok tanda tangan resmi Kepala Satuan Pendidikan dan Guru Mata Pelajaran lengkap dengan titimangsa sebelum bagian Lampiran. Wajib disajikan dalam format TABEL 3 KOLOM DENGAN HIDDEN BORDERLINE (Kolom 1: Kepala Sekolah, Kolom 2: Kosong Pengatur Jarak, Kolom 3: Guru Mata Pelajaran).
+8. Lampiran Instrumen Lengkap (BAGIAN E2): WAJIB susun naskah butir instrumen asesmen nyata secara utuh tepat setelah tabel kisi-kisi (bukan hanya tabel kisi-kisi atau placeholder), LKPD kontekstual sesuai sintaks model, instrumen non-tes, dan rubrik per instrumen. TERAPKAN ATURAN WAJIB DOKUMEN DOCX:
+   * TABEL IDENTITAS 3 KOLOM (HIDDEN BORDERLINES): Bagian Identitas Pembelajaran pada output dokumen WAJIB disajikan menggunakan tabel 3 kolom yang dihidden garis batasnya (borderless / hidden borderline). Tiga kolom masing-masing untuk Label (Kolom 1), ":" (Kolom 2), dan Info / Nilai Data (Kolom 3).
+   * TABEL BLOK TANDA TANGAN 3 KOLOM (HIDDEN BORDERLINES): Bagian Blok Tanda Tangan pada dokumen output WAJIB disajikan menggunakan tabel 3 kolom yang dihidden garis batasnya (borderless / hidden borderline): Kolom kiri (Kolom 1) untuk Kepala Satuan Pendidikan, Kolom tengah (Kolom 2) kosong tanpa teks untuk mengatur jarak pemisah yang rapi, dan Kolom kanan (Kolom 3) untuk Guru Mata Pelajaran lengkap dengan titimangsa (tempat & tanggal).
+   * TABEL DOCX WAJIB "AUTOFIT TO WINDOW": Tabel di dokumen docx wajib "Autofit to window" agar ngepas ke lebar halaman docx nya dan tabelnya jadi rapi (tidak terpotong atau melebar keluar margin).
+   * SATU HALAMAN SATU LAMPIRAN: Instruksikan dan terapkan secara tegas: satu halaman satu lampiran, jangan digabung satu halaman ada lebih dari satu lampiran! Wajib sertakan pemisah halaman (Page Break / Halaman Baru) sebelum setiap judul lampiran baru (Lampiran 1 s.d. Lampiran 5).
+9. Rangkai jadi satu dokumen utuh mengikuti STRUKTUR RESMI DOKUMEN RPM (Header, Bagian A-D, Blok Tanda Tangan, dan Lampiran) dan verifikasi kesesuaiannya dengan 7 Pola Acuan Resmi di BAGIAN G.
+
+══════════════════════════════════════════════════════════
+PRINSIP KONSISTENSI YANG HARUS DIJAGA:
+══════════════════════════════════════════════════════════
+- Keselarasan CP → TP → Model → Pengalaman Belajar → Asesmen harus mengalir dari satu benang merah yang sama.
+- Satu model pembelajaran utama per RPM (bukan dicampur). Metode (diskusi, tanya jawab, eksperimen) hanya elemen pendukung di dalam model, bukan pengganti model.
+- Sintaks di Pengalaman Belajar harus sama persis dengan sintaks resmi model yang disebut di Praktik Pedagogis.
+- PENEGASAN: "Pembelajaran Mendalam" BUKAN nama model, melainkan pendekatan/payung filosofis dengan 3 prinsip (Berkesadaran, Bermakna, Menggembirakan). Jangan pernah menulis "model pembelajaran deep learning".
+- Integrasi 3 Prinsip di Setiap Langkah: AI WAJIB memilih salah satu atau kombinasi yang paling relevan dari prinsip Berkesadaran, Bermakna, dan/atau Menggembirakan di tiap langkah pembelajaran (Kegiatan Awal, Kegiatan Inti, Kegiatan Penutup) sesuai konteks aktivitas nyata, bukan sekadar menulis label statis yang seragam.
+- Dimensi Profil Lulusan harus konsisten dengan model (mis. dimensi Kolaborasi idealnya disertai model kooperatif/kelompok).
+- Kerumitan bahasa & aktivitas menyesuaikan fase & rombel peserta didik (${data.faseKelas}).
+- Kepatuhan Rentang KKTP Resmi & Kategori: Rubrik Kriteria Ketercapaian Tujuan Pembelajaran (KKTP) dan tindak lanjut intervensi/pengayaan WAJIB mengikuti rentang KKTP dan keterangan/kategorinya resmi satuan pendidikan yang tercantum di formulir data di atas (${data.kktpInline}). Jangan membuat rentang angka rekaan sendiri agar hasil generate RPM dan rubriknya sesuai dengan standar sekolah!
+- Aturan Format Dokumen & Pengaturan Tabel docx:
+  * Wajib font Times New Roman 12pt untuk seluruh teks dan tabel.
+  * TABEL IDENTITAS 3 KOLOM DENGAN HIDDEN BORDERLINE: Bagian identitas pada output dokumen WAJIB menggunakan tabel 3 kolom yang dihidden borderline nya (borderless / tanpa garis tepi). Tiga kolom masing-masing untuk label (kolom 1), tanda titik dua ":" (kolom 2), dan info data (kolom 3).
+  * BLOK TANDA TANGAN 3 KOLOM DENGAN HIDDEN BORDERLINE: Blok tanda tangan pada dokumen output WAJIB menggunakan tabel 3 kolom yang dihidden borderline nya (borderless / tanpa garis tepi): Kolom kiri untuk Kepala Sekolah (Mengetahui), Kolom tengah kosong untuk mengatur jarak spasi, dan Kolom kanan untuk Guru Mata Pelajaran lengkap dengan titimangsa tempat dan tanggal.
+  * Simbol Checkbox pada Dimensi Profil Lulusan: WAJIB gunakan font Wingdings 254 (simbol ) untuk simbol cek box (dimensi terpilih), dan font Wingdings 168 (simbol ) untuk simbol box kosong (dimensi yang tidak terpilih). Dilarang memakai tanda kurung biasa seperti [x] atau [ ] pada dokumen hasil akhir.
+  * INSTRUKSI TABEL DOCX WAJIB 'AUTOFIT TO WINDOW': Seluruh tabel di dokumen docx wajib 'Autofit to window' agar ngepas ke lebar halaman docx nya dan tabelnya jadi rapi serta proporsional (lebar tabel 100% pas margin dokumen docx).
+  * INSTRUKSI HALAMAN LAMPIRAN WAJIB 'SATU HALAMAN SATU LAMPIRAN': Terapkan aturan: satu halaman satu lampiran, jangan digabung satu halaman ada lebih dari satu lampiran! Wajib sertakan pemisah halaman (Page Break) sebelum setiap nomor/judul Lampiran baru. Masing-masing lampiran (Lampiran 1 s.d. Lampiran 5) harus diawali pada halaman baru tersendiri.
+
+══════════════════════════════════════════════════════════
+STRUKTUR RESMI DOKUMEN RPM (SESUAI TEMPLATE RESMI):
+══════════════════════════════════════════════════════════
+
+### HEADER IDENTITAS
+*(WAJIB menggunakan tabel 3 kolom dengan hidden borderline: Kolom 1 untuk Label, Kolom 2 untuk ":", dan Kolom 3 untuk Info Data. Nama penyusun tidak dicantumkan pada header identitas, melainkan dicantumkan di Blok Tanda Tangan sebelum Lampiran).*
+RENCANA PEMBELAJARAN MENDALAM
+Satuan Pendidikan : ${data.sekolah}
+Mata Pelajaran    : ${data.mapel}
+Fase/Kelas        : ${data.faseKelas}
+Semester          : ${data.semesterText}
+Tahun Ajaran      : ${data.tahun}
+Materi Pokok      : ${data.mp}${data.bab ? ' (Bab: ' + data.bab + ')' : ''}
+Alokasi Waktu     : ${data.totalJP} JP (${data.jumlahPertemuan} kali pertemuan)
+
+### A. IDENTIFIKASI
+1. Peserta Didik (opsional):
+   Identifikasi kesiapan peserta didik sebelum belajar: pengetahuan awal, minat, latar belakang, kebutuhan belajar, dan aspek keberagaman lainnya.
+2. Materi Pelajaran (opsional):
+   Analisis materi pelajaran: jenis pengetahuan yang akan dicapai, relevansi dengan kehidupan nyata peserta didik, tingkat kesulitan, struktur materi, serta integrasi nilai dan karakter luhur.
+3. Dimensi Profil Lulusan:
+   Sajikan dalam format daftar/tabel dengan format checkbox: font Wingdings 254 (simbol ) untuk cek box dimensi terpilih dan font Wingdings 168 (simbol ) untuk box kosong dimensi yang tidak terpilih, dari 8 dimensi profil lulusan resmi Kementerian Pendidikan Dasar dan Menengah RI ("Pembelajaran Mendalam Menuju Pendidikan Bermutu untuk Semua"):
+    Keimanan dan Ketakwaan terhadap Tuhan Yang Maha Esa — Keyakinan teguh akan keberadaan Tuhan YME, menghayati serta mengamalkan nilai-nilai spiritual dalam kehidupan sehari-hari.
+    Kewargaan — Rasa cinta tanah air, menghargai keberagaman budaya, menaati aturan/norma sosial, kepedulian dan tanggung jawab sosial, komitmen menyelesaikan masalah nyata demi harmoni kebhinekaan global.
+    Penalaran Kritis — Berpikir logis, analitis, dan reflektif dalam memahami, mengevaluasi, serta memproses informasi untuk menyelesaikan masalah.
+    Kreativitas — Berpikir inovatif, fleksibel, dan orisinal dalam mengolah ide/informasi untuk menciptakan solusi unik dan bermanfaat.
+    Kolaborasi — Bekerja sama secara efektif dengan orang lain secara gotong royong mencapai tujuan bersama melalui pembagian peran dan tanggung jawab.
+    Kemandirian — Bertanggung jawab atas proses dan hasil belajarnya sendiri, berinisiatif, mengatasi hambatan, dan menyelesaikan tugas secara tepat tanpa bergantung pada orang lain.
+    Kesehatan — Fisik prima, bugar, sehat, dan mampu menjaga keseimbangan kesehatan mental dan fisik demi kesejahteraan lahir dan batin (well-being).
+    Komunikasi — Komunikasi intrapribadi untuk refleksi dan antarpribadi untuk menyampaikan ide, gagasan, dan informasi lisan/tulisan serta berinteraksi efektif dalam berbagai situasi.
+   * Panduan Pemilihan & Format Simbol:
+     - Pilih 2-4 dimensi yang paling selaras dengan target TP dan aktivitas belajar yang dirancang.
+     - Ubah simbol box kosong (font Wingdings 168: ) menjadi simbol cek box (font Wingdings 254: ) pada dimensi terpilih.
+     - Dimensi yang tidak terpilih tetap memakai simbol box kosong (font Wingdings 168: ).
+     - Jelaskan integrasi operasional dimensi terpilih tersebut dalam pembelajaran.
+
+### B. DESAIN PEMBELAJARAN
+1. Capaian Pembelajaran (opsional):
+   Tuliskan Capaian Pembelajaran (CP) sesuai fase: [Elemen: ${data.elemen}] "${data.cp}".
+2. Lintas Disiplin Ilmu (opsional):
+   Tuliskan disiplin ilmu dan/atau mata pelajaran lain yang relevan serta keterkaitannya (termasuk orientasi STEM/interdisipliner jika relevan).
+3. Tujuan Pembelajaran:
+   Tuliskan tujuan pembelajaran yang mencakup kompetensi dan konten pada ruang lingkup materi, dengan kata kerja operasional yang relevan: [${data.kode}] ${data.tp}.
+4. Topik Pembelajaran (opsional):
+   Tuliskan topik dan sub-topik pembelajaran yang relevan dengan capaian dan tujuan pembelajaran.
+5. Praktik Pedagogis:
+   Tuliskan model/strategi/metode pembelajaran yang dipilih untuk mencapai tujuan belajar (mis. Problem Based Learning, Project Based Learning, Inkuiri, Discovery, Kontekstual, dsb.).
+   * Penegasan Resmi: Pembelajaran Mendalam dapat dilaksanakan dengan berbagai praktik pedagogis dengan menerapkan tiga prinsip (berkesadaran, bermakna, menggembirakan). Sebutkan SATU model utama bersintaks resmi didukung metode interaktif (diskusi, peta konsep, advance organiser, kerja kelompok, eksperimen).
+   * Rujukan Implementasi per Mapel:
+     - Agama: Berfokus pada pengembangan spiritual, karakter, akhlak/moral melalui penanaman nilai agama dan penerapannya sehari-hari (contoh: Experiential Learning pada isu sosial/moral).
+     - Pendidikan Pancasila: Membentuk murid jadi warga negara yang baik dan bertanggung jawab (contoh: Studi Kasus penyelesaian isu sosial/hukum/demokrasi).
+     - Matematika: Mengembangkan pola pikir logis, pemecahan masalah, analitis-komputatif (contoh: Problem Based Learning pemecahan masalah nyata kontekstual).
+     - Bahasa: Mengembangkan keterampilan komunikasi, pemahaman teks, berpikir kritis, ekspresi gagasan (contoh: Inquiry Based Learning eksplorasi bahasa & wacana).
+     - IPA: Berfokus pada pemahaman alam semesta, fenomena alam, prinsip ilmiah (contoh: Project Based Learning solusi sains & lingkungan).
+     - Ilmu Sosial: Menekankan kehidupan sosial, interaksi manusia, dinamika masyarakat (contoh: Pembelajaran Kontekstual membandingkan dinamika sosial-ekonomi nyata).
+   * Prinsip Pelaksanaan Penting: Disesuaikan dengan karakteristik mapel; sintaks model diadaptasi ke pengalaman belajar Memahami-Mengaplikasi-Merefleksi; topik dikaitkan lintas ilmu jika relevan.
+6. Kemitraan Pembelajaran (opsional):
+   Kemitraan membentuk hubungan kolaboratif memindahkan kontrol dari guru saja menjadi kolaborasi bersama:
+   - Lingkungan Sekolah: Kepala sekolah, pengawas, guru sejawat, peserta didik lain.
+   - Lingkungan Luar Sekolah: MGMP, mitra profesional, DUDIKA (dunia usaha/industri/kerja), lembaga pendidikan, media.
+   - Masyarakat: Orang tua murid, komunitas lokal, tokoh masyarakat, organisasi keagamaan/budaya.
+   * Catatan: Mitra harus benar-benar dilibatkan dalam aktivitas belajar nyata (mis. narasumber/penilai), bukan hiasan administratif.
+7. Lingkungan Pembelajaran:
+   Integrasi tiga dimensi lingkungan belajar pendukung Pembelajaran Mendalam:
+   a. Budaya Belajar: Iklim belajar yang aman, nyaman, dan saling memuliakan; memotivasi peserta didik bereksplorasi, berekspresi, dan berpendapat secara merdeka.
+   b. Ruang Fisik: Dirancang untuk interaksi langsung kondusif dan nyaman (ruang kelas, lab, perpustakaan, alam sekitar, ruang kreasi/seni/ibadah).
+   c. Ruang Virtual: Interaksi, transfer ilmu, dan asesmen fleksibel tanpa batas ruang fisik (platform daring/hybrid, media digital interaktif).
+8. Pemanfaatan Digital (opsional):
+   Pemanfaatan teknologi digital pada:
+   - Perencanaan: Kelas digital, manajemen proyek, desain bahan ajar visual/infografis, AI generatif, desain instruksional.
+   - Pelaksanaan: Pembelajaran sinkronus/asinkronus, kolaborasi daring, video edukasi, simulasi, gamifikasi interaktif.
+   - Asesmen: Kuis interaktif otomatis, asesmen formatif digital, evaluasi tulisan, portofolio digital.
+
+### C. PENGALAMAN BELAJAR (RINCIAN SELURUH PERTEMUAN: ${data.jumlahPertemuan} SESI)
+Langkah-langkah pembelajaran disusun terperinci untuk seluruh pertemuan (${data.jumlahPertemuan} sesi pertemuan riil) mengikuti alokasi JP per pertemuan.
+
+* ATURAN WAJIB PEMILIHAN PRINSIP DI SETIAP LANGKAH:
+Pada setiap langkah pembelajaran (Kegiatan Awal, Kegiatan Inti, dan Kegiatan Penutup) di setiap sesi pertemuan, AI WAJIB memilih salah satu atau beberapa yang paling relevan dengan konteks kegiatan dari 3 prinsip Pembelajaran Mendalam: Berkesadaran, Bermakna, dan/atau Menggembirakan.
+Cantumkan prinsip terpilih tersebut secara eksplisit dalam tanda kurung tepat di samping nama langkah kegiatan!
+Contoh penulisan yang valid:
+- Kegiatan Awal (Berkesadaran) ATAU Kegiatan Awal (Berkesadaran, Bermakna) ATAU Kegiatan Awal (Menggembirakan)
+- Kegiatan Inti (Bermakna, Menggembirakan) ATAU Kegiatan Inti (Berkesadaran, Bermakna) ATAU Kegiatan Inti (Berkesadaran, Bermakna, Menggembirakan)
+- Kegiatan Penutup (Berkesadaran) ATAU Kegiatan Penutup (Berkesadaran, Bermakna) ATAU Kegiatan Penutup (Menggembirakan, Berkesadaran), dsb.
+
+Sajikan per pertemuan:
+Pertemuan Pertama:
+1. Kegiatan Awal ([WAJIB pilih salah satu atau beberapa yang relevan: Berkesadaran / Bermakna / Menggembirakan]):
+   • Pembuka proses pembelajaran untuk mempersiapkan peserta didik: orientasi bermakna, apersepsi kontekstual, motivasi menggembirakan, serta 2-3 pertanyaan pemantik yang menumbuhkan rasa ingin tahu dan empati.
+2. Kegiatan Inti ([WAJIB pilih salah satu atau beberapa yang relevan: Berkesadaran / Bermakna / Menggembirakan]) — Menerapkan Sintaks Model Pembelajaran Terpilih:
+   a. Memahami:
+      • Pendalaman 3 jenis pengetahuan: Esensial (dasar fundamental keilmuan), Aplikatif (penerapan konteks nyata), Nilai dan Karakter (moral & etika).
+      • Karakteristik: Menghubungkan pengetahuan baru, menstimulasi proses berpikir kritis, kebebasan eksploratif.
+   b. Mengaplikasi (Pendalaman Pengetahuan):
+      • Memperluas pemahaman konsep ke situasi baru/nyata atau lintas disiplin ilmu; menemukan solusi inovatif.
+      • Terapkan Pembelajaran Berdiferensiasi (Diferensiasi Konten, Proses, atau Produk sesuai BAGIAN F) untuk mengakomodasi keragaman kesiapan/minat murid.
+   c. Merefleksi (Regulasi Diri):
+      • Regulasi diri, evaluasi mandiri ketercapaian tujuan belajar, metakognisi, dan regulasi emosi positif.
+3. Kegiatan Penutup ([WAJIB pilih salah satu atau beberapa yang relevan: Berkesadaran / Bermakna / Menggembirakan]):
+   • Umpan balik konstruktif, perumusan simpulan pembelajaran bersama murid, serta perencanaan pembelajaran pertemuan berikutnya.
+
+(Lanjutkan susunan yang sama secara terperinci untuk Pertemuan Kedua sampai Pertemuan ke-${data.jumlahPertemuan}, dengan tetap WAJIB memilih salah satu atau beberapa prinsip yang relevan pada tiap langkah Awal, Inti, dan Penutup).
+
+### D. ASESMEN PEMBELAJARAN
+Asesmen dirancang komprehensif mencakup 3 fungsi asesmen Pembelajaran Mendalam (bukan hanya teori, melainkan pemahaman konseptual mendalam, berpikir kritis, dan asesmen autentik):
+1. Asesmen pada awal pembelajaran:
+   • Teknik & instrumen asesmen diagnostik / pemetaan kesiapan belajar awal, pengetahuan prasyarat, dan profil murid.
+2. Asesmen pada proses pembelajaran:
+   Disusun rinci per sesi pertemuan:
+   - Pertemuan pertama:
+     • Teknik & instrumen formatif (observasi keterlibatan/kinerja, pertanyaan dialogis, catatan umpan balik berkala).
+   - Pertemuan kedua:
+     • Teknik & instrumen formatif.
+   - Pertemuan ke-...:
+     • Teknik & instrumen formatif.
+3. Asesmen pada akhir pembelajaran:
+   • Teknik & instrumen evaluasi sumatif ketercapaian Tujuan Pembelajaran (tes tertulis HOTS berbasis stimulus / unjuk kerja / produk / portofolio).
+4. Kriteria Ketercapaian Tujuan Pembelajaran (KKTP):
+   • Rubrik analitik ketercapaian berbasis skala interval dan kategori resmi sekolah:
+${data.kktpText}
+   • Deskriptor terukur konkret per interval (lihat BAGIAN E).
+
+══════════════════════════════════════════════════════════
+BLOK TANDA TANGAN (DICANTUMKAN TEPAT SEBELUM LAMPIRAN):
+══════════════════════════════════════════════════════════
+Cantumkan blok tanda tangan resmi berikut di akhir dokumen sebelum bagian Lampiran. WAJIB disajikan dalam format TABEL 3 KOLOM DENGAN HIDDEN BORDERLINE (Kolom 1: Kepala Satuan Pendidikan, Kolom 2: Kosong untuk mengatur jarak spasi, Kolom 3: Guru Mata Pelajaran lengkap titimangsa):
+
+${data.blokTandaTangan}
+
+### LAMPIRAN (WAJIB DISERTAKAN LENGKAP, OPERASIONAL & SIAP PAKAI)
+* ATURAN TATA LETAK LAMPIRAN & FORMAT TABEL (WAJIB DIPATUHI):
+  1. SATU HALAMAN SATU LAMPIRAN: Wajib sertakan pemisah halaman (Page Break / Halaman Baru) sebelum setiap judul Lampiran. DILARANG KERAS menggabungkan lebih dari satu lampiran pada halaman yang sama! Masing-masing lampiran memiliki halaman tersendiri.
+  2. FORMAT TABEL AUTOFIT TO WINDOW: Seluruh tabel dalam dokumen dan lampiran (kisi-kisi, lembar observasi, rubrik, dsb.) WAJIB disetel "Autofit to Window" (lebar 100% pas dengan margin halaman docx) agar tampilan rapi, proporsional, dan tidak terpotong.
+
+- Lampiran 1: Kisi-kisi Asesmen (HALAMAN BARU — Format tabel Autofit to Window: No, Indikator Pembelajaran/TP, Materi Pokok, Level Kognitif C1-C6 HOTS/LOTS, Bentuk Soal, Nomor Butir).
+- Lampiran 2: Naskah Butir Instrumen Asesmen Riil Lengkap (HALAMAN BARU TEPAT SETELAH KISI-KISI)
+  * Butir Instrumen Asesmen Awal (Diagnostik): Pertanyaan lisan/tulis pemetaan prasyarat.
+  * Butir Instrumen Asesmen Formatif (Proses per Pertemuan): Lembar observasi kinerja/diskusi dan daftar pertanyaan pemandu guru.
+  * Butir Instrumen Asesmen Sumatif (Akhir TP): Naskah butir soal evaluasi nyata secara utuh (soal pilihan ganda berbasis stimulus/kasus + uraian pemecahan masalah HOTS) LENGKAP dengan Kunci Jawaban dan Pedoman Penskoran/Rubrik Nilai per butir.
+- Lampiran 3: Lembar Kerja Peserta Didik (LKPD) kontekstual berjenjang sesuai sintaks model (HALAMAN BARU — lihat BAGIAN E2.2).
+- Lampiran 4: Instrumen Non-Tes (HALAMAN BARU) (Lembar Observasi Sikap Dimensi Profil Lulusan terpilih, Format Penilaian Diri / Antarteman, Jurnal Refleksi Siswa) (lihat BAGIAN E2.3).
+- Lampiran 5: Rubrik Penilaian KKTP Berdasarkan Interval Resmi Satuan Pendidikan (HALAMAN BARU — Format tabel Autofit to Window selaras rentang: ${data.kktpInline}) (lihat BAGIAN E & E2.4).
+
+══════════════════════════════════════════════════════════
+PANDUAN METODOLOGI OPERASIONAL (BAGIAN C - G)
+══════════════════════════════════════════════════════════
+
+## BAGIAN C — PRAKTIK PEDAGOGIS: CARA MEMILIH MODEL PEMBELAJARAN
+
+Konsep dasar: Model = kerangka utuh satu sesi (sintaks/urutan tahapan baku, dari pembuka sampai penilaian). Beda dari metode (satu teknik di dalam salah satu tahapan model, mis. "diskusi kelompok" bisa dipakai di model apa pun). Kesalahan umum: menulis metode di kolom yang seharusnya model bersintaks.
+
+Tabel 20 Model Pembelajaran (Pilih SATU sebagai model utama):
+1. Problem Based Learning (PBL): Belajar dari masalah nyata tanpa jawaban tunggal. Paling cocok untuk materi yang butuh penalaran/analisis masalah kontekstual.
+2. Project Based Learning (PjBL): Menghasilkan produk nyata jangka panjang (2-6 minggu). Paling cocok untuk materi lintas mapel, kokurikuler, dan aplikasi praktis.
+3. Inquiry Based Learning: Murid merumuskan pertanyaan lalu mencari jawaban (terbimbing/terstruktur/terbuka). Paling cocok untuk IPA, IPS, dan penemuan konsep.
+4. Discovery Learning: Guru siapkan data/stimulus, murid menemukan konsep sendiri. Paling cocok untuk konsep/rumus yang bisa diturunkan sendiri.
+5. Cooperative Learning: Kerja kelompok dengan tanggung jawab individual terukur (payung untuk Jigsaw/STAD/dll). Paling cocok untuk materi yang bisa dipecah jadi beberapa bagian.
+6. Jigsaw: Tiap murid menjadi ahli pada 1 bagian, lalu saling mengajar ke kelompok asal. Paling cocok untuk teks panjang atau banyak subtopik setara.
+7. STAD (Student Teams-Achievement Divisions): Kelompok heterogen, skor tim dari peningkatan nilai individu. Paling cocok untuk materi yang butuh latihan berulang.
+8. Think Pair Share: Berpikir sendiri (1-2') → berpasangan (2-3') → berbagi ke kelas (5-10'). Paling cocok untuk sesi interaktif singkat memancing partisipasi aktif.
+9. Numbered Heads Together: Penomoran acak, semua anggota tim harus siap menjawab. Paling cocok untuk mengecek pemahaman merata di kelas.
+10. Teams Games Tournament (TGT): Turnamen antar-tim setara kemampuan secara menyenangkan. Paling cocok untuk penguatan materi sebelum asesmen.
+11. Contextual Teaching Learning (CTL): Materi dikaitkan erat dengan konteks nyata kehidupan murid. Paling cocok untuk materi abstrak yang terasa jauh dari murid.
+12. Direct Instruction: Modeling/demonstrasi → latihan terbimbing → umpan balik → latihan mandiri. Paling cocok untuk keterampilan prosedural dan materi dasar baru.
+13. Experiential Learning: Mengalami langsung → refleksi → konseptualisasi → penerapan aktif. Paling cocok untuk kegiatan praktik dan kunjungan lapangan.
+14. Case Based Learning: Analisis kasus nyata yang lengkap konteksnya. Paling cocok untuk materi sosial, kejuruan, etika, dan studi kasus kontekstual.
+15. Design Thinking: Empati → Definisi masalah → Ideasi solusi → Prototipe → Uji coba. Paling cocok untuk proyek karya kreatif solutif.
+16. Challenge Based Learning: Berangkat dari tantangan besar di lingkungan sekitar yang berdampak nyata. Paling cocok untuk proyek nyata ke sekolah/masyarakat.
+17. Role Playing: Murid memerankan tokoh atau situasi sosial tertentu. Paling cocok untuk sejarah, PPKn, bahasa, dan nilai sosial.
+18. Simulasi: Meniru sistem atau dinamika nyata dalam kondisi terkendali. Paling cocok untuk proses berisiko atau kompleks jika dilakukan nyata.
+19. Flipped Classroom: Materi dipelajari mandiri di rumah, kelas difokuskan untuk latihan dan diskusi. Paling cocok untuk kelas dengan akses gawai memadai.
+20. Blended Learning: Kombinasi tatap muka interaktif dan aktivitas daring terencana. Paling cocok untuk sekolah dengan LMS aktif.
+
+Sintaks Model yang Paling Umum Digunakan:
+- Problem Based Learning (PBL): 1) Orientasi murid pada masalah; 2) Mengorganisasi murid untuk belajar; 3) Membimbing penyelidikan individu/kelompok; 4) Mengembangkan dan menyajikan hasil karya; 5) Menganalisis dan mengevaluasi proses pemecahan masalah.
+- Project Based Learning (PjBL): 1) Menentukan pertanyaan mendasar; 2) Mendesain perencanaan proyek; 3) Menyusun jadwal pelaksanaan; 4) Memonitor keaktifan dan perkembangan proyek; 5) Menguji hasil; 6) Mengevaluasi pengalaman belajar.
+- Inquiry Based Learning: 1) Orientasi; 2) Merumuskan masalah; 3) Merumuskan hipotesis; 4) Mengumpulkan data/fakta; 5) Menguji hipotesis; 6) Menarik kesimpulan.
+- Discovery Learning: 1) Stimulasi (pemberian rangsangan); 2) Identifikasi masalah; 3) Pengumpulan data; 4) Pengolahan data; 5) Pembuktian (verifikasi); 6) Menarik simpulan (generalisasi).
+- Direct Instruction: 1) Menyampaikan tujuan & menyiapkan murid; 2) Mendemonstrasikan pengetahuan/keterampilan; 3) Membimbing pelatihan; 4) Memeriksa pemahaman & memberi umpan balik; 5) Memberikan latihan mandiri.
+
+4 Pertanyaan Penyaring Cepat Pemilihan Model:
+1. Level berpikir yang dituntut TP? Jika mengingat/memahami → Direct Instruction atau Kooperatif cukup. Jika menganalisis/mengevaluasi/mencipta → PBL, PjBL, atau Inkuiri.
+2. Materi prosedural atau konseptual? Prosedural → Direct Instruction. Konseptual/penemuan → Discovery atau Inkuiri.
+3. Waktu yang tersedia? Jangan paksakan PjBL selesai dalam 1-2 JP. Sesi singkat → Think Pair Share atau Discovery.
+4. Kesiapan murid & sarana? Disesuaikan dengan hasil asesmen awal/diagnostik murid dan sarana sekolah.
+
+Penegasan Istilah:
+- Pembelajaran Mendalam BUKAN model, melainkan pendekatan/payung di atas model yang dijalankan dengan 3 prinsip (Berkesadaran, Bermakna, Menggembirakan). Jangan menulis "model pembelajaran deep learning".
+- STEM bukan model tersendiri, melainkan pendekatan lintas disiplin. Jika bernuansa STEM, gunakan model PjBL atau PBL, lalu cantumkan keterkaitan di B.2 Lintas Disiplin Ilmu.
+
+Contoh Resmi Implementasi Model per Mata Pelajaran:
+- Agama: Berfokus pada pengembangan spiritual, karakter, akhlak/moral. Contoh: Experiential Learning (mencermati isu nyata mis. kenakalan remaja, lalu mengajukan solusi berdasarkan nilai agama).
+- Pendidikan Pancasila: Membentuk warga negara yang baik dan bertanggung jawab. Contoh: Studi Kasus (menyelesaikan isu sosial/hukum berlandaskan demokrasi & Pancasila).
+- Matematika: Mengembangkan pola pikir logis, pemecahan masalah, komputatif. Contoh: Problem Based Learning (memecahkan masalah nyata kontekstual seperti nilai gizi/proporsi).
+- Bahasa: Keterampilan komunikasi, pemahaman teks, berpikir kritis. Contoh: Inquiry Based Learning (eksplorasi bahasa & wacana isu sosial).
+- IPA: Pemahaman fenomena alam & prinsip ilmiah. Contoh: Project Based Learning (membuat proyek energi terbarukan/solusi lingkungan).
+- Ilmu Sosial: Dinamika masyarakat & interaksi sosial. Contoh: Pembelajaran Kontekstual (membandingkan dinamika pasar modern vs tradisional).
+
+Prinsip Pelaksanaan Penting (Lintas Mapel):
+1. Penerapan pembelajaran mendalam disesuaikan dengan karakteristik masing-masing mata pelajaran.
+2. Sintaks model diadaptasi sesuai pengalaman belajar Memahami-Mengaplikasi-Merefleksi, disesuaikan konteks murid dan inovasi guru.
+3. Topik pembelajaran dikaitkan dengan lintas ilmu (multi/interdisiplin) jika relevan.
+
+Panduan Memilih 3 Prinsip Pembelajaran Mendalam di Tiap Langkah Pembelajaran:
+- Berkesadaran (Mindful): Menghadirkan perhatian penuh, kesadaran diri/sosial, fokus, keterhubungan batin, dan metakognisi. Paling relevan dipilih untuk kegiatan orientasi awal/mindfulness, pertanyaan pemantik reflektif, serta kegiatan penutup refleksi diri dan evaluasi mandiri.
+- Bermakna (Meaningful): Menghubungkan konsep dengan konteks kehidupan nyata peserta didik, pemecahan masalah autentik, dan penanaman nilai karakter luhur. Paling relevan dipilih untuk apersepsi kontekstual di kegiatan awal, serta tahap Memahami dan Mengaplikasi di kegiatan inti.
+- Menggembirakan (Joyful): Menciptakan suasana belajar yang positif, antusias, aman secara emosional, kolaboratif, penuh apresiasi, atau menggunakan tantangan/permainan edukatif. Paling relevan dipilih untuk motivasi/ice-breaking di kegiatan awal, eksplorasi kolaboratif/simulasi di kegiatan inti, dan apresiasi positif di kegiatan penutup.
+
+Prinsip Pembelajaran Mendalam vs Model Paling Mendukung:
+- Berkesadaran: Inquiry, Experiential Learning, Flipped Classroom.
+- Bermakna: PBL, PjBL, CTL, Case Based Learning, Design Thinking.
+- Menggembirakan: TGT, Role Playing, Simulasi, Jigsaw.
+
+## BAGIAN D — TEKNIK ASESMEN: CARA MEMILIH
+
+13 Teknik Asesmen Kurikulum Merdeka:
+1. Observasi: Pengamatan berkesinambungan dengan lembar observasi berindikator perilaku konkret (Awal & Proses).
+2. Kinerja / Unjuk Kerja: Demonstrasi langsung (presentasi, demonstrasi, praktik, eksperimen) dinilai dengan rubrik (Proses & Akhir).
+3. Projek: Penugasan terencana mencakup perencanaan, pelaksanaan, dan pelaporan dalam kurun waktu tertentu (Akhir/Lintas pertemuan; khas PjBL).
+4. Tes Tertulis: Kuis, soal pilihan ganda kontekstual, atau uraian HOTS berbasis stimulus wacana (Akhir sumatif atau Proses formatif).
+5. Tes Lisan: Pertanyaan langsung secara lisan untuk konfirmasi cepat pemahaman (Proses).
+6. Penugasan: Tugas individu/kelompok untuk mengukur sekaligus memfasilitasi pendalaman materi (Proses & Akhir).
+7. Portofolio: Kumpulan dokumentasi karya terbaik murid yang reflektif dan menunjukkan perkembangan belajar (Akhir unit/semester).
+8. Classroom Assessment Techniques (CATs): Teknik cepat: Minute Paper (1 hal paling dipahami + 1 hal paling menantang), Muddiest Point (bagian paling membingungkan), One-Sentence Summary, Background Knowledge Probe (Awal/Penutup).
+9. Exit Ticket: 1-3 pertanyaan ringkas sebelum siswa mengakhiri sesi kelas (Penutup).
+10. Penilaian Diri (Self-Assessment): Murid merefleksikan proses belajar sendiri untuk melatih metakognisi (Assessment as Learning).
+11. Penilaian Antarteman (Peer Assessment): Murid saling mengevaluasi kinerja kelompok memakai rubrik yang sama (Proses kerja kelompok).
+12. Wawancara / Tanya Jawab Lisan: Deteksi miskonsepsi tersembunyi secara mendalam (Asesmen diferensiasi).
+13. Angket / Survei: Menjaring data minat, kesiapan non-kognitif, atau umpan balik pengalaman belajar (Awal diagnostik non-kognitif).
+
+Cara Memilih (2 Lapis Penyaring):
+- Penyaring 1 — Jenis Kompetensi: Kognitif → tes tertulis/kuis/wawancara lisan. Keterampilan → unjuk kerja/observasi/projek. Sikap/Karakter → observasi perilaku teramati/penilaian diri/antarteman/angket. Kreativitas/Produksi → portofolio/projek/karya nyata.
+- Penyesuaian per Fase & Rombel (${data.faseKelas}):
+  * SD kelas rendah (Fase A-B): Observasi, unjuk kerja konkret, portofolio gambar/cerita, angket bergambar, penilaian diri sederhana lisan/terbimbing.
+  * SD kelas tinggi - SMP (Fase C-D): Tes tertulis esai pendek kontekstual, CATs, exit ticket, peer assessment terbimbing.
+  * SMA (Fase E-F): Tes tertulis HOTS stimulus kompleks, portofolio reflektif mandiri, self/peer assessment mandiri, projek riset analitis.
+- Penyaring 2 — Tahap Asesmen: Awal (kesiapan) → background knowledge probe/tes lisan singkat/observasi awal. Proses (formatif) → observasi kinerja/tes lisan/penugasan/CATs. Akhir (sumatif) → tes tertulis/kinerja/projek/portofolio/exit ticket.
+- Keselarasan Model: PjBL → Projek + Portofolio. PBL → Kinerja (presentasi solusi) + Tes Tertulis. Kooperatif/Jigsaw/STAD → Observasi (kontribusi individu) + Tes Tertulis individual + Peer Assessment. Direct Instruction → Tes Tertulis/Lisan pasca latihan mandiri. Role Playing/Simulasi → Kinerja + Observasi.
+
+## BAGIAN E — RUBRIK KETERCAPAIAN TP (KKTP)
+
+Skala Interval & Kategori KKTP Resmi Satuan Pendidikan:
+${data.kktpText}
+
+Bentuk Rubrik yang Disediakan:
+- Kriteria Ketercapaian Tujuan Pembelajaran (KKTP) WAJIB disusun berdasarkan skala rentang interval dan keterangan kategori resmi sekolah di atas (${data.kktpInline}).
+- Aturan Penulisan Deskriptor: Wajib menggunakan penanda kuantitas terukur atau tingkat kemandirian murid (perlu bimbingan penuh → mandiri dengan kesalahan minor → mandiri tepat → mampu membimbing teman), BUKAN kata sifat samar!
+- Deskriptor KKTP wajib disesuaikan secara spesifik dengan konten materi ${data.mp} dan target TP [${data.kode}].
+
+Tindak Lanjut Hasil Rubrik untuk Diferensiasi:
+Seleraskan langsung dengan deskripsi dan tindak lanjut rentang KKTP resmi sekolah:
+- Kelompok rentang nilai terendah: intervensi khusus / pendampingan intensif oleh guru atau tutor sebaya pada konsep paling esensial.
+- Kelompok rentang nilai belum tuntas: pengulangan terarah pada aspek/indikator spesifik yang belum dikuasai.
+- Kelompok rentang nilai tuntas: penguatan mandiri dan melanjutkan ke aktivitas pengayaan reguler.
+- Kelompok rentang nilai tertinggi: tantangan belajar kontekstual tingkat lanjut, proyek pemecahan masalah kreatif, dan pemberdayaan sebagai tutor sebaya.
+
+## BAGIAN E2 — INSTRUMEN & LAMPIRAN ASESMEN LENGKAP (WAJIB DISERTAKAN LENGKAP & SIAP PAKAI)
+
+Tepat setelah bagian Asesmen Pembelajaran atau sebagai lampiran naskah resmi, Anda WAJIB menyajikan:
+1. E2.1 Kisi-Kisi & Naskah Butir Soal (Disajikan Langsung Tepat Setelah Kisi-Kisi):
+   - Tabel Kisi-kisi Asesmen: No | Indikator Soal (turunan TP) | Materi Pokok | Level Kognitif (C1-C6) | Bentuk Soal | Nomor Butir.
+   - Naskah Butir Instrumen Asesmen Nyata (Bukan hanya kisi-kisi):
+     * Asesmen Awal (Diagnostik): 3-5 pertanyaan lisan/tertulis untuk memetakan kesiapan prasyarat belajar murid.
+     * Asesmen Formatif (Proses): Lembar observasi diskusi/kinerja kelompok dan daftar pertanyaan dialogis guru selama kegiatan inti.
+     * Asesmen Sumatif (Akhir TP): Naskah butir soal evaluasi secara utuh (soal pilihan ganda kontekstual dengan stimulus narasi/kasus + soal uraian pemecahan masalah HOTS C4-C6).
+     * Kunci Jawaban Lengkap & Pedoman Penskoran / Rubrik Penilaian per butir soal.
+2. E2.2 Lembar Kerja Peserta Didik (LKPD):
+   - LKPD aplikatif dan kontekstual yang dirancang selaras dengan sintaks model pembelajaran terpilih: memuat Identitas LKPD, Tujuan Belajar ramah murid, Petunjuk Kerja, Stimulus Kasus/Data, Langkah Kerja Eksplorasi Berjenjang, Lembar Jawaban Siswa, dan Kolom Refleksi Diri Murid.
+3. E2.3 Instrumen Non-Tes:
+   - Lembar Observasi Sikap & Karakter Dimensi Profil Lulusan terpilih (indikator operasional perilaku teramati).
+   - Format Penilaian Diri (Self-Assessment) / Penilaian Antarteman (Peer Assessment) terukur.
+   - Format Jurnal Refleksi Siswa (pertanyaan pemandu metakognisi: apa yang paling dipahami, tantangan yang dihadapi, rencana belajar selanjutnya).
+4. E2.4 Rubrik Analitik per Instrumen:
+   - Rubrik analitik penilaian kinerja / presentasi / produk / projek dengan deskriptor operasional pada 4 tingkat capaian.
+
+## BAGIAN F — DIFERENSIASI PEMBELAJARAN
+
+Integrasikan strategi pembelajaran berdiferensiasi secara proporsional pada tahap Mengaplikasi di Kegiatan Inti:
+1. Pemetaan 3 Aspek Kondisi Murid:
+   - Kesiapan Belajar: Sebagian murid butuh scaffolding bimbingan terarah, sebagian mandiri dan siap tantangan.
+   - Minat Belajar: Menghubungkan tugas dengan minat atau konteks keseharian murid.
+   - Profil Belajar: Menfasilitasi ragam modalitas belajar (visual, auditori, kinestetik) serta kerja mandiri vs kolaboratif.
+2. Penerapan 3 Bentuk Diferensiasi:
+   - Diferensiasi Konten: Variasi penyajian bahan belajar (ringkasan infografis visual vs teks artikel analitis mendalam) dengan target TP yang tetap sama.
+   - Diferensiasi Proses: Pengelompokan fleksibel — kelompok bimbingan intensif didampingi guru/tutor sebaya, kelompok mandiri melakukan eksplorasi terbimbing.
+   - Diferensiasi Produk: Murid diberikan pilihan mengekspresikan hasil pemahaman/solusi (poster visual, rekaman audio/podcast singkat, laporan tertulis, atau demonstrasi/maket nyata) dinilai dengan rubrik TP yang setara.
+
+## BAGIAN G — POLA ACUAN DARI CONTOH RPM RESMI KEMENDIKDASMEN (7 POLA WAJIB DITIRU)
+
+Wajib terapkan 7 pola keberhasilan dari benchmark resmi dokumen RPM Kemendikdasmen:
+1. Satu model utama bersintaks baku (didukung metode interaktif seperti diskusi, tanya jawab, demonstrasi, presentasi) — jangan mencampuradukkan banyak model sekaligus.
+2. Dimensi Profil Lulusan dipilih secara selektif (2-4 dimensi dari 8 dimensi resmi) yang benar-benar tercermin nyata dalam aktivitas, disajikan dengan simbol checkbox rapi: font Wingdings 254 (simbol ) untuk cek box dimensi terpilih dan font Wingdings 168 (simbol ) untuk box kosong dimensi lainnya.
+3. Integrasi 3 Prinsip di Tiap Langkah: AI WAJIB memilih salah satu atau beberapa yang paling relevan dari 3 prinsip (Berkesadaran, Bermakna, dan/atau Menggembirakan) di tiap langkah kegiatan (Awal, Inti, Penutup) sesuai esensi kegiatan dan menuliskan prinsip terpilih di samping nama langkah kegiatan.
+4. Pertanyaan pemantik di Kegiatan Awal langsung menggugah rasa ingin tahu, empati, dan relevansi nyata murid (bukan salam pembuka datar).
+5. Kemitraan pembelajaran nyata: mitra belajar (lingkungan sekolah/luar sekolah/orang tua) benar-benar dilibatkan di tahap Mengaplikasi dan memberi umpan balik di Merefleksi.
+6. Diferensiasi produk muncul eksplisit pada tahap Mengaplikasi (murid memiliki keleluasaan mengekspresikan pemahaman konsep).
+7. Asesmen tiga tahap saling melengkapi (Awal kesiapan, Proses formatif berkelanjutan, Akhir sumatif evaluatif), dan Kegiatan Penutup melibatkan murid secara aktif merefleksi ketercapaian tujuan bersama guru.
+
+Susunlah sekarang seluruh dokumen RPM lengkap di atas beserta seluruh lampiran instrumennya secara utuh, rapi, terstruktur, profesional, mendalam, dan langsung dapat dicetak atau diajarkan!`;
+        }
+
+        // 2. FORMAT: RPM RINGKAS (1-2 Halaman Praktis)
+        if (normalizedFormat === "rpm-ringkas") {
+          return `# MASTER PROMPT — RENCANA PEMBELAJARAN MENDALAM (RPM) RINGKAS 1-2 HALAMAN
+Sesuai Prinsip Pembelajaran Mendalam (Berkesadaran, Bermakna, Menggembirakan)
+
+Bertindaklah sebagai asisten guru ahli Kurikulum Merdeka. Buatkan dokumen RENCANA PEMBELAJARAN MENDALAM (RPM) RINGKAS (1-2 halaman, padat, terstruktur rapi, aplikatif, dan langsung siap diajarkan) mengikuti template resmi Kurikulum Merdeka (Header, Bagian A-D, Blok Tanda Tangan, dan Lampiran Ringkas):
+
+══════════════════════════════════════════════════════════
+HEADER IDENTITAS PEMBELAJARAN:
+══════════════════════════════════════════════════════════
+*(WAJIB menggunakan tabel 3 kolom dengan hidden borderline: Kolom 1 untuk Label, Kolom 2 untuk ":", dan Kolom 3 untuk Info Data. Nama guru pengampu dicantumkan pada Blok Tanda Tangan sebelum Lampiran).*
+RENCANA PEMBELAJARAN MENDALAM
+Satuan Pendidikan : ${data.sekolah}
+Mata Pelajaran    : ${data.mapel}
+Fase/Kelas        : ${data.faseKelas}
+Semester          : ${data.semesterText}
+Tahun Ajaran      : ${data.tahun}
+Materi Pokok      : ${data.mp}${data.bab ? ' (Bab: ' + data.bab + ')' : ''}
+Alokasi Waktu     : ${data.totalJP} JP (${data.jumlahPertemuan} kali pertemuan)
+
+Capaian Pembelajaran (CP) [Elemen: ${data.elemen}${data.subElemen ? ' - ' + data.subElemen : ''}]:
+"${data.cp}"
+
+Tujuan Pembelajaran (TP):
+[${data.kode}] ${data.tp}
+
+Jadwal Distribusi Pertemuan (${data.jumlahPertemuan} Sesi Pertemuan Riil):
+${rincianText}
+
+Kriteria Ketercapaian Tujuan Pembelajaran (KKTP) Satuan Pendidikan:
+${data.kktpText}
+
+══════════════════════════════════════════════════════════
+STRUKTUR RESMI RPM RINGKAS YANG HARUS DISUSUN:
+══════════════════════════════════════════════════════════
+
+### A. IDENTIFIKASI
+1. Peserta Didik & Materi Pelajaran (Ringkas): Kesiapan awal murid, konteks kehidupan nyata, serta integrasi nilai luhur.
+2. Dimensi Profil Lulusan: Pilih 2-3 dimensi resmi yang paling selaras dari 8 dimensi Kemendikdasmen (Keimanan & Ketakwaan Tuhan YME, Kewargaan, Penalaran Kritis, Kreativitas, Kolaborasi, Kemandirian, Kesehatan, Komunikasi). Format simbol checkbox WAJIB menggunakan font Wingdings 254 (simbol ) untuk cek box dimensi terpilih dan font Wingdings 168 (simbol ) untuk box kosong dimensi lainnya.
+
+### B. DESAIN PEMBELAJARAN
+1. Capaian Pembelajaran & Lintas Disiplin Ilmu (Ringkas): Keterkaitan dengan CP fase dan mata pelajaran lain/STEM.
+2. Tujuan Pembelajaran: [${data.kode}] ${data.tp}.
+3. Praktik Pedagogis: SATU model utama bersintaks baku (PBL / PjBL / Inquiry / Discovery / dsb.) didukung metode aktif.
+4. Kemitraan & Lingkungan Belajar & Digital: Ruang fisik/virtual/budaya belajar dan pemanfaatan gawai/aplikasi.
+
+### C. PENGALAMAN BELAJAR (RINGKAS UNTUK ${data.jumlahPertemuan} PERTEMUAN)
+* ATURAN WAJIB PEMILIHAN PRINSIP: Di tiap langkah kegiatan pembelajaran (Awal, Inti, Penutup), Anda WAJIB memilih salah satu atau beberapa yang paling relevan dengan konteks kegiatan dari 3 prinsip (Berkesadaran, Bermakna, dan/atau Menggembirakan), lalu cantumkan dalam tanda kurung di samping nama langkah (contoh: Kegiatan Awal (Berkesadaran), Kegiatan Inti (Bermakna, Menggembirakan), Kegiatan Penutup (Berkesadaran, Bermakna), dan sebagainya).
+
+1. Kegiatan Awal ([WAJIB pilih yang relevan: Berkesadaran / Bermakna / Menggembirakan]): Orientasi bermakna, apersepsi kontekstual, motivasi, dan 2 pertanyaan pemantik.
+2. Kegiatan Inti ([WAJIB pilih yang relevan: Berkesadaran / Bermakna / Menggembirakan]):
+   - Memahami: Konsep esensial disiplin ilmu, aplikatif nyata, dan karakter.
+   - Mengaplikasi: Pemecahan masalah kontekstual dengan diferensiasi (konten/proses/produk).
+   - Merefleksi: Regulasi diri, metakognisi, evaluasi mandiri murid.
+3. Kegiatan Penutup ([WAJIB pilih yang relevan: Berkesadaran / Bermakna / Menggembirakan]): Simpulan bersama, umpan balik konstruktif, dan perencanaan sesi lanjutan.
+
+### D. ASESMEN PEMBELAJARAN
+1. Asesmen Tiga Fungsi: Awal (Diagnostik/As Learning), Proses per Pertemuan (Formatif/For Learning), dan Akhir (Sumatif/Of Learning).
+2. Kriteria Ketercapaian TP (KKTP): Rubrik capaian berbasis skala interval dan kategori resmi satuan pendidikan:
+${data.kktpText}
+
+══════════════════════════════════════════════════════════
+BLOK TANDA TANGAN (SEBELUM LAMPIRAN):
+══════════════════════════════════════════════════════════
+*(WAJIB disajikan dalam format TABEL 3 KOLOM DENGAN HIDDEN BORDERLINE: Kolom 1/Kiri untuk Kepala Sekolah, Kolom 2/Tengah kosong untuk mengatur jarak, Kolom 3/Kanan untuk Guru Pengampu lengkap titimangsa).*
+${data.blokTandaTangan}
+
+* ATURAN FORMAT DOKUMEN & PENGATURAN TABEL (.DOCX):
+  - Wajib font Times New Roman 12pt untuk seluruh teks dan tabel.
+  - TABEL IDENTITAS 3 KOLOM DENGAN HIDDEN BORDERLINE: Bagian identitas pada output dokumen WAJIB menggunakan tabel 3 kolom yang dihidden borderline nya (Kolom 1: label, Kolom 2: ":", Kolom 3: info data).
+  - BLOK TANDA TANGAN 3 KOLOM DENGAN HIDDEN BORDERLINE: Blok tanda tangan WAJIB menggunakan tabel 3 kolom yang dihidden borderline nya (Kolom kiri: Kepala Sekolah, Kolom tengah: kosong untuk jarak, Kolom kanan: Guru).
+  - Simbol Checkbox Dimensi Profil Lulusan: WAJIB gunakan font Wingdings 254 () untuk simbol cek box dan font Wingdings 168 () untuk simbol box kosong.
+  - FORMAT TABEL WAJIB "AUTOFIT TO WINDOW": Seluruh tabel di dokumen docx wajib disetel "Autofit to window" agar ngepas ke lebar halaman docx nya dan tabelnya jadi rapi (tidak terpotong atau melebar keluar margin).
+  - TATA LETAK HALAMAN LAMPIRAN WAJIB "SATU HALAMAN SATU LAMPIRAN": Wajib menerapkan prinsip satu halaman satu lampiran, jangan digabung satu halaman ada lebih dari satu lampiran! Sertakan pemisah halaman (Page Break) sebelum setiap nomor lampiran.
+  - DATA KKTP RESMI: Rubrik KKTP wajib menggunakan rentang KKTP dan keterangan/kategorinya (${data.kktpInline}) sehingga hasil asesmen dan pembelajarannya sesuai.
+
+### LAMPIRAN RINGKAS SIAP PAKAI (MASING-MASING SATU HALAMAN SATU LAMPIRAN — HALAMAN BARU)
+1. Lampiran 1: Kisi-kisi singkat indikator asesmen (HALAMAN BARU — Format tabel Autofit to window).
+2. Lampiran 2: Naskah Butir Instrumen Asesmen Nyata Langsung Setelah Kisi-kisi (HALAMAN BARU — soal diagnostik awal, formatif proses per pertemuan, dan sumatif akhir lengkap dengan kunci/rubrik penskoran).
+3. Lampiran 3: LKPD ringkas berbasis sintaks model (HALAMAN BARU).
+4. Lampiran 4: Rubrik KKTP Interval Resmi (HALAMAN BARU — Format tabel Autofit to window selaras rentang & kategori: ${data.kktpInline}).
+
+Gunakan bahasa Indonesia baku, ringkas, padat, tajam, dan langsung siap digunakan dalam kelas nyata!`;
+        }
+
+        // 3. FORMAT: MODUL AJAR REGULER (Sistematika Kemendikbudristek)
+        if (normalizedFormat === "modul-ajar") {
+          return `Bertindaklah sebagai Konsultan Ahli Kurikulum Merdeka dan Pengembang Modul Ajar Profesional. 
+Tolong buatkan dokumen MODUL AJAR (LESSON PLAN) yang komprehensif, mendalam, berpusat pada peserta didik, dan siap diimplementasikan untuk kelas saya berdasarkan data kurikulum resmi berikut:
+
+══════════════════════════════════════════════════════════
+A. IDENTITAS MODUL & INFORMASI UMUM
+══════════════════════════════════════════════════════════
+*(WAJIB menggunakan tabel 3 kolom dengan hidden borderline: Kolom 1 untuk Label, Kolom 2 untuk ":", dan Kolom 3 untuk Info Data).*
+• Satuan Pendidikan : ${data.sekolah}
+• Penyusun          : ${data.guru}${data.nipGuru ? ` (${data.guruIdLabel || 'NIP'}: ${data.nipGuru})` : ''}
+• Mata Pelajaran    : ${data.mapel}
+• Fase / Kelas      : ${data.faseKelas}
+• Semester          : ${data.semesterText}
+• Tahun Ajaran      : ${data.tahun}
+• Materi Pokok      : ${data.mp}${data.bab ? ' (Bab: ' + data.bab + ')' : ''}
+• Alokasi Waktu     : ${data.totalJP} Jam Pelajaran (JP) (${data.jumlahPertemuan} Pertemuan)
+• Target Peserta Didik: Siswa Reguler / Tipikal (Heterogen)
+• Model Pembelajaran : Problem-Based Learning (PBL) / Discovery Learning / Project-Based Learning (pilih sintaks yang paling relevan dengan materi)
+• Pendekatan         : Pembelajaran Berdiferensiasi (Konten, Proses, Produk) & Teaching at the Right Level (TaRL)
+
+══════════════════════════════════════════════════════════
+B. CAPAIAN & TUJUAN PEMBELAJARAN
+══════════════════════════════════════════════════════════
+• Elemen Kurikulum   : ${data.elemen}${data.subElemen ? ' (Sub-Elemen: ' + data.subElemen + ')' : ''}
+• Capaian Pembelajaran (CP):
+"${data.cp}"
+
+• Tujuan Pembelajaran (TP):
+[${data.kode}] ${data.tp}
+
+• Lingkup Materi / Topik:
+${data.mp}${data.bab ? ' (Bab: ' + data.bab + ')' : ''}
+
+• Kriteria Ketercapaian Tujuan Pembelajaran (KKTP) Resmi Satuan Pendidikan:
+${data.kktpText}
+
+══════════════════════════════════════════════════════════
+C. ALOKASI WAKTU & RINCIAN JADWAL PERTEMUAN
+══════════════════════════════════════════════════════════
+Rincian Distribusi Pembelajaran:
+${rincianText}
+
+══════════════════════════════════════════════════════════
+D. SISTEMATIKA MODUL AJAR YANG HARUS DISUSUN:
+══════════════════════════════════════════════════════════
+Mohon susun Modul Ajar lengkap dengan rincian berikut:
+
+1. PROFIL PELAJAR PANCASILA / DIMENSI PROFIL LULUSAN:
+   Tentukan 2-3 dimensi yang paling terkait erat. Format penandaan checkbox: gunakan font Wingdings 254 (simbol cek box: ) untuk dimensi terpilih dan font Wingdings 168 (simbol box kosong: ) untuk dimensi lainnya, beserta penjelasan operasional penerapannya.
+
+2. SARANA, PRASARANA & MEDIA:
+   Daftar media ajar, alat peraga nyata, lembar aktivitas, dan sumber referensi digital/cetak yang disarankan.
+
+3. KRITERIA KETERCAPAIAN TUJUAN PEMBELAJARAN (KKTP / IKTP):
+   Wajib menggunakan skala rentang interval dan kategori/keterangan resmi satuan pendidikan berikut:
+${data.kktpText}
+   Susun deskripsi indikator keberhasilan belajar peserta didik terukur dari tingkat awal hingga mahir beserta pedoman tindak lanjutnya selaras dengan kategori tersebut.
+
+4. PEMAHAMAN BERMAKNA & PERTANYAAN PEMANTIK:
+   - Pemahaman bermakna: Manfaat kontekstual materi bagi kehidupan sehari-hari siswa.
+   - 3-4 pertanyaan pemantik yang merangsang daya nalar dan rasa ingin tahu.
+
+5. SKENARIO KEGIATAN PEMBELAJARAN PER PERTEMUAN:
+   Jelaskan alur pembelajaran secara terperinci untuk MASING-MASING PERTEMUAN (${data.jumlahPertemuan} pertemuan) sesuai alokasi JP.
+   * ATURAN WAJIB PEMILIHAN PRINSIP: Di tiap langkah kegiatan pembelajaran (Pendahuluan, Inti, Penutup), Anda WAJIB memilih salah satu atau beberapa yang paling relevan dengan konteks kegiatan dari 3 prinsip (Berkesadaran, Bermakna, dan/atau Menggembirakan), lalu cantumkan dalam tanda kurung di samping nama langkah (contoh: Kegiatan Pendahuluan (Berkesadaran), Kegiatan Inti (Bermakna, Menggembirakan), Kegiatan Penutup (Berkesadaran, Bermakna)):
+   a. Kegiatan Pendahuluan ([WAJIB pilih yang relevan: Berkesadaran / Bermakna / Menggembirakan]): Orientasi, Apersepsi, Motivasi, Penyampaian Tujuan.
+   b. Kegiatan Inti ([WAJIB pilih yang relevan: Berkesadaran / Bermakna / Menggembirakan]): Ikuti tahapan sintaks model pembelajaran dengan integrasi diferensiasi.
+   c. Kegiatan Penutup ([WAJIB pilih yang relevan: Berkesadaran / Bermakna / Menggembirakan]): Kesimpulan bersama, Refleksi siswa & guru, Umpan balik positif, Doa/Penutup.
+
+6. RANCANGAN ASESMEN:
+   - Asesmen Diagnostik / Formatif Awal
+   - Asesmen Formatif (teknik observasi kinerja / diskusi selama kegiatan inti)
+   - Asesmen Sumatif Lingkup Materi (disertai contoh soal/tugas evaluasi dan rubrik).
+
+══════════════════════════════════════════════════════════
+BLOK TANDA TANGAN (SEBELUM LAMPIRAN):
+══════════════════════════════════════════════════════════
+*(WAJIB disajikan dalam format TABEL 3 KOLOM DENGAN HIDDEN BORDERLINE: Kolom 1/Kiri untuk Kepala Sekolah, Kolom 2/Tengah kosong untuk mengatur jarak spasi, Kolom 3/Kanan untuk Guru Pengampu lengkap titimangsa).*
+${data.blokTandaTangan}
+
+7. LAMPIRAN LENGKAP:
+   * KETENTUAN FORMAT DOCX & TATA LETAK HALAMAN:
+     - Wajib font Times New Roman 12pt untuk seluruh teks dan tabel.
+     - TABEL IDENTITAS 3 KOLOM DENGAN HIDDEN BORDERLINE: Bagian identitas WAJIB disajikan menggunakan tabel 3 kolom dengan border tersembunyi (Kolom 1: label, Kolom 2: ":", Kolom 3: info data).
+     - BLOK TANDA TANGAN 3 KOLOM DENGAN HIDDEN BORDERLINE: Blok tanda tangan di akhir sebelum lampiran WAJIB menggunakan tabel 3 kolom dengan border tersembunyi (Kolom 1: Kepala Sekolah, Kolom 2: Kosong untuk jarak, Kolom 3: Guru).
+     - FORMAT TABEL WAJIB "AUTOFIT TO WINDOW": Seluruh tabel di dokumen docx wajib disetel "Autofit to window" agar ngepas ke lebar halaman docx nya dan tabelnya jadi rapi.
+     - TATA LETAK HALAMAN LAMPIRAN: Wajib satu halaman satu lampiran, jangan digabung satu halaman ada lebih dari satu lampiran (sertakan pemisah halaman / Page Break sebelum setiap nomor lampiran).
+     - DATA KKTP RESMI: Rubrik KKTP wajib menggunakan rentang KKTP dan keterangan/kategorinya (${data.kktpInline}) sehingga hasil modul ajar dan rubrik asesmennya sesuai.
+   - Lampiran 1: Kisi-kisi Asesmen (Halaman Baru — Format tabel Autofit to window).
+   - Lampiran 2: Instrumen Asesmen Lengkap (Halaman Baru tepat setelah kisi-kisi, memuat butir soal evaluasi asesmen diagnostik awal, formatif proses, dan tes sumatif nyata beserta kunci jawaban dan rubrik penskoran).
+   - Lampiran 3: Lembar Kerja Peserta Didik (LKPD) aplikatif (Halaman Baru).
+   - Lampiran 4: Instrumen Non-Tes & Rubrik KKTP Interval Resmi (${data.kktpInline}) (Halaman Baru — Format tabel Autofit to window).
+   - Lampiran 5: Ringkasan Bahan Bacaan Guru & Peserta Didik serta Glosarium (Halaman Baru).
+
+Tuliskan dalam format yang rapi, terstruktur, berbahasa Indonesia formal yang inspiratif, dan siap digunakan.`;
+        }
+
+        // 4. FORMAT: DATA MENTAH / SPESIFIKASI TEKNIS
+        return `DATA LENGKAP TUJUAN PEMBELAJARAN (TP) - KURIKULUM MERDEKA
+Aplikasi Promesta.id
+
+[1. IDENTITAS PEMBELAJARAN]
+• Satuan Pendidikan : ${data.sekolah}
+• Penyusun          : ${data.guru}${data.nipGuru ? ` (${data.guruIdLabel || 'NIP'}: ${data.nipGuru})` : ''}
+• Mata Pelajaran    : ${data.mapel}
+• Fase / Kelas      : ${data.faseKelas}
+• Semester          : ${data.semesterText}
+• Tahun Ajaran      : ${data.tahun}
+• Materi Pokok      : ${data.mp}${data.bab ? ' (Bab: ' + data.bab + ')' : ''}
+• Alokasi Waktu     : ${data.totalJP} JP (${data.jumlahPertemuan} Pertemuan)
+
+[2. CAPAIAN PEMBELAJARAN (CP)]
+• Elemen            : ${data.elemen}
+• Sub-Elemen        : ${data.subElemen || '-'}
+• Deskripsi CP:
+${data.cp}
+
+[3. TUJUAN PEMBELAJARAN (TP)]
+• Kode TP           : ${data.kode}
+• Bunyi TP          : ${data.tp}
+• Materi Pokok (MP) : ${data.mp}
+• Bab               : ${data.bab || '-'}
+• Kategori          : ${data.isSumatif ? 'Sumatif Lingkup Materi' : 'Formatif / Reguler'}
+
+[4. ALOKASI WAKTU & PERTEMUAN]
+• Total Alokasi JP  : ${data.totalJP} JP
+• Jumlah Pertemuan  : ${data.jumlahPertemuan} Pertemuan
+
+[5. RINCIAN JADWAL PERTEMUAN]
+${rincianText}
+
+[6. KRITERIA KETERCAPAIAN TUJUAN PEMBELAJARAN (KKTP)]
+• Skala Rentang Interval, Kategori & Keterangan Resmi Satuan Pendidikan:
+${data.kktpText}`;
+      }
+
+      if (!window._customTPDropdownListenerAdded) {
+        document.addEventListener('click', function(e) {
+          if (!e.target.closest('.custom-tp-dropdown')) {
+            document.querySelectorAll('.custom-tp-menu').forEach(m => {
+              m.style.display = 'none';
+            });
+          }
+        });
+        window._customTPDropdownListenerAdded = true;
+      }
+
+      window.toggleCustomTPDropdown = function(dropdownId, e) {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        const dd = document.getElementById(dropdownId);
+        if (!dd) return;
+        const menu = dd.querySelector('.custom-tp-menu');
+        if (!menu) return;
+        const isHidden = menu.style.display === 'none' || getComputedStyle(menu).display === 'none';
+        
+        document.querySelectorAll('.custom-tp-menu').forEach(m => {
+          if (m !== menu) m.style.display = 'none';
+        });
+        
+        menu.style.display = isHidden ? 'block' : 'none';
+        if (isHidden) {
+          const selectedItem = menu.querySelector('.custom-tp-item.selected');
+          if (selectedItem) {
+            setTimeout(() => {
+              selectedItem.scrollIntoView({ block: 'nearest' });
+            }, 10);
+          }
+        }
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
+      };
+
+      function openDetailTPModal(sem = "ganjil", index = 0, activeTab = "detail", promptFormat = "rpm-lengkap") {
+        let semKey = (sem === "genap" || sem === 2 || sem === "tpGenap") ? "genap" : "ganjil";
+        let data = getTPDetailsData(semKey, index);
+
+        if (!data) {
+          const otherSem = semKey === "ganjil" ? "genap" : "ganjil";
+          data = getTPDetailsData(otherSem, 0);
+          if (data) {
+            semKey = otherSem;
+          } else {
+            alert("Belum ada data Tujuan Pembelajaran (TP) yang dipetakan.\nSilakan tambahkan TP atau gunakan tombol 'Isi Otomatis dari CP' terlebih dahulu.");
+            return;
+          }
+        }
+
+        let existing = document.getElementById("detail-tp-modal");
+        if (existing) existing.remove();
+
+        const modal = document.createElement("div");
+        modal.id = "detail-tp-modal";
+        modal.className = "modal-overlay";
+
+        let contentHtml = "";
+
+        if (activeTab === "detail") {
+          contentHtml = `
+            <div class="tp-detail-card-section">
+              <div class="tp-detail-card-title"><i class="material-symbols-rounded" style="font-size:15px;" data-lucide="school"></i> 1. Identitas Pembelajaran</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:10px;font-size:13px;">
+                <div><span style="color:var(--text-light);font-size:11.5px;display:block;">Satuan Pendidikan:</span><strong>${escH(data.sekolah)}</strong></div>
+                <div><span style="color:var(--text-light);font-size:11.5px;display:block;">Penyusun:</span><strong>${escH(data.guru)}</strong> ${data.nipGuru ? `<span style="font-size:11px;color:var(--text-light);">(${escH(data.guruIdLabel || 'NIP')}: ${escH(data.nipGuru)})</span>` : ''}</div>
+                <div><span style="color:var(--text-light);font-size:11.5px;display:block;">Mata Pelajaran:</span><strong>${escH(data.mapel)}</strong></div>
+                <div><span style="color:var(--text-light);font-size:11.5px;display:block;">Fase / Kelas:</span><strong>${escH(data.faseKelas)}</strong></div>
+                <div><span style="color:var(--text-light);font-size:11.5px;display:block;">Semester:</span><strong>${escH(data.semesterText)}</strong></div>
+                <div><span style="color:var(--text-light);font-size:11.5px;display:block;">Tahun Ajaran:</span><strong>${escH(data.tahun)}</strong></div>
+                <div><span style="color:var(--text-light);font-size:11.5px;display:block;">Materi Pokok:</span><strong>${escH(data.mp || '-')}${data.bab ? ` (Bab: ${escH(data.bab)})` : ''}</strong></div>
+                <div><span style="color:var(--text-light);font-size:11.5px;display:block;">Alokasi Waktu:</span><strong>${data.totalJP} JP (${data.jumlahPertemuan} Pertemuan)</strong></div>
+              </div>
+            </div>
+
+            <div class="tp-detail-card-section">
+              <div class="tp-detail-card-title"><i class="material-symbols-rounded" style="font-size:15px;" data-lucide="book-open-check"></i> 2. Capaian Pembelajaran (CP)</div>
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span style="background:rgba(56,189,248,0.15);color:#38bdf8;padding:2px 8px;border-radius:6px;font-size:11.5px;font-weight:700;">Elemen: ${escH(data.elemen)}</span>
+                ${data.subElemen ? `<span style="background:rgba(255,255,255,0.06);color:var(--text-light);padding:2px 8px;border-radius:6px;font-size:11.5px;">Sub: ${escH(data.subElemen)}</span>` : ''}
+              </div>
+              <div style="background:rgba(0,0,0,0.25);border-left:3px solid #38bdf8;padding:8px 12px;border-radius:0 6px 6px 0;font-size:12.5px;line-height:1.55;color:var(--text);font-style:italic;">
+                "${escH(data.cp)}"
+              </div>
+            </div>
+
+            <div class="tp-detail-card-section">
+              <div class="tp-detail-card-title"><i class="material-symbols-rounded" style="font-size:15px;" data-lucide="target"></i> 3. Tujuan Pembelajaran (TP) &amp; Lingkup Materi</div>
+              <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
+                <span style="background:#facc15;color:#1e293b;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:800;">${escH(data.kode)}</span>
+                ${data.bab ? `<span style="font-size:12px;color:var(--text-light);font-weight:600;">Bab: ${escH(data.bab)}</span>` : ''}
+                <span style="font-size:11px;padding:2px 7px;border-radius:5px;background:rgba(255,255,255,0.06);color:var(--text-light);">${data.isSumatif ? 'Evaluasi / Sumatif Lingkup Materi' : 'Formatif / Reguler'}</span>
+              </div>
+              <div style="font-size:13.5px;font-weight:600;line-height:1.5;color:var(--text);">
+                ${escH(data.tp)}
+              </div>
+              <div style="font-size:12.5px;background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:6px;border:1px solid var(--border);">
+                <span style="color:var(--text-light);">Materi Pokok / Topik: </span><strong>${escH(data.mp || '-')}</strong>
+              </div>
+            </div>
+
+            <div class="tp-detail-card-section">
+              <div class="tp-detail-card-title"><i class="material-symbols-rounded" style="font-size:15px;" data-lucide="clock"></i> 4. Alokasi Waktu (JP) &amp; Jumlah Pertemuan</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:10px;">
+                <div style="background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.25);border-radius:8px;padding:10px;text-align:center;">
+                  <div style="font-size:11px;color:#facc15;font-weight:700;text-transform:uppercase;">Total Jam Pelajaran</div>
+                  <div style="font-size:20px;font-weight:800;color:#fde047;margin-top:2px;">${data.totalJP} <span style="font-size:12px;font-weight:600;">JP</span></div>
+                </div>
+                <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);border-radius:8px;padding:10px;text-align:center;">
+                  <div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;">Jumlah Pertemuan</div>
+                  <div style="font-size:20px;font-weight:800;color:#7dd3fc;margin-top:2px;">${data.jumlahPertemuan} <span style="font-size:12px;font-weight:600;">Pertemuan</span></div>
+                </div>
+                <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:8px;padding:10px;text-align:center;">
+                  <div style="font-size:11px;color:#22c55e;font-weight:700;text-transform:uppercase;">Rata-rata Pertemuan</div>
+                  <div style="font-size:20px;font-weight:800;color:#86efac;margin-top:2px;">${Math.round((data.totalJP / Math.max(1, data.jumlahPertemuan)) * 10) / 10} <span style="font-size:12px;font-weight:600;">JP</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="tp-detail-card-section">
+              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+                <div class="tp-detail-card-title"><i class="material-symbols-rounded" style="font-size:15px;" data-lucide="calendar-check"></i> 5. Rincian Jadwal Pertemuan (${data.pertemuanList.length} Pertemuan)</div>
+                <span style="font-size:11px;color:${data.hasRealSchedule ? '#22c55e' : '#f59e0b'};display:inline-flex;align-items:center;gap:4px;">
+                  <i class="material-symbols-rounded" style="font-size:13px;" data-lucide="${data.hasRealSchedule ? 'calendar' : 'info'}"></i>
+                  ${data.hasRealSchedule ? 'Terjadwal di Kalender Sekolah' : 'Estimasi Alokasi (Kalender Belum Diatur)'}
+                </span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;">
+                ${data.pertemuanList.map((p) => `
+                  <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.03);padding:7px 12px;border-radius:6px;border:1px solid var(--border);font-size:12.5px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <span style="background:rgba(250,204,21,0.15);color:#facc15;font-weight:700;padding:1px 6px;border-radius:4px;font-size:11px;">Ke-${p.no}</span>
+                      <span style="font-weight:600;color:var(--text);">${escH(p.formatted)}</span>
+                    </div>
+                    <span style="background:rgba(56,189,248,0.12);color:#38bdf8;font-weight:700;padding:1px 7px;border-radius:4px;font-size:11px;">${p.jp} JP</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- 6. Kriteria Ketercapaian Tujuan Pembelajaran (KKTP) -->
+            <div class="tp-detail-card-section">
+              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+                <div class="tp-detail-card-title"><i class="material-symbols-rounded" style="font-size:15px;" data-lucide="list-checks"></i> 6. Kriteria Ketercapaian Tujuan Pembelajaran (KKTP)</div>
+                <span style="font-size:11px;color:#38bdf8;background:rgba(56,189,248,0.12);padding:2px 8px;border-radius:6px;font-weight:700;">Rentang Nilai, Kategori &amp; Keterangan Resmi</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:10px;">
+                ${data.kktpList.map((k, i) => `
+                  <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">
+                      <span style="font-size:11px;color:var(--text-light);font-weight:700;">Rentang ${i + 1}</span>
+                      <span style="font-size:12px;font-weight:800;color:#facc15;background:rgba(250,204,21,0.15);padding:1px 8px;border-radius:4px;border:1px solid rgba(250,204,21,0.3);">${escH(k.val)}%</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                      <span style="font-size:11px;color:var(--text-light);font-weight:600;">Kategori:</span>
+                      <span style="font-size:11.5px;font-weight:700;color:#38bdf8;background:rgba(56,189,248,0.12);padding:1px 6px;border-radius:4px;">${escH(k.kategori)}</span>
+                    </div>
+                    <div style="font-size:12px;color:var(--text);line-height:1.45;border-top:1px dashed var(--border);padding-top:4px;">
+                      <span style="color:var(--text-light);font-size:11px;display:block;">Keterangan &amp; Tindak Lanjut:</span>
+                      ${escH(k.desc)}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding-top:6px;border-top:1px solid var(--border);">
+              <button type="button" class="btn-docx" onclick="copyTPDataSummary('${data.semKey}', ${data.index}, this)" style="display:inline-flex;align-items:center;gap:6px;">
+                <i class="material-symbols-rounded" style="font-size:16px;" data-lucide="copy"></i>
+                <span>Salin Data Teks</span>
+              </button>
+              <button type="button" class="btn-add yellow" onclick="openDetailTPModal('${data.semKey}', ${data.index}, 'prompt', '${promptFormat}')" style="display:inline-flex;align-items:center;gap:6px;">
+                <i class="material-symbols-rounded" style="font-size:16px;" data-lucide="astroid"></i>
+                <span>Rancang Prompt AI Lesson Plan →</span>
+              </button>
+            </div>
+          `;
+        } else {
+          // Tab Prompt AI
+          contentHtml = `
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <span style="font-size:12px;font-weight:600;color:var(--text-light);margin-right:2px;">Format Prompt:</span>
+              <button type="button" class="tp-prompt-pill ${promptFormat === 'rpm-lengkap' || promptFormat === 'lengkap' ? 'active' : ''}" onclick="openDetailTPModal('${data.semKey}', ${data.index}, 'prompt', 'rpm-lengkap')">
+                <i class="material-symbols-rounded" style="font-size:14px;" data-lucide="astroid"></i>
+                <span>RPM Lengkap + Instrumen</span>
+              </button>
+              <button type="button" class="tp-prompt-pill ${promptFormat === 'rpm-ringkas' || promptFormat === 'ringkas' ? 'active' : ''}" onclick="openDetailTPModal('${data.semKey}', ${data.index}, 'prompt', 'rpm-ringkas')">
+                <i class="material-symbols-rounded" style="font-size:14px;" data-lucide="file-text"></i>
+                <span>RPM Ringkas (1-2 Halaman)</span>
+              </button>
+              <button type="button" class="tp-prompt-pill ${promptFormat === 'modul-ajar' ? 'active' : ''}" onclick="openDetailTPModal('${data.semKey}', ${data.index}, 'prompt', 'modul-ajar')">
+                <i class="material-symbols-rounded" style="font-size:14px;" data-lucide="file-check-2"></i>
+                <span>Modul Ajar Reguler</span>
+              </button>
+              <button type="button" class="tp-prompt-pill ${promptFormat === 'mentah' ? 'active' : ''}" onclick="openDetailTPModal('${data.semKey}', ${data.index}, 'prompt', 'mentah')">
+                <i class="material-symbols-rounded" style="font-size:14px;" data-lucide="code-2"></i>
+                <span>Data Mentah (Spesifikasi)</span>
+              </button>
+            </div>
+
+            <div style="background:rgba(250,204,21,0.06);border:1px solid rgba(250,204,21,0.25);border-radius:8px;padding:8px 12px;font-size:12px;color:#fde047;display:flex;align-items:center;gap:8px;">
+              <i class="material-symbols-rounded" style="font-size:16px;flex-shrink:0;" data-lucide="lightbulb"></i>
+              <span>Disusun berdasar <strong>Template Resmi Rencana Pembelajaran Mendalam (RPM)</strong>. Data kurikulum sekolah, Capaian Pembelajaran, target TP <strong>[${escH(data.kode)}]</strong>, alokasi ${data.totalJP} JP, dan ${data.jumlahPertemuan} jadwal pertemuan riil telah terisi 100% otomatis tanpa perlu edit manual.</span>
+            </div>
+
+            <textarea id="tp-ai-prompt-content" class="tp-prompt-textarea" readonly spellcheck="false">${escH(generateAIPromptText(data, promptFormat))}</textarea>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding-top:4px;">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span style="font-size:11.5px;color:var(--text-light);">Buka langsung di AI:</span>
+                <a href="https://chatgpt.com" target="_blank" rel="noopener noreferrer" class="tp-prompt-pill" style="text-decoration:none;">
+                  <span>ChatGPT ↗</span>
+                </a>
+                <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer" class="tp-prompt-pill" style="text-decoration:none;">
+                  <span>Gemini ↗</span>
+                </a>
+                <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" class="tp-prompt-pill" style="text-decoration:none;">
+                  <span>Claude ↗</span>
+                </a>
+              </div>
+              <button type="button" class="btn-add yellow" onclick="copyTPPromptToClipboard(this)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;font-weight:700;font-size:13px;">
+                <i class="material-symbols-rounded" style="font-size:16px;" data-lucide="copy"></i>
+                <span>Salin Prompt AI</span>
+              </button>
+            </div>
+          `;
+        }
+
+        modal.innerHTML = `
+          <div class="modal-box modal-box-tp-detail">
+            <div class="modal-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:0;">
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span class="tp-detail-header-badge"><i class="material-symbols-rounded" style="font-size:13px;" data-lucide="astroid"></i> Data Lengkap TP &amp; AI</span>
+                  <span style="font-size:12px;font-weight:700;color:#38bdf8;background:rgba(56,189,248,0.12);padding:2px 8px;border-radius:6px;border:1px solid rgba(56,189,248,0.25);">${escH(data.semesterText)}</span>
+                </div>
+                <div style="font-size:17px;font-weight:700;color:var(--text);margin-top:6px;">Data Lengkap TP &amp; Generator Prompt AI</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <button type="button" class="btn-docx" style="padding:5px 12px;font-size:12px;display:inline-flex;align-items:center;gap:6px;" onclick="if (!isGenerated) { showCustomAlert('Generate Dokumen Diperlukan', 'Bagian <strong>Ekstra</strong> hanya aktif setelah Anda menekan tombol kuning <strong>Generate Dokumen</strong> di sidebar.'); return; } document.getElementById('detail-tp-modal')?.remove(); showTab('ekstra-ai'); setEkstraAITarget('${data.semKey}', ${data.index}, '${activeTab}', '${promptFormat}');">
+                  <i class="material-symbols-rounded" style="font-size:15px;" data-lucide="external-link"></i>
+                  <span>Buka Halaman Ekstra ↗</span>
+                </button>
+                <button type="button" class="btn-modal-cancel" style="padding:6px 12px;font-size:12.5px;" onclick="document.getElementById('detail-tp-modal').remove()">Tutup ✕</button>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;background:rgba(255,255,255,0.03);padding:10px 14px;border-radius:10px;border:1px solid var(--border);">
+              <div class="sem-toggle" style="margin:0;">
+                <button type="button" class="sem-btn ${(data.semNum === 1 || data.semCode === 'ganjil') ? 'active' : ''}" onclick="openDetailTPModal('ganjil', 0, '${activeTab}', '${promptFormat}')">Semester Ganjil</button>
+                <button type="button" class="sem-btn ${(data.semNum === 2 || data.semCode === 'genap') ? 'active' : ''}" onclick="openDetailTPModal('genap', 0, '${activeTab}', '${promptFormat}')">Semester Genap</button>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:280px;width:100%;">
+                <button type="button" class="icon-btn" title="TP Sebelumnya" ${data.index === 0 ? 'disabled' : ''} onclick="openDetailTPModal('${data.semKey}', ${data.index - 1}, '${activeTab}', '${promptFormat}')" style="width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:${data.index === 0 ? 'rgba(255,255,255,0.2)' : 'var(--text)'};cursor:${data.index === 0 ? 'default' : 'pointer'};flex-shrink:0;"><i class="material-symbols-rounded" style="font-size:16px;" data-lucide="chevron-left"></i></button>
+                <button type="button" class="icon-btn" title="TP Berikutnya" ${data.index === data.totalCount - 1 ? 'disabled' : ''} onclick="openDetailTPModal('${data.semKey}', ${data.index + 1}, '${activeTab}', '${promptFormat}')" style="width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:${data.index === data.totalCount - 1 ? 'rgba(255,255,255,0.2)' : 'var(--text)'};cursor:${data.index === data.totalCount - 1 ? 'default' : 'pointer'};flex-shrink:0;"><i class="material-symbols-rounded" style="font-size:16px;" data-lucide="chevron-right"></i></button>
+                <div class="custom-tp-dropdown" id="modal-tp-dropdown" style="flex:1;min-width:0;width:100%;max-width:100%;">
+                  ${(() => {
+                    const currentModalTpObj = data.allTPs[data.index] || {};
+                    const currentModalRawKode = currentModalTpObj.kode || 'TP ' + (data.index + 1);
+                    const currentModalRawTp = (currentModalTpObj.tp ? currentModalTpObj.tp : '-').trim();
+                    const currentModalJpText = ` (${currentModalTpObj.jp || 2} JP)`;
+                    const currentModalFullText = `[${currentModalRawKode}] ${currentModalRawTp}${currentModalJpText}`;
+                    return `
+                      <button type="button" class="custom-tp-trigger" onclick="toggleCustomTPDropdown('modal-tp-dropdown', event)" style="height:32px;padding:0 10px;background:var(--bg);font-size:12.5px;" title="${escH(currentModalFullText)}">
+                        <span style="flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                          ${escH(currentModalFullText)}
+                        </span>
+                        <i class="material-symbols-rounded" style="font-size:16px;flex-shrink:0;color:var(--text-light);" data-lucide="chevron-down"></i>
+                      </button>
+                      <div class="custom-tp-menu" style="display:none;">
+                        ${data.allTPs.map((t, idx) => {
+                          const rawKode = t.kode || 'TP ' + (idx + 1);
+                          const rawTp = (t.tp ? t.tp : '-').trim();
+                          const jpText = ` (${t.jp || 2} JP)`;
+                          const fullOptionText = `[${rawKode}] ${rawTp}${jpText}`;
+                          const isSelected = idx === data.index;
+                          return `<button type="button" class="custom-tp-item ${isSelected ? 'selected' : ''}" onclick="openDetailTPModal('${data.semKey}', ${idx}, '${activeTab}', '${promptFormat}')" title="${escH(fullOptionText)}">
+                            ${escH(fullOptionText)}
+                          </button>`;
+                        }).join('')}
+                      </div>
+                    `;
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            <div class="tp-detail-tabs">
+              <button type="button" class="tp-detail-tab-btn ${activeTab === 'detail' ? 'active' : ''}" onclick="openDetailTPModal('${data.semKey}', ${data.index}, 'detail', '${promptFormat}')">
+                <i class="material-symbols-rounded" style="font-size:16px;" data-lucide="layout-grid"></i>
+                <span>Kartu Data Lengkap TP</span>
+              </button>
+              <button type="button" class="tp-detail-tab-btn ${activeTab === 'prompt' ? 'active' : ''}" onclick="openDetailTPModal('${data.semKey}', ${data.index}, 'prompt', '${promptFormat}')">
+                <i class="material-symbols-rounded" style="font-size:16px;" data-lucide="astroid"></i>
+                <span>Generator Prompt AI (Lesson Plan)</span>
+              </button>
+            </div>
+
+            ${contentHtml}
+          </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
+      }
+
+      function openDetailTPModalFromJurnal() {
+        const isGenap = document.getElementById("btn-jurnal-sem-2") && document.getElementById("btn-jurnal-sem-2").classList.contains("active");
+        openDetailTPModal(isGenap ? "genap" : "ganjil", 0);
+      }
+
+      function copyTPPromptToClipboard(btn) {
+        const textarea = document.getElementById("tp-ai-prompt-content");
+        if (!textarea) return;
+        const text = textarea.value;
+        copyTextToClipboard(text, () => {
+          if (btn) {
+            const origHtml = btn.innerHTML;
+            btn.innerHTML = `<i class="material-symbols-rounded" style="font-size:16px;" data-lucide="check"></i> <span>Tersalin ke Clipboard! ✨</span>`;
+            btn.style.background = "#16a34a";
+            btn.style.color = "#ffffff";
+            if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+            setTimeout(() => {
+              btn.innerHTML = origHtml;
+              btn.style.background = "";
+              btn.style.color = "";
+              if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+            }, 2500);
+          }
+          if (typeof showSaveIndicator === "function") {
+            showSaveIndicator("Prompt AI Berhasil Disalin! ✨", "success");
+          }
+        }, () => {
+          alert("Gagal menyalin otomatis. Silakan blok dan salin teks secara manual.");
+        });
+      }
+
+      function copyTPDataSummary(sem, index, btn) {
+        const data = getTPDetailsData(sem, index);
+        if (!data) return;
+        const text = generateAIPromptText(data, "mentah");
+        copyTextToClipboard(text, () => {
+          if (btn) {
+            const origHtml = btn.innerHTML;
+            btn.innerHTML = `<i class="material-symbols-rounded" style="font-size:16px;" data-lucide="check"></i> <span>Data Tersalin! ✨</span>`;
+            btn.style.background = "#16a34a";
+            btn.style.color = "#ffffff";
+            if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+            setTimeout(() => {
+              btn.innerHTML = origHtml;
+              btn.style.background = "";
+              btn.style.color = "";
+              if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+            }, 2500);
+          }
+          if (typeof showSaveIndicator === "function") {
+            showSaveIndicator("Data TP Berhasil Disalin! ✨", "success");
+          }
+        });
+      }
+
+      let ekstraAIState = {
+        semKey: "ganjil",
+        index: 0,
+        tab: "detail", // "detail" | "prompt" | "matriks"
+        promptFormat: "rpm-lengkap" // "rpm-lengkap" | "rpm-ringkas" | "modul-ajar" | "mentah"
+      };
+
+      function setEkstraAITarget(sem, idx, tab, format) {
+        if (sem) ekstraAIState.semKey = (sem === "genap" || sem === 2 || sem === "tpGenap") ? "genap" : "ganjil";
+        if (typeof idx === "number" && !isNaN(idx)) ekstraAIState.index = idx;
+        if (tab) ekstraAIState.tab = tab;
+        if (format) ekstraAIState.promptFormat = format;
+        renderEkstraAIPage();
+      }
+
+      function copyCurrentEkstraData(btn) {
+        copyTPDataSummary(ekstraAIState.semKey, ekstraAIState.index, btn);
+      }
+
+      function copyCurrentEkstraPrompt(btn) {
+        const data = getTPDetailsData(ekstraAIState.semKey, ekstraAIState.index);
+        if (!data) return;
+        const text = generateAIPromptText(data, ekstraAIState.promptFormat || "rpm-lengkap");
+        copyTextToClipboard(text, () => {
+          if (btn) {
+            const origHtml = btn.innerHTML;
+            btn.innerHTML = `<i class="material-symbols-rounded" style="font-size:16px;" data-lucide="check"></i> <span>Tersalin ke Clipboard! ✨</span>`;
+            btn.style.background = "#16a34a";
+            btn.style.color = "#ffffff";
+            if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+            setTimeout(() => {
+              btn.innerHTML = origHtml;
+              btn.style.background = "";
+              btn.style.color = "";
+              if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+            }, 2500);
+          }
+          if (typeof showSaveIndicator === "function") {
+            showSaveIndicator("Prompt AI Berhasil Disalin! ✨", "success");
+          }
+        });
+      }
+
+      function renderEkstraAIPage() {
+        const container = document.getElementById("ekstra-ai-content");
+        if (!container) return;
+
+        const ganjilCount = (state.tpGanjil || []).length;
+        const genapCount = (state.tpGenap || []).length;
+
+        if (ganjilCount === 0 && genapCount === 0) {
+          container.innerHTML = `
+            <div class="empty" style="padding: 48px 24px; text-align: center; background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--border); border-radius: 12px;">
+              <div class="ic" style="margin-bottom: 12px;">
+                <i class="material-symbols-rounded" style="font-size: 56px; color: #facc15;" data-lucide="astroid"></i>
+              </div>
+              <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 6px 0; color: var(--text);">Data Pemetaan TP Belum Tersedia</h3>
+              <p style="font-size: 13.5px; color: var(--text-light); max-width: 540px; margin: 0 auto 16px auto; line-height: 1.5;">
+                Untuk dapat melihat data lengkap dan meracik prompt AI Lesson Plan, silakan lengkapi Data Umum dan isi Tujuan Pembelajaran di menu <strong>Pemetaan TP</strong> terlebih dahulu.
+              </p>
+              <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button type="button" class="btn-add yellow" onclick="showTab('tp')">
+                  <i class="material-symbols-rounded" style="font-size: 16px;" data-lucide="list-todo"></i> Buka Pemetaan TP
+                </button>
+                <button type="button" class="btn-docx" onclick="showTab('atp-input')">
+                  <i class="material-symbols-rounded" style="font-size: 16px;" data-lucide="book-open"></i> Capaian Pembelajaran
+                </button>
+              </div>
+            </div>
+          `;
+          if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+          }
+          return;
+        }
+
+        // Validate selected semester has data
+        let semKey = ekstraAIState.semKey;
+        if (semKey === "ganjil" && ganjilCount === 0 && genapCount > 0) {
+          semKey = "genap";
+          ekstraAIState.semKey = "genap";
+        } else if (semKey === "genap" && genapCount === 0 && ganjilCount > 0) {
+          semKey = "ganjil";
+          ekstraAIState.semKey = "ganjil";
+        }
+
+        let data = getTPDetailsData(semKey, ekstraAIState.index);
+        if (!data && (semKey === "ganjil" ? ganjilCount : genapCount) > 0) {
+          ekstraAIState.index = 0;
+          data = getTPDetailsData(semKey, 0);
+        }
+
+        if (!data) return;
+
+        const activeTab = ekstraAIState.tab || "detail";
+        const promptFormat = ekstraAIState.promptFormat || "rpm-lengkap";
+
+        // View 1: Detail Card
+        let mainContentHtml = "";
+        if (activeTab === "detail") {
+          mainContentHtml = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; align-items: start;">
+              <!-- Kolom Kiri: Identitas, CP, TP -->
+              <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- 1. Identitas -->
+                <div class="tp-detail-card-section">
+                  <div class="tp-detail-card-title"><i class="material-symbols-rounded" style="font-size:15px;" data-lucide="school"></i> 1. Identitas Pembelajaran</div>
+                  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:10px;font-size:13px;">
+                    <div><span style="color:var(--text-light);font-size:11.5px;display:block;">Satuan Pendidikan:</span><strong>${escH(data.sekolah)}</strong></div>
+                    <div><span style="color:var(--text-light);font-size:11.5px;display:block;">Penyusun:</span><strong>${escH(data.guru)}</strong> ${data.nipGuru ? `<span style="font-size:11px;color:var(--text-light);">(${escH(data.guruIdLabel || 'NIP')}: ${escH(data.nipGuru)})</span>` : ''}</div>
+                    <div><span style="color:var(--text-light);font-size:11.5px;display:block;">Mata Pelajaran:</span><strong>${escH(data.mapel)}</strong></div>
+                    <div><span style="color:var(--text-light);font-size:11.5px;display:block;">Fase / Kelas:</span><strong>${escH(data.faseKelas)}</strong></div>
+                    <div><span style="color:var(--text-light);font-size:11.5px;display:block;">Semester:</span><strong>${escH(data.semesterText)}</strong></div>
+                    <div><span style="color:var(--text-light);font-size:11.5px;display:block;">Tahun Ajaran:</span><strong>${escH(data.tahun)}</strong></div>
+                    <div><span style="color:var(--text-light);font-size:11.5px;display:block;">Materi Pokok:</span><strong>${escH(data.mp || '-')}${data.bab ? ` (Bab: ${escH(data.bab)})` : ''}</strong></div>
+                    <div><span style="color:var(--text-light);font-size:11.5px;display:block;">Alokasi Waktu:</span><strong>${data.totalJP} JP (${data.jumlahPertemuan} Pertemuan)</strong></div>
+                  </div>
+                </div>
+
+                <!-- 2. Capaian Pembelajaran -->
+                <div class="tp-detail-card-section">
+                  <div class="tp-detail-card-title"><i class="material-symbols-rounded" style="font-size:15px;" data-lucide="book-open-check"></i> 2. Capaian Pembelajaran (CP) Terkait</div>
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                    <span style="background:rgba(56,189,248,0.15);color:#38bdf8;padding:2px 8px;border-radius:6px;font-size:11.5px;font-weight:700;">Elemen: ${escH(data.elemen)}</span>
+                    ${data.subElemen ? `<span style="background:rgba(255,255,255,0.06);color:var(--text-light);padding:2px 8px;border-radius:6px;font-size:11.5px;">Sub: ${escH(data.subElemen)}</span>` : ''}
+                  </div>
+                  <div style="background:rgba(0,0,0,0.25);border-left:3px solid #38bdf8;padding:10px 14px;border-radius:0 8px 8px 0;font-size:13px;line-height:1.6;color:var(--text);font-style:italic;">
+                    "${escH(data.cp)}"
+                  </div>
+                </div>
+
+                <!-- 3. Tujuan Pembelajaran -->
+                <div class="tp-detail-card-section">
+                  <div class="tp-detail-card-title"><i class="material-symbols-rounded" style="font-size:15px;" data-lucide="target"></i> 3. Tujuan Pembelajaran (TP) &amp; Lingkup Materi</div>
+                  <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
+                    <span style="background:#facc15;color:#1e293b;padding:3px 9px;border-radius:6px;font-size:12px;font-weight:800;">${escH(data.kode)}</span>
+                    ${data.bab ? `<span style="font-size:12px;color:var(--text-light);font-weight:600;">Bab: ${escH(data.bab)}</span>` : ''}
+                    <span style="font-size:11px;padding:2px 7px;border-radius:5px;background:rgba(255,255,255,0.06);color:var(--text-light);">${data.isSumatif ? 'Evaluasi / Sumatif Lingkup Materi' : 'Formatif / Reguler'}</span>
+                  </div>
+                  <div style="font-size:14px;font-weight:600;line-height:1.55;color:var(--text);">
+                    ${escH(data.tp)}
+                  </div>
+                  <div style="font-size:13px;background:rgba(255,255,255,0.03);padding:8px 12px;border-radius:6px;border:1px solid var(--border);">
+                    <span style="color:var(--text-light);">Materi Pokok / Topik: </span><strong>${escH(data.mp || '-')}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Kolom Kanan: Alokasi JP & Jadwal Pertemuan -->
+              <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- 4. Alokasi Waktu -->
+                <div class="tp-detail-card-section">
+                  <div class="tp-detail-card-title"><i class="material-symbols-rounded" style="font-size:15px;" data-lucide="clock"></i> 4. Alokasi Waktu (JP) &amp; Jumlah Pertemuan</div>
+                  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;">
+                    <div style="background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.25);border-radius:8px;padding:12px 10px;text-align:center;">
+                      <div style="font-size:11px;color:#facc15;font-weight:700;text-transform:uppercase;">Total Jam Pelajaran</div>
+                      <div style="font-size:22px;font-weight:800;color:#fde047;margin-top:2px;">${data.totalJP} <span style="font-size:12px;font-weight:600;">JP</span></div>
+                    </div>
+                    <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);border-radius:8px;padding:12px 10px;text-align:center;">
+                      <div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;">Jumlah Pertemuan</div>
+                      <div style="font-size:22px;font-weight:800;color:#7dd3fc;margin-top:2px;">${data.jumlahPertemuan} <span style="font-size:12px;font-weight:600;">Sesi</span></div>
+                    </div>
+                    <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:8px;padding:12px 10px;text-align:center;">
+                      <div style="font-size:11px;color:#22c55e;font-weight:700;text-transform:uppercase;">Rata-rata Pertemuan</div>
+                      <div style="font-size:22px;font-weight:800;color:#86efac;margin-top:2px;">${Math.round((data.totalJP / Math.max(1, data.jumlahPertemuan)) * 10) / 10} <span style="font-size:12px;font-weight:600;">JP</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 5. Rincian Jadwal -->
+                <div class="tp-detail-card-section">
+                  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+                    <div class="tp-detail-card-title"><i class="material-symbols-rounded" style="font-size:15px;" data-lucide="calendar-check"></i> 5. Rincian Jadwal Pertemuan (${data.pertemuanList.length} Pertemuan)</div>
+                    <span style="font-size:11px;color:${data.hasRealSchedule ? '#22c55e' : '#f59e0b'};display:inline-flex;align-items:center;gap:4px;">
+                      <i class="material-symbols-rounded" style="font-size:13px;" data-lucide="${data.hasRealSchedule ? 'calendar' : 'info'}"></i>
+                      ${data.hasRealSchedule ? 'Terjadwal di Kalender Sekolah' : 'Estimasi Alokasi (Kalender Belum Diatur)'}
+                    </span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;padding-right:4px;">
+                    ${data.pertemuanList.map((p) => `
+                      <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.03);padding:8px 12px;border-radius:6px;border:1px solid var(--border);font-size:12.5px;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                          <span style="background:rgba(250,204,21,0.15);color:#facc15;font-weight:700;padding:2px 7px;border-radius:4px;font-size:11px;">Ke-${p.no}</span>
+                          <span style="font-weight:600;color:var(--text);">${escH(p.formatted)}</span>
+                        </div>
+                        <span style="background:rgba(56,189,248,0.12);color:#38bdf8;font-weight:700;padding:2px 8px;border-radius:4px;font-size:11.5px;">${p.jp} JP</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+
+                <!-- 6. Kriteria Ketercapaian Tujuan Pembelajaran (KKTP) -->
+                <div class="tp-detail-card-section">
+                  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+                    <div class="tp-detail-card-title"><i class="material-symbols-rounded" style="font-size:15px;" data-lucide="list-checks"></i> 6. Kriteria Ketercapaian Tujuan Pembelajaran (KKTP)</div>
+                    <span style="font-size:11px;color:#38bdf8;background:rgba(56,189,248,0.12);padding:2px 8px;border-radius:6px;font-weight:700;">Rentang Nilai, Kategori &amp; Keterangan Resmi</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:10px;">
+                    ${data.kktpList.map((k, i) => `
+                      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">
+                          <span style="font-size:11px;color:var(--text-light);font-weight:700;">Rentang ${i + 1}</span>
+                          <span style="font-size:12px;font-weight:800;color:#facc15;background:rgba(250,204,21,0.15);padding:1px 8px;border-radius:4px;border:1px solid rgba(250,204,21,0.3);">${escH(k.val)}%</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                          <span style="font-size:11px;color:var(--text-light);font-weight:600;">Kategori:</span>
+                          <span style="font-size:11.5px;font-weight:700;color:#38bdf8;background:rgba(56,189,248,0.12);padding:1px 6px;border-radius:4px;">${escH(k.kategori)}</span>
+                        </div>
+                        <div style="font-size:12px;color:var(--text);line-height:1.45;border-top:1px dashed var(--border);padding-top:4px;">
+                          <span style="color:var(--text-light);font-size:11px;display:block;">Keterangan &amp; Tindak Lanjut:</span>
+                          ${escH(k.desc)}
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+
+                <!-- Action Footer -->
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding-top:6px;">
+                  <button type="button" class="btn-docx" onclick="copyCurrentEkstraData(this)" style="display:inline-flex;align-items:center;gap:6px;">
+                    <i class="material-symbols-rounded" style="font-size:16px;" data-lucide="copy"></i>
+                    <span>Salin Data Teks</span>
+                  </button>
+                  <button type="button" class="btn-add yellow" onclick="setEkstraAITarget('${data.semKey}', ${data.index}, 'prompt', '${promptFormat}')" style="display:inline-flex;align-items:center;gap:6px;">
+                    <i class="material-symbols-rounded" style="font-size:16px;" data-lucide="astroid"></i>
+                    <span>Rancang Prompt AI Lesson Plan →</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        } else if (activeTab === "prompt") {
+          // View 2: Prompt Generator
+          mainContentHtml = `
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <!-- Format Selection Pills -->
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span style="font-size:12px;font-weight:600;color:var(--text-light);margin-right:2px;">Format Prompt:</span>
+                <button type="button" class="tp-prompt-pill ${promptFormat === 'rpm-lengkap' || promptFormat === 'lengkap' ? 'active' : ''}" onclick="setEkstraAITarget('${data.semKey}', ${data.index}, 'prompt', 'rpm-lengkap')">
+                  <i class="material-symbols-rounded" style="font-size:14px;" data-lucide="astroid"></i>
+                  <span>RPM Lengkap + Instrumen</span>
+                </button>
+                <button type="button" class="tp-prompt-pill ${promptFormat === 'rpm-ringkas' || promptFormat === 'ringkas' ? 'active' : ''}" onclick="setEkstraAITarget('${data.semKey}', ${data.index}, 'prompt', 'rpm-ringkas')">
+                  <i class="material-symbols-rounded" style="font-size:14px;" data-lucide="file-text"></i>
+                  <span>RPM Ringkas (1-2 Halaman)</span>
+                </button>
+                <button type="button" class="tp-prompt-pill ${promptFormat === 'modul-ajar' ? 'active' : ''}" onclick="setEkstraAITarget('${data.semKey}', ${data.index}, 'prompt', 'modul-ajar')">
+                  <i class="material-symbols-rounded" style="font-size:14px;" data-lucide="file-check-2"></i>
+                  <span>Modul Ajar Reguler</span>
+                </button>
+                <button type="button" class="tp-prompt-pill ${promptFormat === 'mentah' ? 'active' : ''}" onclick="setEkstraAITarget('${data.semKey}', ${data.index}, 'prompt', 'mentah')">
+                  <i class="material-symbols-rounded" style="font-size:14px;" data-lucide="code-2"></i>
+                  <span>Data Mentah (Spesifikasi)</span>
+                </button>
+              </div>
+
+              <!-- Tip Callout -->
+              <div style="background:rgba(250,204,21,0.06);border:1px solid rgba(250,204,21,0.25);border-radius:10px;padding:12px 16px;font-size:12.5px;color:#fde047;display:flex;align-items:center;gap:12px;">
+                <i class="material-symbols-rounded" style="font-size:20px;flex-shrink:0;" data-lucide="lightbulb"></i>
+                <div style="line-height:1.5;">
+                  Prompt ini siap disalin ke AI mana pun (ChatGPT, Claude, Gemini, dll). Diformulasikan berdasarkan <strong>Template Resmi Rencana Pembelajaran Mendalam (RPM)</strong>. Konteks sekolah, Capaian Pembelajaran, target TP <strong>[${escH(data.kode)}]</strong>, alokasi <strong>${data.totalJP} JP</strong>, dan rincian <strong>${data.jumlahPertemuan} sesi pertemuan riil</strong> telah terisi 100% otomatis tanpa perlu edit manual!
+                </div>
+              </div>
+
+              <!-- Textarea Prompt -->
+              <div style="position: relative;">
+                <textarea id="ekstra-ai-prompt-area" class="tp-prompt-textarea" style="min-height: 380px; max-height: 520px;" readonly spellcheck="false">${escH(generateAIPromptText(data, promptFormat))}</textarea>
+              </div>
+
+              <!-- Actions & Chatbot Links -->
+              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px;padding:12px 16px;">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <span style="font-size:12px;color:var(--text-light);font-weight:600;">Buka langsung di chatbot:</span>
+                  <a href="https://chatgpt.com" target="_blank" rel="noopener noreferrer" class="tp-prompt-pill" style="text-decoration:none;">
+                    <i class="material-symbols-rounded" style="font-size:14px;" data-lucide="bot"></i>
+                    <span>ChatGPT ↗</span>
+                  </a>
+                  <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer" class="tp-prompt-pill" style="text-decoration:none;">
+                    <i class="material-symbols-rounded" style="font-size:14px;" data-lucide="astroid"></i>
+                    <span>Gemini ↗</span>
+                  </a>
+                  <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" class="tp-prompt-pill" style="text-decoration:none;">
+                    <i class="material-symbols-rounded" style="font-size:14px;" data-lucide="cpu"></i>
+                    <span>Claude ↗</span>
+                  </a>
+                </div>
+
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <button type="button" class="btn-docx" onclick="setEkstraAITarget('${data.semKey}', ${data.index}, 'detail', '${promptFormat}')">
+                    <i class="material-symbols-rounded" style="font-size:16px;" data-lucide="layout-grid"></i>
+                    <span>Lihat Kartu Data</span>
+                  </button>
+                  <button type="button" class="btn-add yellow" onclick="copyCurrentEkstraPrompt(this)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 20px;font-weight:700;font-size:13.5px;">
+                    <i class="material-symbols-rounded" style="font-size:16px;" data-lucide="copy"></i>
+                    <span>Salin Prompt AI</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        } else {
+          // View 3: Matriks Ringkasan Semua TP Semester
+          const tpList = data.allTPs || [];
+          mainContentHtml = `
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                <div style="font-size: 13px; color: var(--text-light);">
+                  Daftar seluruh Tujuan Pembelajaran untuk <strong>${escH(data.semesterText)}</strong> (${tpList.length} TP). Klik tombol pada baris untuk membuka data lengkap atau racik prompt AI.
+                </div>
+                <div style="font-size: 12px; font-weight: 700; color: #facc15;">
+                  Total Alokasi Semester: ${tpList.reduce((s, t) => s + (+t.jp || 0), 0)} JP
+                </div>
+              </div>
+
+              <div style="overflow-x: auto;">
+                <table class="ekstra-ai-matrix-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 40px; text-align: center;">No</th>
+                      <th style="width: 90px;">Kode TP</th>
+                      <th>Tujuan Pembelajaran</th>
+                      <th style="width: 180px;">Materi Pokok / Bab</th>
+                      <th style="width: 60px; text-align: center;">JP</th>
+                      <th style="width: 170px; text-align: right;">Aksi Cepat</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${tpList.map((t, idx) => {
+                      const isCur = idx === data.index;
+                      const jp = t.jp || 2;
+                      return `
+                        <tr style="${isCur ? 'background: rgba(250,204,21,0.06);' : ''}">
+                          <td style="text-align: center; font-weight: 700; color: var(--text-light);">${idx + 1}</td>
+                          <td>
+                            <span style="background: ${isCur ? '#facc15' : 'rgba(255,255,255,0.06)'}; color: ${isCur ? '#1e293b' : 'var(--text)'}; font-weight: 800; font-size: 11.5px; padding: 2px 7px; border-radius: 4px;">
+                              ${escH(t.kode || 'TP ' + (idx + 1))}
+                            </span>
+                          </td>
+                          <td style="font-weight: 600; color: var(--text); line-height: 1.45;">
+                            ${escH(t.tp || '-')}
+                            ${t.ev ? '<span style="margin-left: 6px; font-size: 10.5px; padding: 1px 5px; border-radius: 4px; background: rgba(239,68,68,0.15); color: #f87171;">Sumatif</span>' : ''}
+                          </td>
+                          <td style="font-size: 12.5px; color: var(--text-light);">
+                            ${escH(t.mp || '-')}
+                            ${t.bab ? `<div style="font-size: 11px; color: var(--text-light); opacity: 0.8;">Bab: ${escH(t.bab)}</div>` : ''}
+                          </td>
+                          <td style="text-align: center; font-weight: 700; color: #38bdf8;">${jp}</td>
+                          <td style="text-align: right; white-space: nowrap;">
+                            <div style="display: inline-flex; gap: 6px; justify-content: flex-end;">
+                              <button type="button" class="btn-docx" style="padding: 4px 8px; font-size: 11.5px;" onclick="setEkstraAITarget('${data.semKey}', ${idx}, 'detail', '${promptFormat}')" title="Lihat Kartu Data Lengkap">
+                                <i class="material-symbols-rounded" style="font-size: 13px;" data-lucide="layout-grid"></i> Data
+                              </button>
+                              <button type="button" class="btn-add yellow" style="padding: 4px 10px; font-size: 11.5px;" onclick="setEkstraAITarget('${data.semKey}', ${idx}, 'prompt', '${promptFormat}')" title="Rancang Prompt AI Lesson Plan">
+                                <i class="material-symbols-rounded" style="font-size: 13px;" data-lucide="astroid"></i> Prompt
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        }
+
+        container.innerHTML = `
+          <!-- Toolbar Atas: Semester Switcher, TP Selector, & View Tabs -->
+          <div class="ekstra-ai-toolbar">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; width: 100%;">
+              <!-- Semester Switcher (CSS persis Pemetaan TP) -->
+              <div class="sem-toggle" style="margin: 0;">
+                <button type="button" class="sem-btn ${(data.semNum === 1 || data.semCode === 'ganjil') ? 'active' : ''}" onclick="setEkstraAITarget('ganjil', 0, '${activeTab}', '${promptFormat}')">
+                  Semester Ganjil
+                </button>
+                <button type="button" class="sem-btn ${(data.semNum === 2 || data.semCode === 'genap') ? 'active' : ''}" onclick="setEkstraAITarget('genap', 0, '${activeTab}', '${promptFormat}')">
+                  Semester Genap
+                </button>
+              </div>
+
+              <!-- View Tabs -->
+              <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="tp-detail-tab-btn ${activeTab === 'detail' ? 'active' : ''}" onclick="setEkstraAITarget('${data.semKey}', ${data.index}, 'detail', '${promptFormat}')">
+                  <i class="material-symbols-rounded" style="font-size:15px;" data-lucide="layout-grid"></i>
+                  <span>Kartu Data Lengkap</span>
+                </button>
+                <button type="button" class="tp-detail-tab-btn ${activeTab === 'prompt' ? 'active' : ''}" onclick="setEkstraAITarget('${data.semKey}', ${data.index}, 'prompt', '${promptFormat}')">
+                  <i class="material-symbols-rounded" style="font-size:15px;" data-lucide="astroid"></i>
+                  <span>Generator Prompt AI</span>
+                </button>
+                <button type="button" class="tp-detail-tab-btn ${activeTab === 'matriks' ? 'active' : ''}" onclick="setEkstraAITarget('${data.semKey}', ${data.index}, 'matriks', '${promptFormat}')">
+                  <i class="material-symbols-rounded" style="font-size:15px;" data-lucide="table"></i>
+                  <span>Matriks Semester</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- TP Navigation & Dropdown mentok sampai batas kanan kartu -->
+            <div style="display: flex; align-items: center; gap: 8px; width: 100%;">
+              <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                <button type="button" class="icon-btn" title="TP Sebelumnya" ${data.index === 0 ? 'disabled' : ''} onclick="setEkstraAITarget('${data.semKey}', ${data.index - 1}, '${activeTab}', '${promptFormat}')" style="width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;color:${data.index === 0 ? 'rgba(255,255,255,0.2)' : 'var(--text)'};cursor:${data.index === 0 ? 'default' : 'pointer'};">
+                  <i class="material-symbols-rounded" style="font-size:18px;" data-lucide="chevron-left"></i>
+                </button>
+                <button type="button" class="icon-btn" title="TP Berikutnya" ${data.index === data.totalCount - 1 ? 'disabled' : ''} onclick="setEkstraAITarget('${data.semKey}', ${data.index + 1}, '${activeTab}', '${promptFormat}')" style="width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;color:${data.index === data.totalCount - 1 ? 'rgba(255,255,255,0.2)' : 'var(--text)'};cursor:${data.index === data.totalCount - 1 ? 'default' : 'pointer'};">
+                  <i class="material-symbols-rounded" style="font-size:18px;" data-lucide="chevron-right"></i>
+                </button>
+              </div>
+              <div class="custom-tp-dropdown" id="ekstra-ai-tp-dropdown" style="flex: 1; min-width: 0; max-width: 100%; width: 100%;">
+                ${(() => {
+                  const currentEkstraTpObj = data.allTPs[data.index] || {};
+                  const currentEkstraRawKode = currentEkstraTpObj.kode || 'TP ' + (data.index + 1);
+                  const currentEkstraRawTp = (currentEkstraTpObj.tp ? currentEkstraTpObj.tp : '-').trim();
+                  const currentEkstraJpText = ` (${currentEkstraTpObj.jp || 2} JP)`;
+                  const currentEkstraFullText = `[${currentEkstraRawKode}] ${currentEkstraRawTp}${currentEkstraJpText}`;
+                  return `
+                    <button type="button" class="custom-tp-trigger" onclick="toggleCustomTPDropdown('ekstra-ai-tp-dropdown', event)" style="height:36px;padding:0 12px;background:rgba(0,0,0,0.28);font-size:13px;" title="${escH(currentEkstraFullText)}">
+                      <span style="flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                        ${escH(currentEkstraFullText)}
+                      </span>
+                      <i class="material-symbols-rounded" style="font-size:18px;flex-shrink:0;color:var(--text-light);" data-lucide="chevron-down"></i>
+                    </button>
+                    <div class="custom-tp-menu" style="display:none;">
+                      ${data.allTPs.map((t, idx) => {
+                        const rawKode = t.kode || 'TP ' + (idx + 1);
+                        const rawTp = (t.tp ? t.tp : '-').trim();
+                        const jpText = ` (${t.jp || 2} JP)`;
+                        const fullOptionText = `[${rawKode}] ${rawTp}${jpText}`;
+                        const isSelected = idx === data.index;
+                        return `<button type="button" class="custom-tp-item ${isSelected ? 'selected' : ''}" onclick="setEkstraAITarget('${data.semKey}', ${idx}, '${activeTab}', '${promptFormat}')" title="${escH(fullOptionText)}">
+                          ${escH(fullOptionText)}
+                        </button>`;
+                      }).join('')}
+                    </div>
+                  `;
+                })()}
+              </div>
+            </div>
+          </div>
+
+          <!-- Main View Body -->
+          ${mainContentHtml}
+        `;
+
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
+      }
+
       function formatKelas(kelas) {
         if (!kelas) return "";
         let k = String(kelas).trim();
@@ -10108,9 +11866,15 @@ function toggleSidebar() {
           outNav.classList.add("disabled-section");
           outNav.title = "Silakan klik Generate Dokumen terlebih dahulu";
         }
+        const ekstraNav = document.getElementById("ekstra-nav-section");
+        if (ekstraNav) {
+          ekstraNav.classList.add("hidden");
+          ekstraNav.classList.add("disabled-section");
+          ekstraNav.title = "Silakan klik Generate Dokumen terlebih dahulu";
+        }
 
         // Switch away from output tabs if currently active
-        const outputTabs = ["kalender", "atp", "rpe", "jurnal", "prota", "prosem", "absensi", "kktp", "nilai"];
+        const outputTabs = ["kalender", "atp", "rpe", "jurnal", "prota", "prosem", "absensi", "kktp", "nilai", "ekstra-ai"];
         const activeTabPane = document.querySelector(".tab-pane.active");
         if (activeTabPane) {
           const activeId = activeTabPane.id ? activeTabPane.id.replace("tab-", "") : "";
@@ -10130,6 +11894,12 @@ function toggleSidebar() {
           outNav.classList.remove("hidden");
           outNav.classList.remove("disabled-section");
           outNav.title = "";
+        }
+        const ekstraNav = document.getElementById("ekstra-nav-section");
+        if (ekstraNav) {
+          ekstraNav.classList.remove("hidden");
+          ekstraNav.classList.remove("disabled-section");
+          ekstraNav.title = "";
         }
       }
 
@@ -10205,7 +11975,9 @@ function toggleSidebar() {
               return `
     <tr class="${item.ev ? "eval-row" : ""}${i % 2 === 1 ? " zebra" : ""}">
       <td style="padding:5px 4px;border:1px solid #1E3A5F;text-align:center;vertical-align:top;white-space:nowrap;">${i + 1}</td>
-      <td style="padding:5px 8px;border:1px solid #1E3A5F;text-align:center;font-weight:normal;vertical-align:top;">${item.kode}</td>
+      <td style="padding:5px 8px;border:1px solid #1E3A5F;text-align:center;font-weight:normal;vertical-align:top;white-space:nowrap;">
+        <span>${item.kode}</span>
+      </td>
       <td style="padding:5px 8px;border:1px solid #1E3A5F;text-align:left;vertical-align:top;">${item.tp}</td>
       <td style="padding:5px 8px;border:1px solid #1E3A5F;text-align:left;vertical-align:top;">${item.mp || " - "}</td>
       <td style="padding:5px 6px;border:1px solid #1E3A5F;text-align:center;vertical-align:top;white-space:nowrap;">${pertemuanCount}</td>
@@ -11248,7 +13020,6 @@ function toggleSidebar() {
           obj[key] = val;
         }
         scheduleSave();
-        markDirty();
         renderNilai(sem);
       }
 
@@ -11596,6 +13367,7 @@ function toggleSidebar() {
         renderKKTPOutput();
         renderTPStats(1, jpTG, jpAG);
         renderTPStats(2, jpTE, jpAE);
+        renderEkstraAIPage();
         markGenerated();
 
         // Show print & docx buttons for non-semester tabs
@@ -16354,6 +18126,9 @@ xmlns="http://www.w3.org/TR/REC-html40">
           markDirty();
         }
         if (e.target.closest(".content")) {
+          if (e.target.closest("#tab-ekstra-ai, #tab-kalender, #tab-atp, #tab-rpe, #tab-jurnal, #tab-prota, #tab-prosem, #tab-absensi, #tab-kktp, #tab-nilai, .modal, .modal-backdrop, #detail-tp-modal")) {
+            return;
+          }
           scheduleSave();
           markDirty();
         }
@@ -16395,6 +18170,9 @@ xmlns="http://www.w3.org/TR/REC-html40">
           triggerMapelChange();
         }
         if (e.target.closest(".content")) {
+          if (e.target.closest("#tab-ekstra-ai, #tab-kalender, #tab-atp, #tab-rpe, #tab-jurnal, #tab-prota, #tab-prosem, #tab-absensi, #tab-kktp, #tab-nilai, .modal, .modal-backdrop, #detail-tp-modal")) {
+            return;
+          }
           scheduleSave();
           markDirty();
         }
@@ -16527,7 +18305,9 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "checkTabletWidth",
   "chunkMonthSpans",
   "cleanCPText",
+  "clearAllAtpTP",
   "clearAllSiswa",
+  "clearAtpRows",
   "clearKalender",
   "clearTourHighlights",
   "closeAllHeaderDropdowns",
@@ -16536,6 +18316,10 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "closePrintAbsensiModal",
   "confirmDeleteKalenderGroup",
   "conn",
+  "copyCurrentEkstraData",
+  "copyCurrentEkstraPrompt",
+  "copyTPDataSummary",
+  "copyTPPromptToClipboard",
   "darkenColor",
   "daysInMonth",
   "deactivateLoginMode",
@@ -16618,6 +18402,8 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "onCPDatabaseFailed",
   "onCPDatabaseLoaded",
   "openChangePasswordModal",
+  "openDetailTPModal",
+  "openDetailTPModalFromJurnal",
   "openEditKalenderGroupModal",
   "openEditKomponenModal",
   "openEditLibur",
@@ -16646,6 +18432,7 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "renderDUSignHTML",
   "renderDaftarKelas",
   "renderEditSubKomponentsList",
+  "renderEkstraAIPage",
   "renderJadwal",
   "renderJurnal",
   "renderKKTP",
@@ -16683,6 +18470,7 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "scheduleSave",
   "searchBSKAP046Data",
   "setAbsensiMonth",
+  "setEkstraAITarget",
   "setupRandomWelcoming",
   "showCustomAlert",
   "showCustomPrompt",

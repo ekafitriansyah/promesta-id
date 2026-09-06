@@ -1414,7 +1414,7 @@
       </div>
 
       <div class="nav-section">
-        <span class="nav-label">Input Data</span>
+        <span class="nav-label">Input</span>
         <button class="nav-btn active" title="Data Umum" onclick="showTab('data-umum')">
           <i class="ic" data-lucide="graduation-cap"></i>Data Umum
         </button>
@@ -1484,6 +1484,13 @@
         </button>
         <button class="nav-btn" title="Daftar Nilai" onclick="showTab('nilai')">
           <i class="ic" data-lucide="graduation-cap"></i>Daftar Nilai
+        </button>
+      </div>
+
+      <div class="nav-section disabled-section hidden" id="ekstra-nav-section" title="Silakan klik Generate Dokumen terlebih dahulu">
+        <span class="nav-label">Ekstra</span>
+        <button class="nav-btn" title="Data TP &amp; Prompt AI" onclick="showTab('ekstra-ai')">
+          <i class="ic" data-lucide="astroid"></i>Data TP &amp; Prompt AI
         </button>
       </div>
 
@@ -2331,7 +2338,7 @@
                       <span>Tambah Sumatif</span>
                     </button>
                     <div class="header-dropdown-divider"></div>
-                    <div class="header-dropdown-group-title">Aksi Otomatis</div>
+                    <div class="header-dropdown-group-title">Aksi Otomatis &amp; AI</div>
                     <button
                       class="header-dropdown-item accent"
                       type="button"
@@ -2392,7 +2399,7 @@
                     <th>Tujuan Pembelajaran</th>
                     <th style="width: 50px">JP</th>
                     <th style="width: 70px">Urutan</th>
-                    <th style="width: 50px">Aksi</th>
+                    <th style="width: 84px">Aksi</th>
                   </tr>
                 </thead>
                 <tbody id="body-tp-ganjil"></tbody>
@@ -2471,7 +2478,7 @@
                       <span>Tambah Sumatif</span>
                     </button>
                     <div class="header-dropdown-divider"></div>
-                    <div class="header-dropdown-group-title">Aksi Otomatis</div>
+                    <div class="header-dropdown-group-title">Aksi Otomatis &amp; AI</div>
                     <button
                       class="header-dropdown-item accent"
                       type="button"
@@ -2532,7 +2539,7 @@
                     <th>Tujuan Pembelajaran</th>
                     <th style="width: 50px">JP</th>
                     <th style="width: 70px">Urutan</th>
-                    <th style="width: 50px">Aksi</th>
+                    <th style="width: 84px">Aksi</th>
                   </tr>
                 </thead>
                 <tbody id="body-tp-genap"></tbody>
@@ -3326,6 +3333,35 @@
             <p>Klik <strong><i class="material-symbols-rounded" style="font-size:16px; vertical-align:middle;" data-lucide="zap"></i> Generate Dokumen</strong> terlebih dahulu.</p>
           </div>
         </div>
+        <!-- FOOTER HAK CIPTA -->
+        <footer class="app-ui-footer no-print">
+          <div class="app-ui-footer-inner">
+            <span>Hak Cipta &copy; 2026 <strong>Eka Fitriansyah</strong> &bull; Promesta.id</span>
+          </div>
+        </footer>
+      </div>
+
+      <!-- EKSTRA: DATA TP & PROMPT AI LESSON PLAN -->
+      <div id="tab-ekstra-ai" class="tab-pane">
+        <div class="tab-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="tp-detail-header-badge"><i class="material-symbols-rounded" style="font-size: 13px" data-lucide="astroid"></i> Ekstra</span>
+            <h2 style="margin: 0;">Data TP &amp; Generator Prompt AI</h2>
+            <button
+              class="header-info-tip"
+              type="button"
+              onclick="showCustomAlert('Data TP &amp; Generator Prompt AI', 'Pusat eksplorasi data lengkap Tujuan Pembelajaran (CP, jadwal pertemuan, alokasi JP) &amp; generator prompt RPP / Modul Ajar Kurikulum Merdeka.', 'info')"
+              title="Pusat eksplorasi data lengkap Tujuan Pembelajaran (CP, jadwal pertemuan, alokasi JP) &amp; generator prompt RPP / Modul Ajar Kurikulum Merdeka."
+            >
+              <i class="material-symbols-rounded" style="font-size: 14px" data-lucide="info"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="ekstra-ai-content" style="margin-top: 14px; display: flex; flex-direction: column; gap: 16px;">
+          <!-- Dinamis dirender oleh renderEkstraAIPage() -->
+        </div>
+
         <!-- FOOTER HAK CIPTA -->
         <footer class="app-ui-footer no-print">
           <div class="app-ui-footer-inner">

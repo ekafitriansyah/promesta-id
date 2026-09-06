@@ -4017,6 +4017,366 @@
         width: 680px;
         max-width: 92vw;
       }
+      .modal-box.modal-box-tp-detail {
+        width: 860px;
+        max-width: 95vw;
+        max-height: calc(100dvh - 50px);
+        padding: 24px 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .tp-detail-header-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 9px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        background: rgba(250, 204, 21, 0.15);
+        color: #facc15;
+        border: 1px solid rgba(250, 204, 21, 0.35);
+      }
+      .tp-detail-tabs {
+        display: flex;
+        gap: 6px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 8px;
+        margin-top: 4px;
+      }
+      .tp-detail-tab-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border-radius: 8px;
+        font-size: var(--fs-sm);
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid transparent;
+        background: none;
+        color: var(--text-light);
+        transition: all 0.2s ease;
+      }
+      .tp-detail-tab-btn:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text);
+      }
+      .tp-detail-tab-btn.active {
+        background: rgba(250, 204, 21, 0.12);
+        color: #fde047;
+        border-color: rgba(250, 204, 21, 0.3);
+      }
+      .tp-detail-card-section {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .tp-detail-card-title {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #94a3b8;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .tp-prompt-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 12.5px;
+        font-weight: 600;
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border);
+        color: var(--text-light);
+        transition: all 0.15s ease;
+      }
+      .tp-prompt-pill:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text);
+      }
+      .tp-prompt-pill.active {
+        background: rgba(56, 189, 248, 0.15);
+        color: #38bdf8;
+        border-color: rgba(56, 189, 248, 0.4);
+      }
+      .tp-prompt-textarea {
+        width: 100%;
+        min-height: 280px;
+        max-height: 380px;
+        padding: 12px 14px;
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+        font-size: 12px;
+        line-height: 1.55;
+        resize: vertical;
+        box-sizing: border-box;
+      }
+      .ekstra-ai-toolbar {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        box-sizing: border-box;
+        width: 100%;
+      }
+
+      /* ============================================================
+         HALAMAN EKSTRA: DATA TP & PROMPT AI STYLING & TYPOGRAPHY
+         ============================================================ */
+      #tab-ekstra-ai,
+      #tab-ekstra-ai *:not(.material-symbols-rounded):not(.tp-prompt-textarea):not(#ekstra-ai-prompt-area):not(h2):not(.tab-header h2) {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+      }
+      #tab-ekstra-ai .tab-header h2 {
+        font-family: 'Funnel Display', sans-serif !important;
+        font-size: var(--fs-xl);
+        color: var(--accent);
+        margin: 0;
+        font-weight: 700;
+      }
+      #tab-ekstra-ai h3,
+      #tab-ekstra-ai .tp-detail-card-title,
+      #tab-ekstra-ai .sem-btn,
+      #tab-ekstra-ai .tp-detail-tab-btn,
+      #tab-ekstra-ai select,
+      #tab-ekstra-ai button:not(.tab-header h2),
+      #tab-ekstra-ai table,
+      #tab-ekstra-ai th,
+      #tab-ekstra-ai td {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+      }
+      #tab-ekstra-ai .material-symbols-rounded {
+        font-family: 'Material Symbols Rounded' !important;
+      }
+      #tab-ekstra-ai textarea.tp-prompt-textarea,
+      #tab-ekstra-ai #ekstra-ai-prompt-area {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace !important;
+      }
+
+      #tab-ekstra-ai select,
+      .modal-box-tp-detail select,
+      #ekstra-ai-tp-selector,
+      #detail-tp-selector {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        text-overflow: ellipsis !important;
+        overflow: hidden !important;
+        white-space: nowrap !important;
+      }
+      #tab-ekstra-ai select option,
+      .modal-box-tp-detail select option,
+      #ekstra-ai-tp-selector option,
+      #detail-tp-selector option {
+        max-width: 100%;
+        text-overflow: ellipsis;
+        overflow: hidden;
+      }
+
+      /* Custom Dropdown TP - Selebar tombol & tidak tembus frame */
+      .custom-tp-dropdown {
+        position: relative;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+      }
+
+      .custom-tp-trigger {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+        background: rgba(0, 0, 0, 0.28);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: border-color 0.2s, background 0.2s;
+        text-align: left;
+      }
+
+      .custom-tp-trigger:hover {
+        border-color: rgba(250, 204, 21, 0.5);
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .custom-tp-trigger:focus {
+        outline: none;
+        border-color: #facc15;
+        box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.2);
+      }
+
+      .custom-tp-menu {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        max-height: 280px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        background: #0b1325;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.75);
+        z-index: 99999;
+      }
+
+      .custom-tp-menu::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .custom-tp-menu::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+      }
+
+      .custom-tp-item {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        padding: 9px 12px;
+        font-size: 12.5px;
+        text-align: left;
+        background: transparent !important;
+        color: var(--text);
+        border: none;
+        border-radius: 0 !important;
+        cursor: pointer;
+        text-overflow: ellipsis !important;
+        overflow: hidden !important;
+        white-space: nowrap !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        transition: color 0.15s;
+        font-family: inherit;
+      }
+
+      .custom-tp-item:last-child {
+        border-bottom: none;
+      }
+
+      .custom-tp-item:hover {
+        background: transparent !important;
+        color: #facc15 !important;
+      }
+
+      .custom-tp-item.selected {
+        background: transparent !important;
+        color: #facc15 !important;
+        font-weight: 700 !important;
+        border-radius: 0 !important;
+      }
+
+      .custom-tp-item.selected:hover {
+        background: transparent !important;
+        color: #fde047 !important;
+        font-weight: 700 !important;
+      }
+
+      /* Filter Semester CSS sama persis dengan Pemetaan TP */
+      #tab-ekstra-ai .sem-toggle,
+      .modal-box-tp-detail .sem-toggle {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(0, 0, 0, 0.28);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 9999px !important;
+        padding: 3px;
+        margin: 0;
+        gap: 4px;
+        width: fit-content;
+      }
+      #tab-ekstra-ai .sem-btn,
+      .modal-box-tp-detail .sem-btn {
+        position: relative;
+        padding: 6px 18px;
+        border-radius: 9999px !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: var(--fs-xs);
+        font-weight: 600;
+        cursor: pointer;
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.75);
+        margin: 0;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        box-shadow: none;
+      }
+      #tab-ekstra-ai .sem-btn:hover:not(.active),
+      .modal-box-tp-detail .sem-btn:hover:not(.active) {
+        background: rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+        box-shadow: none;
+      }
+      #tab-ekstra-ai .sem-btn.active,
+      .modal-box-tp-detail .sem-btn.active {
+        background: var(--accent, #facc15) !important;
+        color: #0f1d3a !important;
+        font-weight: 700 !important;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25) !important;
+      }
+      .ekstra-ai-matrix-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        background: rgba(255, 255, 255, 0.015);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .ekstra-ai-matrix-table th {
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text-light);
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+      }
+      .ekstra-ai-matrix-table td {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text);
+        vertical-align: middle;
+      }
+      .ekstra-ai-matrix-table tr:last-child td {
+        border-bottom: none;
+      }
+      .ekstra-ai-matrix-table tr:hover td {
+        background: rgba(255, 255, 255, 0.03);
+      }
       .modal-grid-2col {
         display: grid;
         grid-template-columns: 1fr 1fr;
