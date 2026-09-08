@@ -427,11 +427,14 @@
       }
 
       function startClassTour(kelasId) {
+        if (!kelasId && typeof currentKelasId !== "undefined") {
+          kelasId = currentKelasId;
+        }
         clearTourHighlights();
         currentTourStep = 1;
         
         // Ensure we are in the correct class screen
-        if (currentKelasId !== kelasId) {
+        if (kelasId && currentKelasId !== kelasId) {
           bukaKelas(kelasId);
         }
         
@@ -467,7 +470,7 @@
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px;">
               <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="background: rgba(250, 204, 21, 0.2); border: 1px solid var(--accent); color: var(--accent); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                  <i class="material-symbols-rounded" style="font-size: 24px;" data-lucide="sparkles"></i>
+                  <i class="material-symbols-rounded" style="font-size: 24px;" data-lucide="lightbulb"></i>
                 </div>
                 <div>
                   <h4 style="font-size: 17px; font-weight: 700; margin: 0; color: #facc15;">Selamat Datang di Panduan Kelas! 🎉</h4>
@@ -484,7 +487,7 @@
                 <strong style="color: #60a5fa; display: block; margin-bottom: 6px; font-size: 13px;">💡 3 Prinsip Kerja Sederhana:</strong>
                 <ol style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--text-light);">
                   <li>Isi 6 menu pada kelompok <strong>"Input Data"</strong> di sidebar kiri.</li>
-                  <li>Klik satu tombol ajaib kuning <strong>"Generate Dokumen"</strong>.</li>
+                  <li>Klik satu tombol ajaib merah <strong>"Generate Dokumen"</strong>.</li>
                   <li>Semua 9 dokumen perangkat ajar otomatis terisi & siap dicetak di kelompok <strong>"Output"</strong>.</li>
                 </ol>
               </div>
@@ -773,7 +776,7 @@
               <div style="background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px;">
                 <strong style="color: #fef08a; font-size: 13.5px; display: block; margin-bottom: 4px;">⚡ Tombol Ajaib Penghitung Otomatis:</strong>
                 <span style="font-size: 12.5px; color: #fef9c3;">
-                  Setelah 6 menu Input Data selesai diisi (atau jika ada perubahan materi/jadwal), <strong>WAJIB menekan tombol kuning "Generate Dokumen"</strong> di sidebar kiri.
+                  Setelah 6 menu Input Data selesai diisi (atau jika ada perubahan materi/jadwal), <strong>WAJIB menekan tombol merah "Generate Dokumen"</strong> di sidebar kiri.
                 </span>
               </div>
               <p style="margin: 0; font-size: 12.5px; color: var(--text-light);">
@@ -928,7 +931,7 @@
       // ============================================================
       // STATE: KELAS AKTIF
       // ============================================================
-      let currentKelasId = null; // ID kelas yang sedang dibuka
+      var currentKelasId = window.currentKelasId = null; // ID kelas yang sedang dibuka
       let daftarKelas = []; // [{id, mapel, kelas, fase, tahun, sekolah, ...}]
 
       // ============================================================
@@ -2601,7 +2604,24 @@
             }
           }
 
-          // Attach registration checker
+          // Attach registration checker and auto error-clearing on all login inputs
+          function clearLoginError() {
+            const errEl = document.getElementById("login-err");
+            if (errEl && errEl.textContent) {
+              errEl.textContent = "";
+            }
+          }
+          window.clearLoginError = clearLoginError;
+
+          ["login-nama", "login-password", "login-sekolah", "login-license"].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) {
+              el.addEventListener("input", clearLoginError);
+              el.addEventListener("change", clearLoginError);
+              el.addEventListener("keyup", clearLoginError);
+            }
+          });
+
           const nameInput = document.getElementById("login-nama");
           if (nameInput && typeof checkNameRegistration === "function") {
             nameInput.addEventListener("input", checkNameRegistration);
@@ -2638,25 +2658,9 @@
         if (!key) return false;
         const cleanKey = key.trim().toUpperCase();
         
-        // Master Keys for quick developer setup/custom codes
+        // Developer Master Keys for emergency offline setup
         const masterKeys = ["PGGURU26", "PGOFFLIN", "PGACTIVE"];
-        if (masterKeys.includes(cleanKey)) return true;
-        
-        // Mathematical generator pattern: 8 digits (no spaces, no dashes)
-        // Part 1 (first 4 digits) must sum to 15
-        // Part 2 (last 4 digits) must sum to 22
-        const regex = /^(\d{4})(\d{4})$/;
-        const match = cleanKey.match(regex);
-        if (match) {
-          const firstPart = match[1];
-          const secondPart = match[2];
-          
-          const sumFirst = firstPart.split('').reduce((acc, val) => acc + parseInt(val, 10), 0);
-          const sumSecond = secondPart.split('').reduce((acc, val) => acc + parseInt(val, 10), 0);
-          
-          return sumFirst === 15 && sumSecond === 22;
-        }
-        return false;
+        return masterKeys.includes(cleanKey);
       }
 
       function findUserKey(users, name) {
@@ -2690,6 +2694,7 @@
       }
 
       function checkNameRegistration() {
+        if (typeof clearLoginError === "function") clearLoginError();
         const nameInput = document.getElementById("login-nama");
         const licenseField = document.getElementById("license-field");
         if (!nameInput || !licenseField) return;
@@ -2706,6 +2711,7 @@
           licenseField.style.display = "none";
         } else {
           licenseField.style.display = "block";
+          if (typeof updateGFormLinkHref === "function") updateGFormLinkHref();
         }
       }
 
@@ -2727,6 +2733,422 @@
             });
           }
         }
+      }
+
+      // ============================================================
+      // GOOGLE FORM & GOOGLE SHEET LICENSE VERIFICATION SYSTEM
+      // ============================================================
+      function _decodeEndpoint(b64) {
+        try {
+          return atob(b64);
+        } catch (e) {
+          return "";
+        }
+      }
+
+      const _0xf1 = "aHR0cHM6Ly9mb3Jtcy5nbGUvOFhyYnU5VUo4dWpwWWlIeDk=";
+      const _0xf2 = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J6U2FnRkQ3UG5zQ042cU8ySHhoNFdBQWFLb0ZkWVllS0xvWEt6M29KdzhCQzdLWWJYZVdLZjhzWlNVLXpScFgtUlkvZXhlYw==";
+
+      function getStoredGFormUrl() {
+        return localStorage.getItem("promesta_gform_url") || _decodeEndpoint(_0xf1);
+      }
+
+      function getStoredGasUrl() {
+        return localStorage.getItem("promesta_gas_script_url") || _decodeEndpoint(_0xf2);
+      }
+
+      function openGFormRequestLink(e) {
+        const url = getStoredGFormUrl();
+        const linkEl = document.getElementById("gform-request-link");
+        if (linkEl && url) {
+          linkEl.href = url;
+        }
+        if (!url || url === "#") {
+          if (e) e.preventDefault();
+          return;
+        }
+        // Native hyperlink navigation handles opening target="_blank" smoothly without popup blocking
+      }
+
+      function updateGFormLinkHref() {
+        const linkEl = document.getElementById("gform-request-link");
+        if (linkEl) {
+          linkEl.href = getStoredGFormUrl();
+        }
+      }
+
+      function ensureGFormSettingsModal() {
+        let modal = document.getElementById("modal-gform-settings");
+        if (!modal) {
+          modal = document.createElement("div");
+          modal.id = "modal-gform-settings";
+          modal.className = "modal-overlay hidden";
+          modal.style.zIndex = "10005";
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width: 520px; width: 92%;">
+              <div class="modal-title" style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="display: flex; align-items: center; gap: 8px;">
+                  <i class="material-symbols-rounded" style="color: #f43f5e;" data-lucide="settings-2"></i> Pengaturan Integrasi Google Sheet
+                </span>
+                <button type="button" class="btn-modal-cancel" style="padding: 2px 6px;" onclick="closeGFormSettingsModal()">✕</button>
+              </div>
+              <div class="modal-field" style="margin-top: 12px;">
+                <label>URL Google Form (Permintaan Lisensi)</label>
+                <input type="text" id="cfg-gform-url" placeholder="https://forms.gle/..." />
+              </div>
+              <div class="modal-field">
+                <label>URL Web App Google Apps Script (Verifikasi Realtime)</label>
+                <input type="text" id="cfg-gas-url" placeholder="https://script.google.com/macros/s/.../exec" />
+              </div>
+              <div style="margin-top: 10px; margin-bottom: 16px;">
+                <a href="#" onclick="openGASTutorialModal(); return false;" style="font-size: 11px; color: #38bdf8; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px;">
+                  <i class="material-symbols-rounded" style="font-size: 13px;" data-lucide="help-circle"></i> Lihat Kode Google Apps Script &amp; Tutorial
+                </a>
+              </div>
+              <div class="modal-actions">
+                <button type="button" class="btn-modal-cancel" onclick="closeGFormSettingsModal()">Batal</button>
+                <button type="button" class="btn-modal-ok btn-save" onclick="saveGFormSettings()" style="background: #e11d48; color: #fff;">Simpan</button>
+              </div>
+            </div>
+          `;
+          document.body.appendChild(modal);
+        }
+        return modal;
+      }
+
+      function openGFormSettingsModal() {
+        const modal = ensureGFormSettingsModal();
+
+        const gformInp = document.getElementById("cfg-gform-url");
+        const gasInp = document.getElementById("cfg-gas-url");
+
+        if (gformInp) gformInp.value = localStorage.getItem("promesta_gform_url") || _decodeEndpoint(_0xf1);
+        if (gasInp) gasInp.value = localStorage.getItem("promesta_gas_script_url") || _decodeEndpoint(_0xf2);
+
+        modal.classList.remove("hidden");
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+          lucide.createIcons();
+        }
+      }
+
+      function closeGFormSettingsModal() {
+        const modal = document.getElementById("modal-gform-settings");
+        if (modal) modal.classList.add("hidden");
+      }
+
+      function saveGFormSettings() {
+        const gformUrl = (document.getElementById("cfg-gform-url")?.value || "").trim();
+        const gasUrl = (document.getElementById("cfg-gas-url")?.value || "").trim();
+
+        if (gformUrl) localStorage.setItem("promesta_gform_url", gformUrl);
+        else localStorage.removeItem("promesta_gform_url");
+
+        if (gasUrl) localStorage.setItem("promesta_gas_script_url", gasUrl);
+        else localStorage.removeItem("promesta_gas_script_url");
+
+        closeGFormSettingsModal();
+        updateGFormLinkHref();
+        alert("Pengaturan Integrasi Google Form & Sheet berhasil disimpan!");
+      }
+
+      function ensureGASTutorialModal() {
+        let modal = document.getElementById("modal-gas-tutorial");
+        if (!modal) {
+          modal = document.createElement("div");
+          modal.id = "modal-gas-tutorial";
+          modal.className = "modal-overlay hidden";
+          modal.style.zIndex = "10006";
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width: 680px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+              <div class="modal-title" style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="display: flex; align-items: center; gap: 8px;">
+                  <i class="material-symbols-rounded" style="color: #38bdf8;" data-lucide="code-2"></i> Kode Google Apps Script (Paket Individu &amp; Paket Sekolah)
+                </span>
+                <button type="button" class="btn-modal-cancel" style="padding: 2px 6px;" onclick="closeGASTutorialModal()">✕</button>
+              </div>
+              <p style="font-size: 11px; color: var(--text-light, #94a3b8); margin-bottom: 10px; line-height: 1.5;">
+                Script ini mendukung verifikasi <strong>Paket Individu</strong> (nama guru harus cocok) dan <strong>Paket Sekolah</strong> (seluruh guru dari sekolah terdaftar diizinkan masuk dengan nama masing-masing asalkan nama sekolah cocok). Pasang di menu <strong>Extensions &gt; Apps Script</strong> pada Google Sheet Anda, lalu Deploy sebagai <strong>Web App</strong> (Who has access: <em>Anyone</em>).
+              </p>
+              <div style="flex: 1; min-height: 260px; margin-bottom: 12px;">
+                <textarea id="gas-code-textarea" readonly style="width: 100%; height: 280px; font-family: monospace; font-size: 11px; padding: 10px; background: rgba(0,0,0,0.4); color: #38bdf8; border: 1px solid var(--border); border-radius: 8px; resize: vertical; outline: none;"></textarea>
+              </div>
+              <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn-modal-cancel" onclick="closeGASTutorialModal()">Tutup</button>
+                <button type="button" class="btn-modal-ok" onclick="copyGASCode()" style="background: #e11d48; color: #fff; display: inline-flex; align-items: center; gap: 5px;">
+                  <i class="material-symbols-rounded" style="font-size: 14px;" data-lucide="copy"></i> Salin Kode Script
+                </button>
+              </div>
+            </div>
+          `;
+          document.body.appendChild(modal);
+        }
+        return modal;
+      }
+
+      function openGASTutorialModal() {
+        const modal = ensureGASTutorialModal();
+
+        const textarea = document.getElementById("gas-code-textarea");
+        if (textarea) {
+          textarea.value = `// ============================================================
+// GOOGLE APPS SCRIPT CODE FOR PROMESTA.ID LICENSE VERIFICATION
+// Paste di menu Extensions > Apps Script pada Google Sheet Anda
+// ============================================================
+
+function doGet(e) {
+  var params = e.parameter || {};
+  var namaInput = (params.nama || "").toString().trim().toLowerCase();
+  var sekolahInput = (params.sekolah || "").toString().trim().toLowerCase();
+  var kodeInput = (params.kode || "").toString().trim().toUpperCase();
+
+  if (!kodeInput) {
+    return ContentService.createTextOutput(JSON.stringify({ 
+      valid: false, 
+      message: "Kode Akses wajib diisi." 
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  if (!namaInput) {
+    return ContentService.createTextOutput(JSON.stringify({ 
+      valid: false, 
+      message: "Nama Lengkap wajib diisi untuk verifikasi." 
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = sheet.getDataRange().getValues();
+  if (data.length <= 1) {
+    return ContentService.createTextOutput(JSON.stringify({ 
+      valid: false, 
+      message: "Data pendaftaran di Google Sheet masih kosong." 
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // Fungsi pembersih teks untuk pencocokan nama yang fleksibel (mengabaikan gelar seperti S.Pd, Gr., M.Pd)
+  function clean(str) {
+    if (!str) return "";
+    return str.toString()
+      .toLowerCase()
+      .replace(/[^a-zA-Z0-9 ]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  var cleanNamaInput = clean(namaInput);
+  var cleanSekolahInput = clean(sekolahInput);
+
+  // Format Kolom Google Sheet:
+  // Kolom D (index 3) = Nama Pembeli Paket Individu
+  // Kolom H (index 7) = Nama Pembeli Paket Sekolah
+  // Kolom I (index 8) = Nama Sekolah
+  // Kolom M (index 12) = Validasi / Kode Akses
+  var colD_Individu = 3;  // Kolom D
+  var colH_Sekolah = 7;   // Kolom H
+  var colI_Sekolah = 8;   // Kolom I
+  var colKode = 12;       // Kolom M
+
+  // Deteksi kolom secara otomatis dari header (baris 1) jika tersedia
+  var header = data[0].map(function(h) { return (h || "").toString().toLowerCase().trim(); });
+  for (var c = 0; c < header.length; c++) {
+    var h = header[c];
+    if (h.indexOf("sekolah") >= 0 || h.indexOf("instansi") >= 0 || h.indexOf("lembaga") >= 0) {
+      if (h.indexOf("nama pembeli") >= 0 || h.indexOf("pemesan") >= 0 || h.indexOf("pendaftar") >= 0) {
+        colH_Sekolah = c;
+      } else if (h.indexOf("nama sekolah") >= 0 || h.indexOf("nama instansi") >= 0) {
+        colI_Sekolah = c;
+      }
+    } else if (h.indexOf("nama") >= 0 && h.indexOf("sekolah") === -1) {
+      if (colD_Individu === 3) colD_Individu = c;
+    }
+    if (h.indexOf("kode") >= 0 || h.indexOf("token") >= 0 || h.indexOf("lisensi") >= 0 || h.indexOf("validasi") >= 0) {
+      colKode = c;
+    }
+  }
+
+  // Helper normalisasi nama sekolah (contoh: 'SMP Negeri 1' cocok dengan 'SMPN 1')
+  function cleanSekolah(str) {
+    if (!str) return "";
+    return str.toString()
+      .toLowerCase()
+      .replace(/smp\s*negeri/g, "smpn")
+      .replace(/sma\s*negeri/g, "sman")
+      .replace(/smk\s*negeri/g, "smkn")
+      .replace(/sd\s*negeri/g, "sdn")
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .trim();
+  }
+
+  function isSekolahCocok(s1, s2) {
+    var c1 = cleanSekolah(s1);
+    var c2 = cleanSekolah(s2);
+    if (!c1 || !c2) return false;
+    if (c1.length < 4 || c2.length < 4) return false;
+    if (c1 === c2) return true;
+    if (c1.indexOf(c2) >= 0 && c2.length >= 5) return true;
+    if (c2.indexOf(c1) >= 0 && c1.length >= 5) return true;
+    return false;
+  }
+
+  function isNamaMatch(rawNama) {
+    var cleanRow = clean(rawNama);
+    if (!cleanRow || !cleanNamaInput) return false;
+    return (cleanRow === cleanNamaInput ||
+            cleanRow.indexOf(cleanNamaInput) >= 0 ||
+            cleanNamaInput.indexOf(cleanRow) >= 0);
+  }
+
+  var kodeDitemukanDiTabel = false;
+  var loginBerhasil = false;
+
+  // Cek di sepanjang baris tabel (mulai dari baris 1 setelah baris header)
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+
+    // Cek apakah Kode Akses cocok pada baris ini (cek Kolom M atau sel lain di baris ini)
+    var isKodeCocok = false;
+    var cellKodeUtama = (row[colKode] || "").toString().trim().toUpperCase();
+    if (cellKodeUtama === kodeInput) {
+      isKodeCocok = true;
+    } else {
+      for (var k = 0; k < row.length; k++) {
+        if ((row[k] || "").toString().trim().toUpperCase() === kodeInput) {
+          isKodeCocok = true;
+          break;
+        }
+      }
+    }
+
+    if (isKodeCocok) {
+      kodeDitemukanDiTabel = true;
+
+      // 1. PERIKSA NAMA DI KOLOM D (Individu) ATAU KOLOM H (Paket Sekolah) DAN KODE
+      var rawNamaD = (row[colD_Individu] || "").toString();
+      var rawNamaH = (row[colH_Sekolah] || "").toString();
+      var namaCocok = isNamaMatch(rawNamaD) || isNamaMatch(rawNamaH);
+
+      // Kalau cocok, boleh masuk!
+      if (namaCocok) {
+        loginBerhasil = true;
+        break;
+      }
+
+      // 2. KALAU NAMA DAN KODE TIDAK COCOK, PERIKSA NAMA SEKOLAH DI KOLOM I DAN KODE
+      var rawSekolahRow = (row[colI_Sekolah] || "").toString();
+      var sekolahCocok = cleanSekolahInput && isSekolahCocok(sekolahInput, rawSekolahRow);
+
+      // Jika nama sekolah cocok, boleh masuk! (Untuk semua guru dari sekolah ini)
+      if (sekolahCocok) {
+        loginBerhasil = true;
+        break;
+      }
+
+      // 3. JIKA SEKOLAH JUGA TIDAK COCOK, MAKA TIDAK AKAN PERNAH BISA MASUK
+    }
+  }
+
+  // HASIL VERIFIKASI:
+  if (loginBerhasil) {
+    return ContentService.createTextOutput(JSON.stringify({ 
+      valid: true, 
+      message: "Aktivasi Lisensi Berhasil!" 
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  if (kodeDitemukanDiTabel) {
+    return ContentService.createTextOutput(JSON.stringify({ 
+      valid: false, 
+      message: "Kode Akses tidak sesuai dengan Nama atau Sekolah yang dimasukkan. Silakan periksa kembali." 
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  return ContentService.createTextOutput(JSON.stringify({ 
+    valid: false, 
+    message: "Kode Akses yang Anda masukkan salah atau belum terdaftar." 
+  })).setMimeType(ContentService.MimeType.JSON);
+}`;
+        }
+
+        modal.classList.remove("hidden");
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+          lucide.createIcons();
+        }
+      }
+
+      function closeGASTutorialModal() {
+        const modal = document.getElementById("modal-gas-tutorial");
+        if (modal) modal.classList.add("hidden");
+      }
+
+      function copyGASCode() {
+        const textarea = document.getElementById("gas-code-textarea");
+        if (!textarea) return;
+
+        textarea.select();
+        textarea.setSelectionRange(0, 99999);
+        try {
+          navigator.clipboard.writeText(textarea.value);
+          alert("Kode Script Google Apps Script berhasil disalin ke clipboard!");
+        } catch (err) {
+          document.execCommand("copy");
+          alert("Kode Script Google Apps Script berhasil disalin!");
+        }
+      }
+
+      async function verifyLicenseWithGoogleSheet(namaGuru, namaSekolah, kodeAkses) {
+        const cleanKode = (kodeAkses || "").trim().toUpperCase();
+        const cleanNama = (namaGuru || "").trim();
+        const cleanSekolah = (namaSekolah || "").trim();
+
+        if (!cleanKode) {
+          return { success: false, message: "Kode Akses / Lisensi wajib diisi." };
+        }
+
+        // 1. If Google Apps Script Web App Endpoint is configured, verify online against Google Sheet
+        const gasUrl = getStoredGasUrl();
+        if (gasUrl) {
+          try {
+            const queryParams = new URLSearchParams({
+              nama: cleanNama,
+              sekolah: cleanSekolah,
+              kode: cleanKode
+            });
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+
+            const res = await fetch(gasUrl + "?" + queryParams.toString(), {
+              method: "GET",
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.valid) {
+                return { success: true, message: data.message || "Aktivasi Lisensi Berhasil!" };
+              } else {
+                return { success: false, message: data.message || "Kode Akses yang Anda masukkan salah atau tidak sesuai. Silakan periksa kembali." };
+              }
+            }
+          } catch (err) {
+            console.warn("GSheet license check error:", err);
+            // If offline / network error occurs, check if user is using an emergency master key
+            if (isValidLicenseKey(cleanKode)) {
+              return { success: true, message: "Aktivasi Lisensi Master Offline Berhasil!" };
+            }
+            return {
+              success: false,
+              message: "Gagal menghubungkan ke Google Sheet. Pastikan perangkat Anda terhubung ke internet saat pertama kali aktivasi."
+            };
+          }
+        }
+
+        // 2. Fallback if no GAS Endpoint is configured
+        if (isValidLicenseKey(cleanKode)) {
+          return { success: true, message: "Aktivasi Lisensi Master Berhasil!" };
+        }
+
+        return { success: false, message: "Kode Lisensi tidak valid. Silakan minta kode akses resmi via Google Form." };
       }
 
       async function doLogin() {
@@ -2754,12 +3176,15 @@
           // Load users list
           let users = JSON.parse(localStorage.getItem("perangkat_guru_local_users") || "{}");
           let existingKey = findUserKey(users, nama);
+          const licenseKey = (document.getElementById("login-license")?.value || "").trim();
+          const sekolah = (document.getElementById("login-sekolah")?.value || "").trim();
           
-          if (!existingKey) {
-            // Unregistered user tries to sign up
-            const licenseKey = (document.getElementById("login-license")?.value || "").trim();
+          // Jika akun baru BELUM terdaftar di browser ini, ATAU pengguna sengaja mengisi/mengubah Kode Akses di form
+          const mustVerifyLicense = !existingKey || (licenseKey && licenseKey.toUpperCase() !== (users[existingKey]?.activatedWith || "").toUpperCase());
+
+          if (mustVerifyLicense) {
             if (!licenseKey) {
-              if (errEl) errEl.textContent = "Kode Lisensi wajib diisi untuk aktivasi perangkat baru.";
+              if (errEl) errEl.textContent = "Kode Akses / Lisensi wajib diisi untuk aktivasi perangkat baru.";
               if (btn) {
                 btn.disabled = false;
                 btn.textContent = "Masuk";
@@ -2767,8 +3192,10 @@
               return;
             }
 
-            if (!isValidLicenseKey(licenseKey)) {
-              if (errEl) errEl.textContent = "Kode Lisensi tidak valid. Silakan hubungi administrator untuk lisensi resmi.";
+            // Verify with Google Sheet (Single-Row Matching)
+            const verifyRes = await verifyLicenseWithGoogleSheet(nama, sekolah, licenseKey);
+            if (!verifyRes.success) {
+              if (errEl) errEl.textContent = verifyRes.message;
               if (btn) {
                 btn.disabled = false;
                 btn.textContent = "Masuk";
@@ -2776,15 +3203,17 @@
               return;
             }
 
-            // Create user securely with their set password
-            const uid = "usr_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5);
+            // Create/update user securely with set password
+            const uid = (existingKey && users[existingKey]?.uid) ? users[existingKey].uid : ("usr_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5));
             users[nama] = {
               password: pass,
               uid: uid,
-              activatedWith: licenseKey.toUpperCase()
+              sekolah: sekolah || (existingKey ? users[existingKey]?.sekolah : ""),
+              activatedWith: licenseKey.toUpperCase(),
+              activatedAt: new Date().toISOString()
             };
             localStorage.setItem("perangkat_guru_local_users", JSON.stringify(users));
-            await alert("Aktivasi Lisensi Berhasil! Akun Anda telah aktif secara offline.");
+            await alert("Aktivasi Lisensi Berhasil! Data Anda cocok pada sistem verifikasi.");
             existingKey = nama;
           } else {
             nama = existingKey; // Use existing account key
@@ -3271,12 +3700,17 @@
       }
 
       function showLoginScreen() {
-        document.getElementById("fb-loading").classList.add("hidden");
-        document.getElementById("login-screen").classList.remove("hidden");
+        const loadingEl = document.getElementById("fb-loading");
+        if (loadingEl) loadingEl.classList.add("hidden");
+        const loginEl = document.getElementById("login-screen");
+        if (loginEl) loginEl.classList.remove("hidden");
         
-        document.getElementById("dashboard-screen").classList.add("hidden");
-        document.querySelector(".sidebar").style.display = "none";
-        document.querySelector(".content").style.display = "none";
+        const dashEl = document.getElementById("dashboard-screen");
+        if (dashEl) dashEl.classList.add("hidden");
+        const sbEl = document.querySelector(".sidebar");
+        if (sbEl) sbEl.style.display = "none";
+        const ctEl = document.querySelector(".content");
+        if (ctEl) ctEl.style.display = "none";
 
         // Reset login button and clear sensitive input fields
         const btn = document.getElementById("auth-submit-btn");
@@ -3311,12 +3745,17 @@
       
 
       function showDashboard() {
-        document.getElementById("fb-loading").classList.add("hidden");
-        document.getElementById("login-screen").classList.add("hidden");
+        const loadingEl = document.getElementById("fb-loading");
+        if (loadingEl) loadingEl.classList.add("hidden");
+        const loginEl = document.getElementById("login-screen");
+        if (loginEl) loginEl.classList.add("hidden");
         
-        document.getElementById("dashboard-screen").classList.remove("hidden");
-        document.querySelector(".sidebar").style.display = "none";
-        document.querySelector(".content").style.display = "none";
+        const dashEl = document.getElementById("dashboard-screen");
+        if (dashEl) dashEl.classList.remove("hidden");
+        const sbEl = document.querySelector(".sidebar");
+        if (sbEl) sbEl.style.display = "none";
+        const ctEl = document.querySelector(".content");
+        if (ctEl) ctEl.style.display = "none";
 
         const nama = currentUser.displayName || currentUser.email;
         if(document.getElementById("dash-guru-nama-text")) document.getElementById("dash-guru-nama-text").textContent = nama;
@@ -3340,9 +3779,12 @@
 
       function showKelas(kelasId) {
         
-        document.getElementById("dashboard-screen").classList.add("hidden");
-        document.querySelector(".sidebar").style.display = "";
-        document.querySelector(".content").style.display = "";
+        const dashEl = document.getElementById("dashboard-screen");
+        if (dashEl) dashEl.classList.add("hidden");
+        const sbEl = document.querySelector(".sidebar");
+        if (sbEl) sbEl.style.display = "";
+        const ctEl = document.querySelector(".content");
+        if (ctEl) ctEl.style.display = "";
 
         const kelas = daftarKelas.find((k) => k.id === kelasId);
         if (!kelas) return;
@@ -3774,6 +4216,274 @@ state.jadwal =
         }
       }
 
+      // ============================================================
+      // MODAL PETUNJUK & KETERANGAN DATA MANAGEMENT (BACKUP, IMPOR, RESET)
+      // ============================================================
+      let _dmCurrentScope = "dashboard"; // "dashboard" | "mapel"
+      let _dmCurrentAction = "backup";  // "backup" | "impor" | "reset"
+
+      function bukaModalBackupDashboard() {
+        bukaModalPetunjukDataManagement("dashboard", "backup");
+      }
+      function bukaModalImporDashboard() {
+        bukaModalPetunjukDataManagement("dashboard", "impor");
+      }
+      function bukaModalResetDashboard() {
+        bukaModalPetunjukDataManagement("dashboard", "reset");
+      }
+      function bukaModalBackupMapel() {
+        bukaModalPetunjukDataManagement("mapel", "backup");
+      }
+      function bukaModalImporMapel() {
+        bukaModalPetunjukDataManagement("mapel", "impor");
+      }
+      function bukaModalResetMapel() {
+        bukaModalPetunjukDataManagement("mapel", "reset");
+      }
+
+      function bukaModalPetunjukDataManagement(level = "dashboard", action = "backup") {
+        _dmCurrentScope = (level === "mapel") ? "mapel" : "dashboard";
+        _dmCurrentAction = (action === "impor" || action === "reset") ? action : "backup";
+
+        const modal = document.getElementById("modal-petunjuk-data-management");
+        if (!modal) return;
+
+        updateDMModalUI();
+        modal.classList.remove("hidden");
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+          lucide.createIcons();
+        }
+      }
+
+      function tutupModalPetunjukDataManagement() {
+        const modal = document.getElementById("modal-petunjuk-data-management");
+        if (modal) modal.classList.add("hidden");
+      }
+
+      function updateDMModalUI() {
+        const titleEl = document.getElementById("dm-modal-title");
+        const subtitleEl = document.getElementById("dm-modal-subtitle");
+        const iconEl = document.getElementById("dm-modal-icon");
+        const iconBgEl = document.getElementById("dm-modal-icon-bg");
+        const container = document.getElementById("dm-modal-content-container");
+        const execBtn = document.getElementById("dm-execute-btn");
+
+        if (!container || !execBtn) return;
+
+        // Current active mapel info
+        const du = (typeof getDU === "function") ? getDU() : {};
+        const mapelName = du.mapel ? (du.mapel + " (" + (du.kelas || "Kelas") + ")") : "Mata Pelajaran Aktif";
+
+        let title = "";
+        let subtitle = "";
+        let icon = "database-arrow-up";
+        let iconColor = "#4ade80";
+        let iconBg = "rgba(34, 197, 94, 0.15)";
+        let iconBorder = "rgba(34, 197, 94, 0.3)";
+        let html = "";
+        let btnText = "";
+        let btnBg = "var(--accent)";
+        let btnFg = "#ffffff";
+
+        if (_dmCurrentScope === "dashboard") {
+          if (_dmCurrentAction === "backup") {
+            title = "Petunjuk & Backup Dashboard";
+            subtitle = "🌐 Level Dashboard &bull; Cadangan Seluruh Kelas";
+            icon = "database-arrow-up";
+            iconColor = "#4ade80";
+            iconBg = "rgba(34, 197, 94, 0.15)";
+            iconBorder = "rgba(34, 197, 94, 0.3)";
+            btnText = "Lanjutkan Backup Dashboard (.json)";
+            btnBg = "#22c55e";
+            html = `
+              <p style="margin:0 0 10px 0; font-size:13px; color:var(--text); line-height:1.5;">
+                Modul ini digunakan untuk mengunduh <strong>berkas cadangan (.JSON)</strong> yang menyimpan <strong>seluruh kelas dan semua mata pelajaran</strong> di Dashboard Anda.
+              </p>
+              <div style="font-size:12.5px; color:var(--text-light); line-height:1.5; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 12px; margin-bottom:10px;">
+                <strong style="color:var(--text); display:block; margin-bottom:4px;">📌 Data yang Tercover dalam Backup Dashboard:</strong>
+                <ul style="margin:0; padding-left:18px; display:flex; flex-direction:column; gap:3px;">
+                  <li>Semua daftar kelas yang ada di Dashboard Anda.</li>
+                  <li>Data Umum, Profil Guru, Sekolah, &amp; Jadwal Mengajar.</li>
+                  <li>Capaian Pembelajaran (CP), TP, ATP, Promes, Prota, dan Jurnal Mengajar.</li>
+                  <li>Daftar Murid, Presensi Bulanan, dan Buku Nilai dari semua kelas.</li>
+                </ul>
+              </div>
+              <div style="font-size:12px; color:#a7f3d0; background:rgba(6,78,59,0.3); padding:8px 10px; border-radius:6px; border:1px solid rgba(16,185,129,0.2);">
+                🔒 <strong>Privasi Aman:</strong> Berkas langsung dibuat dan disimpan secara lokal di komputer/HP Anda tanpa dikirim ke internet.
+              </div>
+            `;
+          } else if (_dmCurrentAction === "impor") {
+            title = "Petunjuk & Impor Dashboard";
+            subtitle = "🌐 Level Dashboard &bull; Pulihkan Seluruh Kelas";
+            icon = "database-arrow-down";
+            iconColor = "#60a5fa";
+            iconBg = "rgba(59, 130, 246, 0.15)";
+            iconBorder = "rgba(59, 130, 246, 0.3)";
+            btnText = "Pilih Berkas JSON &amp; Impor Dashboard";
+            btnBg = "#3b82f6";
+            html = `
+              <p style="margin:0 0 10px 0; font-size:13px; color:var(--text); line-height:1.5;">
+                Modul ini digunakan untuk <strong>mengimpor atau memulihkan berkas cadangan (.JSON)</strong> yang berisi banyak kelas ke Dashboard Anda.
+              </p>
+              <div style="font-size:12.5px; color:var(--text-light); line-height:1.5; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 12px; margin-bottom:10px;">
+                <strong style="color:var(--text); display:block; margin-bottom:4px;">📌 Ketentuan Impor Dashboard:</strong>
+                <ul style="margin:0; padding-left:18px; display:flex; flex-direction:column; gap:3px;">
+                  <li>Pilih berkas cadangan <code>.json</code> keluaran Promesta.id.</li>
+                  <li>Kelas dengan ID yang cocok akan diperbarui datanya secara otomatis.</li>
+                  <li>Kelas baru dalam file impor akan ditambahkan ke daftar kelas Anda.</li>
+                  <li>Data kelas lain yang tidak ada dalam file impor tetap aman &amp; tidak terhapus.</li>
+                </ul>
+              </div>
+              <div style="font-size:12px; color:#bfdbfe; background:rgba(30,58,138,0.3); padding:8px 10px; border-radius:6px; border:1px solid rgba(59,130,246,0.2);">
+                💡 Klik tombol di bawah untuk memilih berkas <code>.json</code> cadangan Anda.
+              </div>
+            `;
+          } else if (_dmCurrentAction === "reset") {
+            title = "Petunjuk & Reset Dashboard";
+            subtitle = "🌐 Level Dashboard &bull; Bersihkan Semua Kelas";
+            icon = "rotate-cw";
+            iconColor = "#f87171";
+            iconBg = "rgba(239, 68, 68, 0.15)";
+            iconBorder = "rgba(239, 68, 68, 0.3)";
+            btnText = "Lanjutkan Reset Seluruh Dashboard";
+            btnBg = "#ef4444";
+            html = `
+              <p style="margin:0 0 10px 0; font-size:13px; color:var(--text); line-height:1.5;">
+                ⚠️ <strong>PERINGATAN RESIKO DATA:</strong> Tindakan ini akan <strong>menghapus SELURUH daftar kelas dan semua mata pelajaran</strong> di peramban (browser) Anda.
+              </p>
+              <div style="font-size:12.5px; color:#fca5a5; background:rgba(127,29,29,0.3); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:10px 12px; margin-bottom:10px; line-height:1.5;">
+                <strong style="color:#fecaca; display:block; margin-bottom:4px;">🚫 Tindakan Ini Tidak Dapat Dibatalkan:</strong>
+                Setelah direset, seluruh data administrasi dan nilai murid dari semua kelas akan bersih kembali seperti awal.
+              </div>
+              <div style="font-size:12px; color:#fef08a; background:rgba(113,63,18,0.3); padding:8px 10px; border-radius:6px; border:1px solid rgba(234,179,8,0.3);">
+                💡 <strong>Saran Penting:</strong> Sangat disarankan mengunduh <strong>Backup Dashboard</strong> terlebih dahulu sebelum melakukan reset.
+              </div>
+            `;
+          }
+        } else {
+          // MAPEL LEVEL
+          if (_dmCurrentAction === "backup") {
+            title = "Petunjuk & Backup Mata Pelajaran";
+            subtitle = `📘 Level Mapel Aktif &bull; ${escH(mapelName)}`;
+            icon = "database-arrow-up";
+            iconColor = "#4ade80";
+            iconBg = "rgba(34, 197, 94, 0.15)";
+            iconBorder = "rgba(34, 197, 94, 0.3)";
+            btnText = "Lanjutkan Backup Mapel Ini (.json)";
+            btnBg = "#22c55e";
+            html = `
+              <p style="margin:0 0 10px 0; font-size:13px; color:var(--text); line-height:1.5;">
+                Modul ini digunakan untuk mengunduh <strong>berkas cadangan (.JSON)</strong> khusus untuk <strong>Mata Pelajaran yang sedang terbuka (${escH(mapelName)})</strong>.
+              </p>
+              <div style="font-size:12.5px; color:var(--text-light); line-height:1.5; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 12px; margin-bottom:10px;">
+                <strong style="color:var(--text); display:block; margin-bottom:4px;">📌 Data yang Tercover dalam Backup Mapel Ini:</strong>
+                <ul style="margin:0; padding-left:18px; display:flex; flex-direction:column; gap:3px;">
+                  <li>Identitas Sekolah, Pengesahan, &amp; Jadwal Mengajar mapel ini.</li>
+                  <li>Kalender Libur &amp; Pekan Efektif khusus mapel ini.</li>
+                  <li>Target CP, TP, ATP, Promes, Prota, dan Jurnal Mengajar.</li>
+                  <li>Daftar Murid, Presensi Bulanan, dan Buku Nilai mapel ini.</li>
+                </ul>
+              </div>
+              <div style="font-size:12px; color:#a7f3d0; background:rgba(6,78,59,0.3); padding:8px 10px; border-radius:6px; border:1px solid rgba(16,185,129,0.2);">
+                🔒 Berkas JSON hasil ekspor dapat Anda simpan sebagai arsip atau diimpor kembali di kemudian hari.
+              </div>
+            `;
+          } else if (_dmCurrentAction === "impor") {
+            title = "Petunjuk & Impor Mata Pelajaran";
+            subtitle = `📘 Level Mapel Aktif &bull; ${escH(mapelName)}`;
+            icon = "database-arrow-down";
+            iconColor = "#60a5fa";
+            iconBg = "rgba(59, 130, 246, 0.15)";
+            iconBorder = "rgba(59, 130, 246, 0.3)";
+            btnText = "Pilih Berkas JSON &amp; Impor Mapel";
+            btnBg = "#3b82f6";
+            html = `
+              <p style="margin:0 0 10px 0; font-size:13px; color:var(--text); line-height:1.5;">
+                Modul ini digunakan untuk <strong>mengimpor berkas cadangan (.JSON)</strong> untuk memperbarui data pada <strong>Mata Pelajaran yang sedang aktif (${escH(mapelName)})</strong>.
+              </p>
+              <div style="font-size:12.5px; color:var(--text-light); line-height:1.5; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 12px; margin-bottom:10px;">
+                <strong style="color:var(--text); display:block; margin-bottom:4px;">📌 Ketentuan Impor Mapel:</strong>
+                <ul style="margin:0; padding-left:18px; display:flex; flex-direction:column; gap:3px;">
+                  <li>Pilih berkas cadangan <code>.json</code> keluaran Promesta.id.</li>
+                  <li>Data administrasi, TP, jurnal, presensi, dan nilai pada mapel ini akan diperbarui.</li>
+                  <li>Mata pelajaran lain dan kelas lain di Dashboard <strong>tetap aman</strong> dan tidak akan terpengaruh.</li>
+                </ul>
+              </div>
+              <div style="font-size:12px; color:#bfdbfe; background:rgba(30,58,138,0.3); padding:8px 10px; border-radius:6px; border:1px solid rgba(59,130,246,0.2);">
+                💡 Klik tombol di bawah untuk memilih file <code>.json</code> dari komputer/HP Anda.
+              </div>
+            `;
+          } else if (_dmCurrentAction === "reset") {
+            title = "Petunjuk & Reset Mata Pelajaran";
+            subtitle = `📘 Level Mapel Aktif &bull; ${escH(mapelName)}`;
+            icon = "rotate-cw";
+            iconColor = "#f87171";
+            iconBg = "rgba(239, 68, 68, 0.15)";
+            iconBorder = "rgba(239, 68, 68, 0.3)";
+            btnText = "Lanjutkan Reset Mapel Ini";
+            btnBg = "#ef4444";
+            html = `
+              <p style="margin:0 0 10px 0; font-size:13px; color:var(--text); line-height:1.5;">
+                ⚠️ <strong>PERINGATAN RESET MAPEL:</strong> Tindakan ini akan <strong>mengosongkan seluruh data pada Mata Pelajaran ${escH(mapelName)}</strong> dan mengembalikannya ke kondisi awal.
+              </p>
+              <div style="font-size:12.5px; color:#fca5a5; background:rgba(127,29,29,0.3); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:10px 12px; margin-bottom:10px; line-height:1.5;">
+                <strong style="color:#fecaca; display:block; margin-bottom:4px;">📌 Dampak Reset Mapel Ini:</strong>
+                Data Umum, TP, Promes, Prota, Jurnal, Presensi, dan Nilai Murid pada mapel ini akan dibersihkan.
+              </div>
+              <div style="font-size:12px; color:#a7f3d0; background:rgba(6,78,59,0.3); padding:8px 10px; border-radius:6px; border:1px solid rgba(16,185,129,0.2);">
+                ✅ <strong>Kelas Lain Aman:</strong> Mata pelajaran lain dan kelas-kelas lain di Dashboard Anda <strong>tidak akan terpengaruh sama sekali</strong>.
+              </div>
+            `;
+          }
+        }
+
+        if (titleEl) titleEl.textContent = title;
+        if (subtitleEl) subtitleEl.innerHTML = subtitle;
+        if (iconEl) {
+          iconEl.setAttribute("data-lucide", icon);
+        }
+        if (iconBgEl) {
+          iconBgEl.style.background = iconBg;
+          iconBgEl.style.borderColor = iconBorder;
+          iconBgEl.style.color = iconColor;
+        }
+
+        container.innerHTML = html;
+        execBtn.style.setProperty("background", btnBg, "important");
+        execBtn.style.setProperty("color", "#ffffff", "important");
+        execBtn.innerHTML = `<i class="material-symbols-rounded" style="font-size:18px; color:#ffffff !important; stroke:#ffffff !important;" data-lucide="${icon}"></i> <span style="color:#ffffff !important; font-weight:700;">${btnText}</span>`;
+
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+          lucide.createIcons();
+        }
+      }
+
+      async function eksekusiDataManagementSelectedAction() {
+        const scope = _dmCurrentScope;
+        const action = _dmCurrentAction;
+        tutupModalPetunjukDataManagement();
+
+        if (scope === "dashboard") {
+          if (action === "backup") {
+            await backupAllData();
+          } else if (action === "impor") {
+            const inputEl = document.getElementById("import-all-json");
+            if (inputEl) inputEl.click();
+          } else if (action === "reset") {
+            await resetAllDataLocal();
+          }
+        } else {
+          // MAPEL LEVEL
+          if (action === "backup") {
+            saveData();
+          } else if (action === "impor") {
+            loadData();
+          } else if (action === "reset") {
+            resetData();
+          }
+        }
+      }
+
 
 
       async function simpanModalKelas() {
@@ -3970,15 +4680,31 @@ state.jadwal =
         const reader = new FileReader();
         reader.onload = async (ev) => {
           try {
-            let importedData = JSON.parse(ev.target.result);
-            if (!Array.isArray(importedData)) {
-              if (importedData && typeof importedData === "object" && (importedData.mapel || importedData.kelas || importedData.sekolah || importedData.id)) {
-                importedData = [importedData];
+            let parsed = JSON.parse(ev.target.result);
+            let importedList = [];
+            if (Array.isArray(parsed)) {
+              importedList = parsed;
+            } else if (parsed && typeof parsed === "object") {
+              if (parsed.daftarKelas && Array.isArray(parsed.daftarKelas)) {
+                importedList = parsed.daftarKelas;
+              } else if (parsed.classes && Array.isArray(parsed.classes)) {
+                importedList = parsed.classes;
+              } else if (parsed.data && Array.isArray(parsed.data)) {
+                importedList = parsed.data;
+              } else if (parsed.mapel || parsed.kelas || parsed.sekolah || parsed.guru || parsed.id || parsed.jadwal || parsed.tpGanjil) {
+                importedList = [parsed];
               } else {
-                throw new Error("Format tidak valid (harus array JSON data kelas atau objek data mata pelajaran).");
+                throw new Error("Format JSON tidak valid (harus data backup mata pelajaran atau kumpulan kelas).");
               }
+            } else {
+              throw new Error("Format file JSON tidak dikenali.");
             }
-            const ok = await confirmAsync(`Ditemukan ${importedData.length} data kelas. Apakah Anda yakin ingin mengimpor ini? Data dengan ID yang sama akan ditimpa.`);
+
+            if (importedList.length === 0) {
+              throw new Error("File backup kosong atau tidak berisi data mata pelajaran.");
+            }
+
+            const ok = await confirmAsync(`Ditemukan ${importedList.length} data mata pelajaran/kelas. Apakah Anda ingin mengimpornya ke dashboard?`);
             if (!ok) {
               e.target.value = "";
               return;
@@ -3986,30 +4712,56 @@ state.jadwal =
             const fbLoading = document.getElementById("fb-loading");
             if (fbLoading) fbLoading.classList.remove("hidden");
             
-            for (const k of importedData) {
+            let countNew = 0;
+            let countUpdated = 0;
+
+            for (let i = 0; i < importedList.length; i++) {
+              const k = importedList[i];
+              if (!k || typeof k !== "object") continue;
               const dataToSave = { ...k };
-              const id = dataToSave.id;
+              
+              // Standard defaults
+              dataToSave.jenjang = dataToSave.jenjang || "SD";
+              dataToSave.mapel = dataToSave.mapel || "Mata Pelajaran";
+              dataToSave.kelas = dataToSave.kelas || "Kelas I";
+              dataToSave.fase = dataToSave.fase || "Fase A";
+              dataToSave.tahun = dataToSave.tahun || getAutoTahunAjaran();
+              dataToSave.sekolah = dataToSave.sekolah || "";
+              dataToSave.guru = dataToSave.guru || (currentUser?.displayName || "");
               dataToSave.updated_at = new Date().toISOString();
+
+              const id = dataToSave.id;
               if (id) {
                 const idx = daftarKelas.findIndex(x => x.id === id);
                 if (idx >= 0) {
                   Object.assign(daftarKelas[idx], dataToSave);
+                  countUpdated++;
                 } else {
                   daftarKelas.push(dataToSave);
+                  countNew++;
                 }
               } else {
-                dataToSave.id = "kelas_" + Math.random().toString(36).substr(2, 9);
+                dataToSave.id = "kelas_" + Math.random().toString(36).substr(2, 9) + "_" + Date.now() + "_" + i;
                 daftarKelas.push(dataToSave);
+                countNew++;
               }
             }
+
             const uid = (currentUser && currentUser.uid) ? currentUser.uid : "local_user";
             localStorage.setItem("perangkat_guru_data_" + uid, JSON.stringify(daftarKelas));
             await loadDaftarKelas(uid);
             renderDaftarKelas();
+            
+            const msgSummary = countNew > 0 && countUpdated > 0
+              ? `${countNew} mata pelajaran baru ditambahkan dan ${countUpdated} diperbarui.`
+              : countNew > 0
+              ? `${countNew} mata pelajaran berhasil ditambahkan ke dashboard.`
+              : `${countUpdated} data mata pelajaran berhasil diperbarui.`;
+
             if (typeof showCustomAlert === "function") {
-              await showCustomAlert("Impor Berhasil", `Berhasil mengimpor ${importedData.length} data kelas ke dashboard.`, "success");
+              await showCustomAlert("Impor Berhasil", `Berhasil mengimpor ${importedList.length} data mata pelajaran. ${msgSummary}`, "success");
             } else {
-              alert(`Data berhasil diimpor (${importedData.length} kelas).`);
+              alert(`Data berhasil diimpor (${importedList.length} mata pelajaran).`);
             }
           } catch (err) {
             console.error("importAllData error:", err);
@@ -7829,7 +8581,7 @@ state.jadwal =
       // ============================================================
       function isEvalRow(t) {
         if (!t) return false;
-        if (t.ev === true) return true;
+        if (t.ev === true || t.ev === "true") return true;
         const k = String(t.kode || "").trim().toUpperCase();
         if (/^S\s*\d*$/.test(k)) return true;
         if (/^(STS|SAS|PTS|PAS|PAT|PSAS|PSAT)$/.test(k)) return true;
@@ -8941,7 +9693,7 @@ state.jadwal =
           })
           .join("");
 
-        const tbodies = `<tbody style="page-break-inside:auto;">${rows}</tbody>`;
+        const tbodies = `<tbody>${rows}</tbody>`;
 
         if(document.getElementById("atp-content")) document.getElementById("atp-content").innerHTML = `
   <div class="doc-frame">
@@ -9178,10 +9930,18 @@ function toggleSidebar() {
               const currentRight = parseFloat(menu.style.right) || 0;
               menu.style.right = `${currentRight + overflowRight}px`;
             }
+            
+            // Safety check: ensure dropdown menu never clips under the sidebar or left screen edge
             const finalRect = menu.getBoundingClientRect();
-            if (finalRect.left < 12) {
-              const currentRight = parseFloat(menu.style.right) || 0;
-              menu.style.right = `${Math.max(0, currentRight - (12 - finalRect.left))}px`;
+            const sidebarEl = document.querySelector(".sidebar");
+            const sidebarRight = (sidebarEl && window.getComputedStyle(sidebarEl).display !== "none")
+              ? sidebarEl.getBoundingClientRect().right
+              : 0;
+            const minAllowedLeft = Math.max(12, sidebarRight + 8);
+
+            if (finalRect.left < minAllowedLeft) {
+              menu.style.right = "auto";
+              menu.style.left = "0px";
             }
           }
           if (typeof lucide !== "undefined" && lucide.createIcons) {
@@ -9685,7 +10445,8 @@ function toggleSidebar() {
         const semKey = semNum === 1 ? "tpGanjil" : "tpGenap";
         const semCode = semNum === 1 ? "ganjil" : "genap";
         const semLabel = semNum === 1 ? "Semester Ganjil" : "Semester Genap";
-        const tpArr = state[semKey] || [];
+        const rawTpArr = state[semKey] || [];
+        const tpArr = rawTpArr.filter(t => !isEvalRow(t));
 
         if (!tpArr || tpArr.length === 0) {
           return null;
@@ -10773,7 +11534,7 @@ ${data.kktpText}`;
                 <div style="font-size:17px;font-weight:700;color:var(--text);margin-top:6px;">Data Lengkap TP &amp; Generator Prompt AI</div>
               </div>
               <div style="display:flex;align-items:center;gap:8px;">
-                <button type="button" class="btn-docx" style="padding:5px 12px;font-size:12px;display:inline-flex;align-items:center;gap:6px;" onclick="if (!isGenerated) { showCustomAlert('Generate Dokumen Diperlukan', 'Bagian <strong>Ekstra</strong> hanya aktif setelah Anda menekan tombol kuning <strong>Generate Dokumen</strong> di sidebar.'); return; } document.getElementById('detail-tp-modal')?.remove(); showTab('ekstra-ai'); setEkstraAITarget('${data.semKey}', ${data.index}, '${activeTab}', '${promptFormat}');">
+                <button type="button" class="btn-docx" style="padding:5px 12px;font-size:12px;display:inline-flex;align-items:center;gap:6px;" onclick="if (!isGenerated) { showCustomAlert('Generate Dokumen Diperlukan', 'Bagian <strong>Ekstra</strong> hanya aktif setelah Anda menekan tombol merah <strong>Generate Dokumen</strong> di sidebar.'); return; } document.getElementById('detail-tp-modal')?.remove(); showTab('ekstra-ai'); setEkstraAITarget('${data.semKey}', ${data.index}, '${activeTab}', '${promptFormat}');">
                   <i class="material-symbols-rounded" style="font-size:15px;" data-lucide="external-link"></i>
                   <span>Buka Halaman Ekstra ↗</span>
                 </button>
@@ -10945,8 +11706,8 @@ ${data.kktpText}`;
         const container = document.getElementById("ekstra-ai-content");
         if (!container) return;
 
-        const ganjilCount = (state.tpGanjil || []).length;
-        const genapCount = (state.tpGenap || []).length;
+        const ganjilCount = (state.tpGanjil || []).filter(t => !isEvalRow(t)).length;
+        const genapCount = (state.tpGenap || []).filter(t => !isEvalRow(t)).length;
 
         if (ganjilCount === 0 && genapCount === 0) {
           container.innerHTML = `
@@ -13992,18 +14753,18 @@ ${data.kktpText}`;
       }
 
       // ============================================================
-      // ATP PRINT BUILDER  -  no rowspan, full borders per row
+      // ATP PRINT BUILDER  -  full rowspan, 12pt font size
       // ============================================================
       function buildATPPrintHTML(du) {
         const arr = state.atpData;
         if (!arr || arr.length === 0) return "<p>Data ATP kosong.</p>";
 
-        const tableFsPt = 11; // 11pt agar proporsional dan muat halaman dengan efisien
+        const tableFsPt = 12; // Ukuran font dokumen 12pt standar
         const BC = "#1E3A5F";
         const B = `0.5pt solid ${BC}`;
 
         const CS =
-          `padding:5px 7px;font-size:${tableFsPt}pt;font-family:'Times New Roman',Times,serif;` +
+          `padding:6px 8px;font-size:${tableFsPt}pt;font-family:'Times New Roman',Times,serif;` +
           `line-height:1.3;word-break:break-word;overflow-wrap:break-word;box-sizing:border-box;border:${B};text-align:left;vertical-align:top;color:#000000;`;
         const elData = arr.filter((el) => el.rows && el.rows.length > 0);
         const hasSubelemen = elData.some(el => el.subElemen && el.subElemen.trim() !== "");
@@ -14016,7 +14777,7 @@ ${data.kktpText}`;
     <col style="width:${hasSubelemen ? "24%" : "30%"};">
   </colgroup>`;
 
-        // -- Header dokumen & Identitas (11pt, Single Spacing) ----------
+        // -- Header dokumen & Identitas (12pt) ----------
         const metaHTML = [
           ["Nama Sekolah", escH(du.sekolah)],
           ["Mata Pelajaran", escH(du.mapel)],
@@ -14025,8 +14786,8 @@ ${data.kktpText}`;
         ]
           .map(
             ([l, v]) => `
-    <div style="display:flex;font-size:11pt;line-height:1.2;margin:0;padding:0;font-family:'Times New Roman',Times,serif;color:#000000;">
-      <span style="min-width:120pt;flex-shrink:0;">${l}</span>
+    <div style="display:flex;font-size:12pt;line-height:1.3;margin:0;padding:0;font-family:'Times New Roman',Times,serif;color:#000000;">
+      <span style="min-width:130pt;flex-shrink:0;">${l}</span>
       <span style="margin-right:6pt;">:</span>
       <span>${v}</span>
     </div>`,
@@ -14040,36 +14801,36 @@ ${data.kktpText}`;
         const orderedAtp = getOrderedATPList();
         const allAtpItems = orderedAtp.length > 0
           ? orderedAtp
-              .map(item => `<li style="margin-bottom:3px; line-height:1.3; text-align:left; color:#000000; word-break:break-word; overflow-wrap:break-word;">${escH(item.tp)}</li>`)
+              .map(item => `<li style="margin-bottom:3px; line-height:1.3; text-align:left; color:#000000; word-break:break-word; overflow-wrap:break-word; font-size:12pt; page-break-inside:auto; break-inside:auto; orphans:1; widows:1;">${escH(item.tp)}</li>`)
               .join("")
-          : "<li>-</li>";
+          : "<li style=\"font-size:12pt;\">-</li>";
 
         let rowsHTML = "";
-        rowsHTML += `<tbody style="page-break-inside: auto; break-inside: auto; color:#000000;">`;
+        rowsHTML += `<tbody style="color:#000000; page-break-inside:auto; break-inside:auto;">`;
         elData.forEach((el, index) => {
           const tpItems = (el.rows || [])
-            .map(row => `<li style="margin-bottom:3px; line-height:1.3; text-align:left; color:#000000; word-break:break-word;">${escH(row.tp)}</li>`)
+            .map(row => `<li style="margin-bottom:3px; line-height:1.3; text-align:left; color:#000000; word-break:break-word; font-size:12pt; page-break-inside:auto; break-inside:auto; orphans:1; widows:1;">${escH(row.tp)}</li>`)
             .join("");
 
           const atpCell = index === 0
-            ? `<td rowspan="${totalRows}" style="${CS}vertical-align:top;color:#000000;word-break:break-word;overflow-wrap:break-word;">
-                <ol style="margin:0;padding-left:14pt;list-style-type:decimal;color:#000000;word-break:break-word;overflow-wrap:break-word;">
+            ? `<td rowspan="${totalRows}" style="${CS}vertical-align:top;color:#000000;word-break:break-word;overflow-wrap:break-word;page-break-inside:auto;break-inside:auto;orphans:1;widows:1;">
+                <ol style="margin:0;padding-left:14pt;list-style-type:decimal;color:#000000;word-break:break-word;overflow-wrap:break-word;page-break-inside:auto;break-inside:auto;orphans:1;widows:1;">
                   ${allAtpItems}
                 </ol>
               </td>`
             : "";
 
           const subElemenCell = hasSubelemen
-            ? `<td style="${CS}font-weight:normal;text-align:left;color:#000000;vertical-align:top;">${escH(el.subElemen || "-")}</td>`
+            ? `<td style="${CS}font-weight:normal;text-align:left;color:#000000;vertical-align:top;page-break-inside:auto;break-inside:auto;orphans:1;widows:1;">${escH(el.subElemen || "-")}</td>`
             : "";
 
-          rowsHTML += `<tr style="page-break-inside: auto !important; break-inside: auto !important;">
-            <td style="${CS}font-weight:normal;text-align:left;color:#000000;vertical-align:top;">${escH(el.elemen)}</td>
+          rowsHTML += `<tr style="page-break-inside:auto;break-inside:auto;orphans:1;widows:1;">
+            <td style="${CS}font-weight:normal;text-align:left;color:#000000;vertical-align:top;page-break-inside:auto;break-inside:auto;orphans:1;widows:1;">${escH(el.elemen)}</td>
             ${subElemenCell}
-            <td style="${CS}vertical-align:top;color:#000000;">${escH(el.cp)}</td>
-            <td style="${CS}vertical-align:top;color:#000000;">
-              <ul style="margin:0;padding-left:14pt;list-style-type:disc;color:#000000;word-break:break-word;">
-                ${tpItems || "<li>-</li>"}
+            <td style="${CS}vertical-align:top;color:#000000;page-break-inside:auto;break-inside:auto;orphans:1;widows:1;">${escH(el.cp)}</td>
+            <td style="${CS}vertical-align:top;color:#000000;page-break-inside:auto;break-inside:auto;orphans:1;widows:1;">
+              <ul style="margin:0;padding-left:14pt;list-style-type:disc;color:#000000;word-break:break-word;page-break-inside:auto;break-inside:auto;orphans:1;widows:1;">
+                ${tpItems || "<li style=\"font-size:12pt;\">-</li>"}
               </ul>
             </td>
             ${atpCell}
@@ -14078,7 +14839,7 @@ ${data.kktpText}`;
         rowsHTML += `</tbody>`;
 
         const tablesHTML = `
-    <table style="width:100%;border-collapse:collapse;font-size:${tableFsPt}pt;table-layout:fixed;margin-bottom:10pt;page-break-inside:auto;break-inside:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:${tableFsPt}pt;table-layout:auto;margin-bottom:0;page-break-inside:auto;break-inside:auto;">
       ${CG}
       <thead style="display:table-header-group;">
         <tr>
@@ -14093,15 +14854,15 @@ ${data.kktpText}`;
     </table>
   `;
 
-        // -- Footer Tanda Tangan ---------------------------------------
-        const footerHTML = renderDUSignHTML(du, true, 11);
+        // -- Footer Tanda Tangan (12pt) ---------------------------------------
+        const footerHTML = renderDUSignHTML(du, true, 12);
 
         return `
     <div style="margin-bottom:8pt;font-family:'Times New Roman',Times,serif;">
-      <div style="font-size:13pt;font-weight:700;text-align:center;
+      <div style="font-size:14pt;font-weight:700;text-align:center;
         text-transform:uppercase;margin-bottom:6pt;">Alur Tujuan Pembelajaran</div>
       ${metaHTML}
-      <div style="margin-top:8pt;font-size:11pt;font-weight:700;">
+      <div style="margin-top:8pt;font-size:12pt;font-weight:700;">
         Capaian Pembelajaran Fase ${escH(du.fase)}
       </div>
     </div>
@@ -14142,7 +14903,7 @@ ${data.kktpText}`;
         const pt2mm = (v) => v / 2.8346,
           mm2pt = (v) => v * 2.8346;
         const noW = 6,
-          dateW = 7,
+          dateW = 8.5,
           ketW = 6;
         const rowHmm = pt2mm(fsPt) * 1.35 + 1.0,
           hdrHmm = pt2mm(fsPt) * 1.5 + 1.5;
@@ -14150,7 +14911,7 @@ ${data.kktpText}`;
         const p = (v) => mm2pt(v).toFixed(1) + "pt";
 
         const TH = (ex) =>
-          `style="background:#BDD7EE;color:#000;font-weight:700;border:0.5pt solid #1E3A5F;text-align:center;vertical-align:middle;font-size:${fsPt}pt;padding:1pt 2pt;height:${p(hdrHmm)};${ex}"`;
+          `style="background:#BDD7EE;color:#000;font-weight:700;border:0.5pt solid #1E3A5F;text-align:center;vertical-align:middle;font-size:${fsPt}pt;padding:1pt 1pt;height:${p(hdrHmm)};${ex}"`;
         const TH2 = (ex) =>
           `style="background:#9DC3E6;color:#000;font-weight:700;border:0.5pt solid #1E3A5F;text-align:center;vertical-align:middle;font-size:${fsPt}pt;padding:1pt 2pt;height:${p(hdrHmm)};${ex}"`;
         const TD = (ex) =>
@@ -14367,7 +15128,7 @@ ${data.kktpText}`;
                   mDates
                     .map((iso) => {
                       const d = pd(iso);
-                      return `<th ${TH(`width:${p(dateW)};`)}>${HARI_S[d.getUTCDay()]}</th>`;
+                      return `<th ${TH(`width:${p(dateW)};white-space:nowrap;`)}>${HARI_S[d.getUTCDay()]}</th>`;
                     })
                     .join("") +
                   `<th ${TH2("background:var(--th-ket-bg, #dbeafe)!important;color:var(--th-ket-fg, #1e3a8a)!important;")} colspan="4">Keterangan</th>`
@@ -17577,12 +18338,12 @@ xmlns="http://www.w3.org/TR/REC-html40">
         .tab-pane.printing { display:block!important; flex: none !important; float: none !important; padding:0; background:#fff!important; position:static!important; overflow:visible!important; width:100%!important; max-width:none!important; margin: 0 !important; }
         .printing .doc-frame { display:none!important; }
         #atp-print-page { display:block!important; overflow:visible!important; }
-        table:not(.kal-tbl) { page-break-inside: auto !important; break-inside: auto !important; page-break-before: avoid !important; break-before: avoid !important; border-collapse: collapse !important; width: 100% !important; }
-        table:not(.kal-tbl):not(.layout-tbl) th, table:not(.kal-tbl):not(.layout-tbl) td { border-width: 0.5pt !important; page-break-inside: auto !important; break-inside: auto !important; }
+        table:not(.kal-tbl) { page-break-inside: auto !important; break-inside: auto !important; page-break-before: auto !important; break-before: auto !important; border-collapse: collapse !important; width: 100% !important; table-layout: auto !important; }
+        table:not(.kal-tbl):not(.layout-tbl) th, table:not(.kal-tbl):not(.layout-tbl) td { border-width: 0.5pt !important; page-break-inside: auto !important; break-inside: auto !important; orphans: 1 !important; widows: 1 !important; }
         .layout-tbl, .layout-tbl td, .layout-tbl th, .doc-meta-list, .doc-meta-list table, .doc-meta-list td, .doc-meta-list th, .sign-box, .sign-box table, .sign-box td, .sign-box th { border: none !important; }
-        tr { page-break-inside: auto !important; break-inside: auto !important; }
+        tr, tbody, td, th, li, ul, ol, p { page-break-inside: auto !important; break-inside: auto !important; orphans: 1 !important; widows: 1 !important; }
         thead { display: table-header-group !important; }
-        .sign-box { margin-top:20px!important; page-break-inside:avoid!important; break-inside:avoid!important; }
+        .sign-box { margin-top:16px!important; page-break-inside:avoid!important; break-inside:avoid!important; }
       }
       #atp-print-page { display:none; }
     `;
@@ -17740,20 +18501,27 @@ xmlns="http://www.w3.org/TR/REC-html40">
         const data = {
           _info: "Backup Promesta  -  promesta.id",
           exported_at: new Date().toISOString(),
+          jenjang: du.jenjang || "SD",
           mapel: du.mapel,
           fase: du.fase,
           kelas: du.kelas,
+          rombel: du.rombel || "",
           tahun: du.tahun,
           sekolah: du.sekolah,
           kepsek: du.kepsek,
+          kepsekIdType: du.kepsekIdType || "NIP",
+          kepsekId: du.kepsekId || "",
           tempat: du.tempat,
           tgl: du.tgl,
           firstDay: du.firstDay,
           guru: du.guru,
+          guruIdType: du.guruIdType || "NIP",
+          guruId: du.guruId || "",
           jadwal: state.jadwal,
           tpGanjil: state.tpGanjil,
           tpGenap: state.tpGenap,
           siswa: state.siswa,
+          kktp: state.kktp,
           absensiGanjil: state.absensiGanjil,
           absensiGenap: state.absensiGenap,
           nilaiGanjil: state.nilaiGanjil,
@@ -17762,9 +18530,12 @@ xmlns="http://www.w3.org/TR/REC-html40">
           pengaturanPenilaianGenap: state.pengaturanPenilaianGenap,
           atpData: state.atpData,
           modulAjar: state.modulAjar,
+          kalenderGanjil: (typeof kalender !== "undefined" && kalender?.ganjil) ? kalender.ganjil : [],
+          kalenderGenap: (typeof kalender !== "undefined" && kalender?.genap) ? kalender.genap : [],
           imgTtdKepsek: state.imgTtdKepsek,
           imgCapSekolah: state.imgCapSekolah,
           imgTtdGuru: state.imgTtdGuru,
+          isGenerated: typeof isGenerated !== "undefined" ? isGenerated : false,
         };
         const blob = new Blob([JSON.stringify(data, null, 2)], {
           type: "application/json",
@@ -17787,11 +18558,28 @@ xmlns="http://www.w3.org/TR/REC-html40">
           const r = new FileReader();
           r.onload = async (ev) => {
             try {
-              let d = JSON.parse(ev.target.result);
-              if (Array.isArray(d)) {
-                if (d.length === 0) throw new Error("File backup kosong.");
-                d = d[0];
+              let parsed = JSON.parse(ev.target.result);
+              let allItems = [];
+              if (Array.isArray(parsed)) {
+                if (parsed.length === 0) throw new Error("File backup kosong.");
+                allItems = parsed;
+              } else if (parsed && typeof parsed === "object") {
+                if (parsed.daftarKelas && Array.isArray(parsed.daftarKelas)) {
+                  allItems = parsed.daftarKelas;
+                } else if (parsed.classes && Array.isArray(parsed.classes)) {
+                  allItems = parsed.classes;
+                } else if (parsed.data && Array.isArray(parsed.data)) {
+                  allItems = parsed.data;
+                } else {
+                  allItems = [parsed];
+                }
+              } else {
+                throw new Error("Format file JSON tidak dikenali.");
               }
+
+              let d = allItems[0];
+              if (!d || typeof d !== "object") throw new Error("Format data mata pelajaran tidak valid.");
+
               if (d.jadwal) state.jadwal = d.jadwal;
               if (d.tpGanjil) state.tpGanjil = d.tpGanjil;
               if (d.tpGenap) state.tpGenap = d.tpGenap;
@@ -17861,9 +18649,19 @@ xmlns="http://www.w3.org/TR/REC-html40">
               setVal("f-tahun", d.tahun);
               setVal("f-sekolah", d.sekolah);
               setVal("f-kepsek", d.kepsek);
+              if (d.kepsekIdType) {
+                const rbKip = document.querySelector(`input[name="f-kepsek-id-type"][value="${d.kepsekIdType}"]`);
+                if (rbKip) rbKip.checked = true;
+              }
+              setVal("f-kepsek-id", d.kepsekId || "");
               setVal("f-tempat", d.tempat);
               setVal("f-tgl", d.tgl);
               setVal("f-guru", d.guru);
+              if (d.guruIdType) {
+                const rbGuru = document.querySelector(`input[name="f-guru-id-type"][value="${d.guruIdType}"]`);
+                if (rbGuru) rbGuru.checked = true;
+              }
+              setVal("f-guru-id", d.guruId || "");
               if (d.firstDay !== undefined) {
                 const fd = document.getElementById("f-first-day");
                 if (fd) fd.value = d.firstDay;
@@ -17875,9 +18673,33 @@ xmlns="http://www.w3.org/TR/REC-html40">
               } else if (typeof scheduleSave === "function") {
                 scheduleSave();
               }
+
+              // Jika file berisi beberapa mapel (backup level dashboard), sinkronkan mapel lainnya ke daftarKelas
+              if (allItems.length > 1) {
+                const uid = (currentUser && currentUser.uid) ? currentUser.uid : "local_user";
+                for (let i = 1; i < allItems.length; i++) {
+                  const itemK = allItems[i];
+                  if (!itemK || typeof itemK !== "object") continue;
+                  const dataToSave = { ...itemK };
+                  const targetId = dataToSave.id || ("kelas_" + Math.random().toString(36).substr(2, 9) + "_" + Date.now() + "_" + i);
+                  dataToSave.id = targetId;
+                  dataToSave.updated_at = new Date().toISOString();
+                  const idx = daftarKelas.findIndex(x => x.id === targetId || (x.mapel === dataToSave.mapel && x.kelas === dataToSave.kelas));
+                  if (idx >= 0) {
+                    Object.assign(daftarKelas[idx], dataToSave);
+                  } else {
+                    daftarKelas.push(dataToSave);
+                  }
+                }
+                localStorage.setItem("perangkat_guru_data_" + uid, JSON.stringify(daftarKelas));
+              }
               
+              const alertMsg = allItems.length > 1
+                ? `Mata pelajaran aktif (${escH(d.mapel || "Mapel")}) berhasil dimuat, dan ${allItems.length} mata pelajaran dari file cadangan dashboard telah disinkronkan ke daftar kelas.`
+                : "Seluruh data mata pelajaran berhasil diimpor dan diperbarui.";
+
               if (typeof showCustomAlert === "function") {
-                await showCustomAlert("Backup Berhasil Dimuat", "Seluruh data mata pelajaran berhasil diimpor dan diperbarui.", "success");
+                await showCustomAlert("Backup Berhasil Dimuat", alertMsg, "success");
               } else {
                 alert("Backup berhasil dimuat!");
               }
@@ -18186,8 +19008,10 @@ xmlns="http://www.w3.org/TR/REC-html40">
       // ============================================================
       // INIT  -  Sesi Pengguna Lokal
       // ============================================================
-      document.querySelector(".sidebar").style.display = "none";
-      document.querySelector(".content").style.display = "none";
+      const initialSidebarEl = document.querySelector(".sidebar");
+      if (initialSidebarEl) initialSidebarEl.style.display = "none";
+      const initialContentEl = document.querySelector(".content");
+      if (initialContentEl) initialContentEl.style.display = "none";
 
       renderWdBar();
     
@@ -18286,13 +19110,21 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "buildMonths",
   "buildNilaiPrintHTML",
   "bukaKelas",
+  "bukaModalBackupDashboard",
+  "bukaModalBackupMapel",
+  "bukaModalImporDashboard",
+  "bukaModalImporMapel",
   "bukaModalKelas",
   "bukaModalOnboarding",
   "bukaModalPetunjukCP",
+  "bukaModalPetunjukDataManagement",
   "bukaModalPetunjukLibur",
   "bukaModalPetunjukPenilaian",
   "bukaModalPetunjukSiswa",
   "bukaModalPetunjukTP",
+  "bukaModalResetDashboard",
+  "bukaModalResetMapel",
+  "eksekusiDataManagementSelectedAction",
   "calculateTotalBobot",
   "changeKatColor",
   "checkClassTour",
@@ -18470,6 +19302,8 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "scheduleSave",
   "searchBSKAP046Data",
   "setAbsensiMonth",
+  "setDMDataAction",
+  "setDMDataScope",
   "setEkstraAITarget",
   "setupRandomWelcoming",
   "showCustomAlert",
@@ -18515,6 +19349,7 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "tutupModalOnboarding",
   "tutupModalPanduanRumusTP",
   "tutupModalPetunjukCP",
+  "tutupModalPetunjukDataManagement",
   "tutupModalPetunjukLibur",
   "tutupModalPetunjukPenilaian",
   "tutupModalPetunjukSiswa",
@@ -18554,6 +19389,14 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "tutupModalUrutKodeTP",
   "clearAtpRows",
   "clearAllAtpTP",
+  "openGASTutorialModal",
+  "closeGASTutorialModal",
+  "copyGASCode",
+  "openGFormRequestLink",
+  "openGFormSettingsModal",
+  "closeGFormSettingsModal",
+  "saveGFormSettings",
+  "verifyLicenseWithGoogleSheet",
   "updateAutoUrutCheckboxes",
   "updateModalUrutPreview",
 ].forEach((fnName) => {

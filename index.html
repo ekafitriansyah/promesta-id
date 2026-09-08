@@ -7,6 +7,18 @@
           console.error("Global error:", e.message, e.filename, e.lineno, e.colno, e.error);
         }
       });
+      // Ultimate safety watchdog: if loading overlay is still stuck after 2s, force show login screen
+      setTimeout(function() {
+        var loader = document.getElementById("fb-loading");
+        if (loader && !loader.classList.contains("hidden")) {
+          loader.classList.add("hidden");
+          var login = document.getElementById("login-screen");
+          var dash = document.getElementById("dashboard-screen");
+          if (login && (!dash || dash.classList.contains("hidden"))) {
+            login.classList.remove("hidden");
+          }
+        }
+      }, 2000);
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -86,27 +98,28 @@
 
         <!-- Right Panel: Login / Signup Form -->
         <div class="auth-form-panel" id="auth-form-panel">
-          <div class="auth-form-header">
-            <h3 class="auth-form-title">Akses Akun</h3>
+          <div class="auth-form-header" style="margin-bottom: 12px;">
+            <h3 class="auth-form-title" style="font-size: 15pt; margin-bottom: 2px;">Akses Akun</h3>
             <p class="auth-form-subtitle">Sistem Perangkat Pembelajaran</p>
           </div>
 
-          <!-- Name & Title Field -->
-          <div class="login-field">
-            <label>Nama Lengkap & Gelar</label>
-            <input
-              type="text"
-              id="login-nama"
-              placeholder="Contoh: Dr. Budi Santoso, M.Pd."
-              autocomplete="name"
-              onkeydown="if (event.key === 'Enter') doLogin();"
-            />
-          </div>
+          <!-- Name & Password Fields Row (Horizontal layout: 3 : 2) -->
+          <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 10px; margin-bottom: 10px;">
+            <!-- Name & Title Field -->
+            <div class="login-field" style="margin-bottom: 0;">
+              <label>Nama Lengkap & Gelar</label>
+              <input
+                type="text"
+                id="login-nama"
+                placeholder="Contoh: Dr. Budi Santoso"
+                autocomplete="name"
+                oninput="if (typeof clearLoginError === 'function') clearLoginError();"
+                onkeydown="if (event.key === 'Enter') doLogin();"
+              />
+            </div>
 
-          <!-- Password & License Fields Row (Horizontal layout) -->
-          <div class="login-fields-row">
             <!-- Password Field -->
-            <div class="login-field login-field-half">
+            <div class="login-field" style="margin-bottom: 0;">
               <label>Password</label>
               <div class="login-input-wrap">
                 <input
@@ -114,6 +127,7 @@
                   id="login-password"
                   placeholder="Masukkan password..."
                   autocomplete="current-password"
+                  oninput="if (typeof clearLoginError === 'function') clearLoginError();"
                   onkeydown="if (event.key === 'Enter') doLogin();"
                 />
                 <button
@@ -128,17 +142,52 @@
                 </button>
               </div>
             </div>
+          </div>
 
-            <!-- License Key Field (Shown dynamically for unregistered users) -->
-            <div class="login-field login-field-half login-license-card" id="license-field" style="display: none;">
-              <label><i class="material-symbols-rounded" style="font-size: 13px; vertical-align: middle;" data-lucide="key"></i> Kode Aktivasi</label>
-              <input
-                type="text"
-                id="login-license"
-                placeholder="Kode lisensi..."
-                maxlength="12"
-                onkeydown="if (event.key === 'Enter') doLogin();"
-              />
+          <!-- License & School Card (Shown dynamically for unregistered users) -->
+          <div class="login-license-card" id="license-field" style="display: none; margin-top: 6px; margin-bottom: 12px; padding: 10px 12px; background: rgba(225, 29, 72, 0.08); border: 1px dashed rgba(239, 68, 68, 0.5); border-radius: 10px; text-align: left;">
+            <div style="margin-bottom: 8px; display: grid; grid-template-columns: 3fr 2fr; gap: 8px; align-items: center;">
+              <span style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #ffffff;">
+                <i class="material-symbols-rounded" style="font-size: 14px; color: #ef4444;" data-lucide="key-round"></i> Aktivasi Perangkat Baru
+              </span>
+              <a
+                id="gform-request-link"
+                href="https://forms.gle/8Xrbu9UJ8ujpYiHx9"
+                target="_blank"
+                rel="noopener"
+                onclick="openGFormRequestLink(event)"
+                class="btn-minta-kode"
+                style="display: flex; align-items: center; justify-content: center; width: 100%; box-sizing: border-box; text-align: center; gap: 4px; padding: 4px 6px; background: #e11d48; color: #ffffff; border: 1px solid #f43f5e; border-radius: 6px; font-size: 10px; font-weight: 600; text-decoration: none; white-space: nowrap; box-shadow: 0 2px 6px rgba(225, 29, 72, 0.35); transition: all 0.2s;"
+                title="Minta Kode Akses via Google Form"
+              >
+                <i class="material-symbols-rounded" style="font-size: 12px; color: #ffffff;" data-lucide="external-link"></i> Minta Kode Akses
+              </a>
+            </div>
+            
+            <!-- School & License Row (Horizontal layout: 3 : 2) -->
+            <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 8px;">
+              <div class="login-field" style="margin-bottom: 0;">
+                <label style="font-size: 10px; color: #ffffff; margin-bottom: 3px;">Nama Sekolah <span style="font-weight: 400; opacity: 0.75; font-size: 9px;">(Wajib jika Paket Sekolah)</span></label>
+                <input
+                  type="text"
+                  id="login-sekolah"
+                  placeholder="Contoh: SDN 01"
+                  style="padding: 6px 9px; font-size: 8.5pt;"
+                  oninput="if (typeof clearLoginError === 'function') clearLoginError();"
+                  onkeydown="if (event.key === 'Enter') doLogin();"
+                />
+              </div>
+              <div class="login-field" style="margin-bottom: 0;">
+                <label style="font-size: 10px; color: #ffffff; margin-bottom: 3px;">Kode Akses <span style="color: #ef4444; font-weight: bold;">*</span></label>
+                <input
+                  type="text"
+                  id="login-license"
+                  placeholder="Masukkan kode..."
+                  style="padding: 6px 9px; font-size: 8.5pt; text-transform: uppercase; background: rgba(225, 29, 72, 0.08); border: 1px dashed rgba(239, 68, 68, 0.6); color: #ffffff;"
+                  oninput="if (typeof clearLoginError === 'function') clearLoginError();"
+                  onkeydown="if (event.key === 'Enter') doLogin();"
+                />
+              </div>
             </div>
           </div>
 
@@ -201,16 +250,16 @@
             <i class="material-symbols-rounded" style="font-size: 15px;" data-lucide="help-circle"></i>
             <span class="topbar-btn-text">Petunjuk</span>
           </button>
-          <button onclick="backupAllData()" class="dash-topbar-btn btn-topbar-backup" title="Backup">
+          <button onclick="bukaModalBackupDashboard()" class="dash-topbar-btn btn-topbar-backup" title="Petunjuk & Backup Dashboard">
             <i class="material-symbols-rounded" style="font-size: 15px;" data-lucide="database-arrow-up"></i>
             <span class="topbar-btn-text">Backup</span>
           </button>
-          <button onclick="document.getElementById('import-all-json').click()" class="dash-topbar-btn btn-topbar-impor" title="Impor">
+          <button onclick="bukaModalImporDashboard()" class="dash-topbar-btn btn-topbar-impor" title="Petunjuk & Impor Dashboard">
             <i class="material-symbols-rounded" style="font-size: 15px;" data-lucide="database-arrow-down"></i>
             <span class="topbar-btn-text">Impor</span>
           </button>
           <input type="file" id="import-all-json" accept=".json" style="display: none;" onchange="importAllData(event)">
-          <button onclick="resetAllDataLocal()" class="dash-topbar-btn btn-topbar-reset" title="Reset">
+          <button onclick="bukaModalResetDashboard()" class="dash-topbar-btn btn-topbar-reset" title="Petunjuk & Reset Dashboard">
             <i class="material-symbols-rounded" style="font-size: 15px;" data-lucide="trash"></i>
             <span class="topbar-btn-text">Reset</span>
           </button>
@@ -637,7 +686,7 @@
               <strong style="color: #fef08a; font-size: 14px;">Klik "Generate Dokumen" ⚡</strong>
             </div>
             <p style="margin: 0 0 0 34px; font-size: 13px; color: #fef9c3;">
-              Setelah seluruh data pada menu <strong>Input Data</strong> terisi, klik tombol kuning <strong>"Generate Dokumen"</strong> di sidebar. Sistem akan mengkalkulasi alokasi pekan efektif, mendistribusikan Prota/Promes, memetakan Jurnal Harian, serta menyiapkan lembar Presensi &amp; Buku Nilai.
+              Setelah seluruh data pada menu <strong>Input Data</strong> terisi, klik tombol merah <strong>"Generate Dokumen"</strong> di sidebar. Sistem akan mengkalkulasi alokasi pekan efektif, mendistribusikan Prota/Promes, memetakan Jurnal Harian, serta menyiapkan lembar Presensi &amp; Buku Nilai.
             </p>
           </div>
 
@@ -1243,6 +1292,37 @@
       </div>
     </div>
 
+    <!-- MODAL PETUNJUK & KETERANGAN DATA MANAGEMENT (BACKUP, IMPOR, RESET) -->
+    <div class="modal-overlay hidden" id="modal-petunjuk-data-management" style="z-index: 10001;">
+      <div class="modal-box" style="max-width: 580px; width: 92%; padding: 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 14px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div id="dm-modal-icon-bg" style="width: 38px; height: 38px; border-radius: 10px; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3); color: #4ade80; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i id="dm-modal-icon" class="material-symbols-rounded" style="font-size: 20px;" data-lucide="database-arrow-up"></i>
+            </div>
+            <div>
+              <div id="dm-modal-title" class="modal-title" style="margin: 0; font-size: 16px; line-height: 1.2;">Petunjuk & Backup Dashboard</div>
+              <span id="dm-modal-subtitle" style="font-size: 11.5px; color: var(--text-light); opacity: 0.9;">Level Dashboard • Cadangan Seluruh Kelas</span>
+            </div>
+          </div>
+          <button type="button" onclick="tutupModalPetunjukDataManagement()" style="background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 18px; padding: 4px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: background 0.2s;">✕</button>
+        </div>
+
+        <!-- DYNAMIC CONTENT DISPLAY -->
+        <div id="dm-modal-content-container" style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; min-height: 140px; max-height: 320px; overflow-y: auto; margin-bottom: 16px;">
+        </div>
+
+        <!-- ACTIONS FOOTER -->
+        <div class="modal-actions" style="justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px;">
+          <button type="button" class="btn-modal-cancel" onclick="tutupModalPetunjukDataManagement()">
+            Batal / Tutup
+          </button>
+          <button type="button" id="dm-execute-btn" onclick="eksekusiDataManagementSelectedAction()" class="btn-modal-ok" style="display: flex; align-items: center; gap: 8px; padding: 8px 20px; font-weight: 600; color: #ffffff !important;">
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div
       class="mobile-overlay"
       id="mobile-overlay"
@@ -1382,7 +1462,7 @@
           </div>
           <!-- Mulai Tour/Panduan Button -->
           <button
-            onclick="startClassTour(currentKelasId)"
+            onclick="startClassTour()"
             style="
               display: flex;
               align-items: center;
@@ -1416,7 +1496,7 @@
       <div class="nav-section">
         <span class="nav-label">Input</span>
         <button class="nav-btn active" title="Data Umum" onclick="showTab('data-umum')">
-          <i class="ic" data-lucide="graduation-cap"></i>Data Umum
+          <i class="ic" data-lucide="school"></i>Data Umum
         </button>
         <button
           title="Data Libur"
@@ -1440,7 +1520,7 @@
           <i class="ic" data-lucide="users"></i>Daftar Murid
         </button>
         <button class="nav-btn" title="Pengaturan Penilaian" onclick="showTab('pengaturan-penilaian')">
-          <i class="ic" data-lucide="ruler"></i>Pengaturan Penilaian
+          <i class="ic" data-lucide="clipboard-pen"></i>Pengaturan Penilaian
         </button>
       </div>
 
@@ -1495,45 +1575,37 @@
       </div>
 
       <div class="sidebar-bottom">
-        <button class="btn-logout" title="Ganti Password" onclick="openChangePasswordModal()" style="background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2); margin-bottom: 8px;">
-          <i class="ic" data-lucide="key-round"></i>
-          Ganti Password
-        </button>
-        <button class="btn-logout" title="Keluar" onclick="doLogout()">
-          <i class="ic" data-lucide="log-out"></i>
-          Keluar
-        </button>
         <div class="btn-row" style="display: flex; gap: 8px; justify-content: center;">
           <button
-            onclick="saveData()"
-            title="Ekspor cadangan JSON"
-            style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; background: rgba(34, 197, 94, 0.1); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 6px; padding: 6px 0; font-weight: 500; font-size: 11px; cursor: pointer; transition: background 0.2s;"
+            class="btn-sb-action btn-sb-backup"
+            onclick="bukaModalBackupMapel()"
+            title="Petunjuk & Backup Mapel"
           >
             <i class="material-symbols-rounded" style="font-size: 18px;" data-lucide="database-arrow-up"></i> Backup
           </button>
           <button
-            onclick="loadData()"
-            title="Impor cadangan JSON"
-            style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 6px; padding: 6px 0; font-weight: 500; font-size: 11px; cursor: pointer; transition: background 0.2s;"
+            class="btn-sb-action btn-sb-impor"
+            onclick="bukaModalImporMapel()"
+            title="Petunjuk & Impor Mapel"
           >
             <i class="material-symbols-rounded" style="font-size: 18px;" data-lucide="database-arrow-down"></i> Impor
           </button>
           <button
-            onclick="resetData()"
-            title="Reset ke default"
-            style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 6px; padding: 6px 0; font-weight: 500; font-size: 11px; cursor: pointer; transition: background 0.2s;"
+            class="btn-sb-action btn-sb-reset"
+            onclick="bukaModalResetMapel()"
+            title="Petunjuk & Reset Mapel"
           >
             <i class="material-symbols-rounded" style="font-size: 18px;" data-lucide="rotate-cw"></i> Reset
           </button>
         </div>
         <!-- OFFLINE_DOWNLOAD_BUTTON_START -->
-        <a id="btn-download-offline" class="btn-logout" href="./promesta-offline.html" download="promesta-offline.html" title="Unduh versi HTML Standalone Offline (Siap pakai tanpa internet)" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); margin-top: 8px; margin-bottom: 8px;">
+        <a id="btn-download-offline" class="btn-sidebar-offline" href="./promesta-offline.html" download="promesta-offline.html" title="Unduh versi HTML Standalone Offline (Siap pakai tanpa internet)">
           <i class="ic" data-lucide="download"></i>
           Unduh HTML Offline
         </a>
         <!-- OFFLINE_DOWNLOAD_BUTTON_END -->
         <div class="sidebar-ver">
-          v1.05 &mdash; promesta.id<br>
+          v1.06 &mdash; promesta.id<br>
           <span style="font-size: 10.5px; opacity: 0.85;">&copy; 2026 Eka Fitriansyah</span>
         </div>
       </div>
@@ -2931,7 +3003,7 @@
               </button>
             </div>
             <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-              <div class="header-dropdown align-right" id="dropdown-siswa-menu">
+              <div class="header-dropdown" id="dropdown-siswa-menu">
                 <button
                   class="btn-add yellow header-dropdown-btn"
                   type="button"
