@@ -1287,6 +1287,35 @@
         color: #93c5fd;
         box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
       }
+      .btn-format-tanggal {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px 14px;
+        background: rgba(255, 255, 255, 0.08);
+        color: #f1f5f9;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 8px;
+        font-family: var(--f);
+        font-size: var(--fs-sm);
+        font-weight: 600;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: all 0.25s ease;
+      }
+      .btn-format-tanggal span.material-symbols-rounded,
+      .btn-format-tanggal i {
+        font-size: 18px !important;
+        color: inherit !important;
+      }
+      .btn-format-tanggal:hover,
+      .header-dropdown.open .btn-format-tanggal {
+        background: rgba(255, 255, 255, 0.16);
+        color: #ffffff;
+        border-color: rgba(255, 255, 255, 0.35);
+        box-shadow: 0 0 12px rgba(255, 255, 255, 0.12);
+      }
       /* ---- DOCUMENT OUTPUT: Excel-like formal style ---- */
       .doc-wrap {
         background: #fff;
@@ -3148,6 +3177,71 @@
         font-size: 16pt;
         margin: 0;
       }
+      .dashboard-topbar-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
+      }
+      .dashboard-topbar-greeting {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .topbar-greeting-divider {
+        width: 1px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.15);
+        display: inline-block;
+      }
+      .topbar-greeting-box {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 4px 10px 4px 6px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 999px;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+      .topbar-greeting-avatar {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: rgba(16, 185, 129, 0.15);
+        border: 1px solid rgba(16, 185, 129, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .topbar-greeting-text-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+      }
+      .topbar-greeting-name {
+        font-family: 'Funnel Display', sans-serif;
+        font-size: 9.5pt;
+        font-weight: 700;
+        color: #ffffff;
+        letter-spacing: 0.2px;
+      }
+      .topbar-greeting-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 7.5pt;
+        font-weight: 700;
+        color: #facc15;
+        background: rgba(250, 204, 21, 0.12);
+        border: 1px solid rgba(250, 204, 21, 0.28);
+        padding: 2px 7px;
+        border-radius: 999px;
+        line-height: 1.2;
+      }
       .dashboard-topbar-right {
         display: flex;
         align-items: center;
@@ -3263,6 +3357,16 @@
         }
         #dash-guru-nama {
           padding: 7px 9px;
+        }
+      }
+      @media screen and (max-width: 900px) {
+        .topbar-greeting-badge {
+          display: none !important;
+        }
+      }
+      @media screen and (max-width: 680px) {
+        .dashboard-topbar-greeting {
+          display: none !important;
         }
       }
       @media screen and (max-width: 600px) {
@@ -3425,7 +3529,7 @@
         }
         .dashboard-body {
           height: calc(100vh - 65px - env(safe-area-inset-top, 0px));
-          padding: 18px 28px 12px 28px;
+          padding: 14px 20px 10px 20px;
           display: flex;
           flex-direction: column;
           box-sizing: border-box;
@@ -3436,150 +3540,790 @@
           min-height: 0;
           align-items: stretch;
         }
-        .dashboard-left-card {
-          height: auto;
-          overflow: visible;
-        }
-        .dashboard-right-card {
+        .dashboard-kanban-col {
           height: 100%;
           min-height: 0;
           display: flex;
           flex-direction: column;
         }
-        .dashboard-classes-header {
-          flex-shrink: 0;
-          margin-bottom: 14px;
-        }
-        .kelas-grid {
+        .kanban-col-body {
           flex: 1;
           min-height: 0;
           overflow-y: auto;
-          margin-bottom: 0;
-          padding-right: 6px;
+          overflow-x: hidden;
+          padding: 8px 6px 10px 4px;
+          margin: 0 -2px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
         }
-        .kelas-grid::-webkit-scrollbar {
-          width: 6px;
+        .kanban-col-body::-webkit-scrollbar {
+          width: 5px;
         }
-        .kelas-grid::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .kelas-grid::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.12);
+        .kanban-col-body::-webkit-scrollbar-track {
+          background: rgba(0, 0, 0, 0.12);
           border-radius: 10px;
         }
-        .kelas-grid::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.25);
+        .kanban-col-body::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 10px;
+        }
+        .kanban-col-body::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.4);
         }
       }
 
-      /* -- CUSTOM WIDESCREEN DASHBOARD LAYOUT -- */
-      .dashboard-layout-grid {
+      /* -- KANBAN BOARD 3-COLUMN LAYOUT -- */
+      .dashboard-layout-grid.dashboard-kanban-board {
         display: grid;
-        grid-template-columns: 330px 1fr;
-        gap: 20px;
+        grid-template-columns: 315px minmax(0, 1fr) 310px;
+        gap: 16px;
         align-items: stretch;
         margin-top: 0;
       }
+      @media (min-width: 1025px) and (max-width: 1360px) {
+        .dashboard-layout-grid.dashboard-kanban-board {
+          grid-template-columns: 290px minmax(0, 1fr) 290px;
+          gap: 12px;
+        }
+      }
       @media (max-width: 1024px) {
-        .dashboard-layout-grid {
+        .dashboard-layout-grid.dashboard-kanban-board {
           grid-template-columns: 1fr;
+          gap: 18px;
+        }
+        .dashboard-kanban-col {
+          height: auto;
+          overflow: visible;
+        }
+        .kanban-col-body {
+          overflow: visible;
+          height: auto;
+          padding: 6px 0 8px 0;
+          margin: 0;
         }
       }
 
-      .dashboard-left-card {
-        background: rgba(15, 23, 42, 0.45);
+      /* Kanban Column Containers */
+      .dashboard-kanban-col {
+        background: rgba(15, 23, 42, 0.58);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.09);
         border-radius: 16px;
-        padding: 20px 22px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        padding: 14px 14px 12px 14px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
-        height: 100%;
+        gap: 4px;
         position: relative;
       }
-      .dashboard-left-card::before {
+      .dashboard-kanban-col::before {
         content: "";
         position: absolute;
         inset: 0;
         background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
         pointer-events: none;
+        border-radius: 16px;
       }
-      .dashboard-badge-kurikulum {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 5px 12px;
-        background: rgba(168, 85, 247, 0.1);
-        border: 1px solid rgba(168, 85, 247, 0.25);
-        border-radius: 99px;
-        color: #c084fc;
-        font-size: 8pt;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        margin-bottom: 12px;
-        align-self: flex-start;
-      }
-      .dashboard-badge-kurikulum i {
-        font-size: 14px;
-      }
-      .dashboard-welcome-name {
-        font-family: 'Funnel Display', sans-serif;
-        font-size: 14pt;
-        font-weight: 800;
-        color: #ffffff;
-        margin: 0 0 3px 0;
-        line-height: 1.25;
-      }
-      .dashboard-guru-star {
+
+      /* Kanban Column Header */
+      .kanban-col-header {
         display: flex;
         align-items: center;
-        gap: 5px;
-        color: #10b981;
-        font-size: 9pt;
-        font-weight: 600;
-        margin-bottom: 12px;
-      }
-      .dashboard-guru-star i {
-        font-size: 15px;
-      }
-      .dashboard-welcome-text {
-        font-size: 9pt;
-        color: rgba(255, 255, 255, 0.7);
-        line-height: 1.4;
-        margin: 0 0 12px 0;
-      }
-      .dashboard-checklist-list {
-        display: flex;
-        flex-direction: column;
         justify-content: space-between;
-        flex: 1;
-        gap: 7px;
-        list-style: none;
-        padding: 0;
-        margin: 0;
+        gap: 8px;
+        padding-bottom: 9px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        flex-shrink: 0;
+        position: relative;
+        z-index: 1;
       }
-      .dashboard-checklist-item {
+      .kanban-col-title-wrap {
         display: flex;
         align-items: center;
         gap: 8px;
-        font-size: 9pt;
-        color: rgba(255, 255, 255, 0.85);
-        font-weight: 500;
+        min-width: 0;
+        flex-wrap: wrap;
       }
-      .dashboard-checklist-icon {
-        color: #10b981;
-        background: rgba(16, 185, 129, 0.15);
+      .kanban-col-indicator {
+        width: 8px;
+        height: 8px;
         border-radius: 50%;
-        width: 16px;
-        height: 16px;
+        flex-shrink: 0;
+      }
+      .kanban-col-indicator.indicator-emerald {
+        background: #10b981;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+      }
+      .kanban-col-indicator.indicator-blue {
+        background: #38bdf8;
+        box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+      }
+      .kanban-col-indicator.indicator-rose {
+        background: #fb7185;
+        box-shadow: 0 0 10px rgba(251, 113, 133, 0.6);
+      }
+      .kanban-col-title {
+        font-family: 'Funnel Display', sans-serif;
+        font-size: 10pt;
+        font-weight: 800;
+        color: #ffffff;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        margin: 0;
+        line-height: 1.2;
+      }
+      .kanban-col-badge {
+        font-size: 7.5pt;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 6px;
+        border: 1px solid;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        line-height: 1.2;
+      }
+      .kanban-col-badge.badge-emerald {
+        background: rgba(16, 185, 129, 0.12);
+        color: #34d399;
+        border-color: rgba(16, 185, 129, 0.3);
+      }
+      .kanban-col-badge.badge-blue {
+        background: rgba(56, 189, 248, 0.12);
+        color: #38bdf8;
+        border-color: rgba(56, 189, 248, 0.3);
+      }
+      .kanban-col-badge.badge-amber {
+        background: rgba(250, 204, 21, 0.12);
+        color: #facc15;
+        border-color: rgba(250, 204, 21, 0.3);
+      }
+      .kanban-col-badge.badge-rose {
+        background: rgba(244, 63, 94, 0.12);
+        color: #fb7185;
+        border-color: rgba(244, 63, 94, 0.3);
+      }
+      .kanban-col-add-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: #ffffff;
+        font-size: 8pt;
+        font-weight: 700;
+        padding: 4px 9px;
+        border-radius: 7px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        white-space: nowrap;
+      }
+      .kanban-col-add-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.45);
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      }
+
+      /* Generic Kanban Card */
+      .kanban-card {
+        background: rgba(30, 41, 59, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+      .kanban-card:hover {
+        border-color: rgba(255, 255, 255, 0.18);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      }
+
+      /* Profile Card inside Col 1 */
+      .dash-profile-card {
+        padding: 10px 12px;
+      }
+
+      /* -- BAGIAN ATAS: PROFIL GURU & STATS -- */
+      .dash-profile-section {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .dash-profile-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .dash-profile-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: rgba(16, 185, 129, 0.12);
+        border: 1.5px solid rgba(16, 185, 129, 0.3);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 11px;
         flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+      }
+      .dash-profile-info {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .dashboard-welcome-name {
+        font-family: 'Funnel Display', sans-serif;
+        font-size: 13.5pt;
+        font-weight: 800;
+        color: #ffffff;
+        margin: 0 0 2px 0;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .dashboard-guru-star {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: #10b981;
+        font-size: 8.5pt;
+        font-weight: 600;
+        margin: 0;
+      }
+
+      /* Stats Boxes */
+      .dash-stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .dash-stat-box {
+        background: rgba(30, 41, 59, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: border-color 0.2s, background 0.2s, transform 0.2s;
+      }
+      .dash-stat-box:hover {
+        border-color: rgba(255, 255, 255, 0.18);
+        background: rgba(30, 41, 59, 0.65);
+        transform: translateY(-1px);
+      }
+      .dash-stat-icon-wrapper {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .dash-stat-data {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .dash-stat-value {
+        font-family: 'Funnel Display', sans-serif;
+        font-size: 13pt;
+        font-weight: 800;
+        color: #ffffff;
+        line-height: 1.1;
+        display: flex;
+        align-items: baseline;
+        gap: 3px;
+      }
+      .dash-stat-unit {
+        font-size: 8.5pt;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.65);
+      }
+      .dash-stat-label {
+        font-size: 7.5pt;
+        color: rgba(255, 255, 255, 0.5);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        font-weight: 600;
+        margin-top: 1px;
+      }
+
+      /* -- KARTU BULAN BERJALAN (DASHBOARD) -- */
+      .dash-month-card-wrap {
+        width: 100%;
+        margin-top: 2px;
+      }
+      .dash-month-card-wrap .kal-month {
+        border-radius: 12px;
+        border: 1px solid rgba(56, 189, 248, 0.22);
+        background: #0b1528;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      }
+      .dash-month-card-wrap .kal-month-hdr {
+        background: #162f55;
+        border-bottom: 1px solid #142844;
+        padding: 6px 10px;
+      }
+      .dash-month-card-wrap .kal-month-title {
+        font-size: 9.5pt;
+        font-weight: 700;
+        color: #ffffff;
+      }
+      .dash-month-card-wrap .kal-tbl th {
+        font-size: 7.5pt;
+        padding: 3px 0 2px;
+        background: #1c365d;
+      }
+      .dash-month-card-wrap .kal-tbl td {
+        height: 24px;
+        font-size: 8.5pt;
+      }
+      .dash-month-card-wrap .kal-cell-num {
+        font-size: 8.5pt;
+      }
+      .dash-month-card-wrap .kal-hari-efektif {
+        font-size: 7.5pt;
+        padding: 4px 10px;
+        background: #0a1324;
+      }
+
+      .btn-dash-cp-explore {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(56, 189, 248, 0.12);
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        border-radius: 9px;
+        padding: 8px 12px;
+        color: #38bdf8;
+        font-size: 8.5pt;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+      }
+      .btn-dash-cp-explore:hover {
+        background: rgba(56, 189, 248, 0.25);
+        border-color: #38bdf8;
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
+      }
+
+      /* -- BAGIAN BAWAH: BACKUP, IMPOR, DAN RESET -- */
+      .dash-dm-section {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        background: rgba(15, 23, 42, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        padding: 12px;
+      }
+      .dash-dm-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 7.5pt;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.55);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .dash-dm-actions-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 7px;
+      }
+      .btn-dash-dm {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        padding: 8px 6px;
+        border-radius: 8px;
+        font-size: 8.5pt;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+        white-space: nowrap;
+      }
+      .btn-dash-backup {
+        background: rgba(34, 197, 94, 0.1);
+        border-color: rgba(34, 197, 94, 0.25);
+        color: #4ade80;
+      }
+      .btn-dash-backup:hover {
+        background: rgba(34, 197, 94, 0.22);
+        border-color: #22c55e;
+        color: #ffffff;
+        transform: translateY(-1px);
+      }
+      .btn-dash-impor {
+        background: rgba(59, 130, 246, 0.1);
+        border-color: rgba(59, 130, 246, 0.25);
+        color: #60a5fa;
+      }
+      .btn-dash-impor:hover {
+        background: rgba(59, 130, 246, 0.22);
+        border-color: #3b82f6;
+        color: #ffffff;
+        transform: translateY(-1px);
+      }
+      .btn-dash-reset {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: rgba(239, 68, 68, 0.25);
+        color: #f87171;
+      }
+      .btn-dash-reset:hover {
+        background: rgba(239, 68, 68, 0.22);
+        border-color: #ef4444;
+        color: #ffffff;
+        transform: translateY(-1px);
+      }
+
+      .dash-left-copyright {
+        padding: 4px 6px 0 6px;
+        text-align: center;
+        font-size: 7.5pt;
+        color: rgba(255, 255, 255, 0.4);
+        line-height: 1.4;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        margin-top: auto;
+      }
+      .dash-left-copyright strong {
+        color: rgba(255, 255, 255, 0.65);
+        font-weight: 600;
+      }
+
+      /* -- DASHBOARD RIGHT COLUMN WIDGETS -- */
+      .dash-widget-card {
+        background: rgba(30, 41, 59, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 11px 13px;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      .dash-widget-card:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      }
+      .dash-widget-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .dash-widget-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+      .dash-widget-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .dash-widget-title {
+        font-family: 'Funnel Display', sans-serif;
+        font-size: 9.5pt;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0;
+        line-height: 1.2;
+      }
+      .dash-widget-subtitle {
+        font-size: 7.5pt;
+        color: rgba(255, 255, 255, 0.55);
+        font-weight: 600;
+      }
+      .dash-widget-badge {
+        font-size: 7.5pt;
+        font-weight: 800;
+        padding: 2px 7px;
+        border-radius: 6px;
+        border: 1px solid;
+      }
+      .dash-widget-action-link {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: rgba(255, 255, 255, 0.7);
+        border-radius: 6px;
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .dash-widget-action-link:hover {
+        background: rgba(56, 189, 248, 0.2);
+        border-color: #38bdf8;
+        color: #ffffff;
+      }
+      .dash-widget-body {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      /* Schedule Item */
+      .dash-sched-item {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        padding: 7px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .dash-sched-item:hover {
+        border-color: rgba(250, 204, 21, 0.45);
+        background: rgba(250, 204, 21, 0.08);
+        transform: translateX(2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 0 8px rgba(250, 204, 21, 0.1);
+      }
+      .dash-sched-item:hover .dash-sched-name {
+        color: #facc15;
+      }
+      .dash-sched-info {
+        min-width: 0;
+        flex: 1;
+      }
+      .dash-sched-name {
+        font-size: 8.5pt;
+        font-weight: 700;
+        color: #f8fafc;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .dash-sched-sub {
+        font-size: 7.5pt;
+        color: rgba(255, 255, 255, 0.55);
+      }
+      .dash-sched-badge {
+        font-size: 7.5pt;
+        font-weight: 800;
+        color: #facc15;
+        background: rgba(250, 204, 21, 0.15);
+        border: 1px solid rgba(250, 204, 21, 0.3);
+        padding: 2px 6px;
+        border-radius: 5px;
+        flex-shrink: 0;
+      }
+
+      /* Agenda Item */
+      .dash-agenda-item {
+        background: rgba(15, 23, 42, 0.6);
+        border-left: 3px solid #38bdf8;
+        border-radius: 6px;
+        padding: 6px 9px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .dash-agenda-info {
+        min-width: 0;
+        flex: 1;
+      }
+      .dash-agenda-title {
+        font-size: 8pt;
+        font-weight: 700;
+        color: #f1f5f9;
+        line-height: 1.3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .dash-agenda-date {
+        font-size: 7pt;
+        color: rgba(255, 255, 255, 0.6);
+        font-weight: 600;
+        margin-top: 1px;
+      }
+      .dash-agenda-tag {
+        font-size: 6.5pt;
+        font-weight: 700;
+        padding: 2px 5px;
+        border-radius: 4px;
+        flex-shrink: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+
+      /* Quick Notes */
+      .dash-quicknotes-input-wrap {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .dash-quicknotes-input-wrap input {
+        flex: 1;
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 7px;
+        padding: 5px 8px;
+        color: #ffffff;
+        font-size: 8pt;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .dash-quicknotes-input-wrap input:focus {
+        border-color: #34d399;
+      }
+      .dash-quicknotes-input-wrap button {
+        background: rgba(16, 185, 129, 0.2);
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        border-radius: 7px;
+        width: 26px;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #34d399;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex-shrink: 0;
+      }
+      .dash-quicknotes-input-wrap button:hover {
+        background: rgba(16, 185, 129, 0.35);
+        color: #ffffff;
+      }
+      .dash-quicknotes-list {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        max-height: 115px;
+        overflow-y: auto;
+        padding-right: 2px;
+      }
+      .dash-quicknote-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 5px 7px;
+        background: rgba(15, 23, 42, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 6px;
+        font-size: 8pt;
+        transition: background 0.15s;
+      }
+      .dash-quicknote-item:hover {
+        background: rgba(15, 23, 42, 0.8);
+      }
+      .dash-quicknote-left {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+        flex: 1;
+      }
+      .dash-quicknote-item.done span {
+        text-decoration: line-through;
+        color: rgba(255, 255, 255, 0.35);
+      }
+      .dash-quicknote-del-btn {
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.3);
+        cursor: pointer;
+        padding: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.15s;
+      }
+      .dash-quicknote-del-btn:hover {
+        color: #f87171;
+      }
+
+      /* -- MODAL EKSPLORASI CP STYLES -- */
+      .cp-elemen-card {
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 12px;
+        transition: border-color 0.2s;
+      }
+      .cp-elemen-card:hover {
+        border-color: rgba(56, 189, 248, 0.4);
+      }
+      .cp-elemen-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .cp-elemen-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 9px;
+        background: rgba(56, 189, 248, 0.15);
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        border-radius: 6px;
+        color: #38bdf8;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      .cp-elemen-sub {
+        font-size: 12px;
+        color: #facc15;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .cp-elemen-text {
+        font-size: 13px;
+        line-height: 1.6;
+        color: rgba(255, 255, 255, 0.9);
+        margin: 0;
+        text-align: justify;
+      }
+      .btn-salin-cp {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 6px;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .btn-salin-cp:hover {
+        background: rgba(56, 189, 248, 0.2);
+        border-color: #38bdf8;
+        color: #ffffff;
       }
 
       .dashboard-right-card {
@@ -3660,60 +4404,60 @@
         background: linear-gradient(90deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
       }
 
-      /* -- HORIZONTAL KELAS ROW CARDS (UNWRAPPED / CLEAN LIST) -- */
+      /* -- KANBAN KELAS ROW CARDS -- */
       .dashboard-kelas-row-card {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 12px 8px;
-        background: transparent;
-        border: none;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 0;
+        padding: 11px 13px;
+        background: rgba(30, 41, 59, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 11px;
         cursor: pointer;
-        transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.2s ease;
-        gap: 16px;
+        transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        gap: 12px;
         position: relative;
-        transform-origin: center center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
       }
       .dashboard-kelas-row-card:hover {
-        background: transparent;
-        border-bottom-color: var(--accent, #facc15);
-        transform: scale(1.015);
-        z-index: 2;
+        background: rgba(30, 41, 59, 0.85);
+        border-color: rgba(250, 204, 21, 0.45);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), 0 0 14px rgba(250, 204, 21, 0.12);
+        z-index: 5;
       }
       .dashboard-kelas-row-left {
         display: flex;
         align-items: center;
-        gap: 14px;
+        gap: 12px;
         flex: 1;
         min-width: 0;
       }
       .dashboard-kelas-row-icon {
-        width: auto;
-        height: auto;
-        border-radius: 0;
-        background: transparent;
-        border: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: rgba(56, 189, 248, 0.12);
+        border: 1px solid rgba(56, 189, 248, 0.25);
         box-shadow: none;
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        color: #22c55e;
-        transition: transform 0.2s ease, color 0.2s ease;
+        color: #38bdf8;
+        transition: transform 0.2s ease, color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
       }
       .dashboard-kelas-row-card:hover .dashboard-kelas-row-icon {
-        transform: scale(1.1);
-        color: var(--accent) !important;
-        background: transparent;
-        border-color: transparent;
+        transform: scale(1.05);
+        color: #facc15 !important;
+        background: rgba(250, 204, 21, 0.18);
+        border-color: rgba(250, 204, 21, 0.45);
       }
       .dashboard-kelas-row-icon.indigo {
-        color: #22c55e;
+        color: #38bdf8;
       }
       .dashboard-kelas-row-icon.blue {
-        color: #22c55e;
+        color: #38bdf8;
       }
       .dashboard-kelas-row-info {
         display: flex;
@@ -3722,27 +4466,27 @@
         flex: 1;
       }
       .dashboard-kelas-row-title {
-        font-family: 'Inter', sans-serif;
-        font-size: 11pt;
-        font-weight: 600;
+        font-family: 'Funnel Display', sans-serif;
+        font-size: 10.5pt;
+        font-weight: 700;
         color: #ffffff;
-        margin: 0 0 4px 0;
+        margin: 0 0 3px 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
         transition: color 0.2s;
-        letter-spacing: -0.01em;
+        line-height: 1.25;
       }
       .dashboard-kelas-row-card:hover .dashboard-kelas-row-title {
-        color: var(--accent);
+        color: #facc15;
       }
       .dashboard-kelas-row-meta {
         display: flex;
         align-items: center;
         flex-wrap: wrap;
-        gap: 12px;
-        font-size: 8.5pt;
-        color: rgba(255, 255, 255, 0.5);
+        gap: 10px;
+        font-size: 8pt;
+        color: rgba(255, 255, 255, 0.55);
       }
       .dashboard-kelas-row-meta-item {
         display: flex;
@@ -3750,28 +4494,28 @@
         gap: 4px;
       }
       .dashboard-kelas-row-meta-item i {
-        font-size: 13px;
+        font-size: 12px;
         color: rgba(255, 255, 255, 0.4);
       }
       .dashboard-kelas-row-right {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 8px;
         flex-shrink: 0;
       }
       .dashboard-kelas-row-actions {
         display: flex;
         align-items: center;
         gap: 4px;
-        opacity: 0;
+        opacity: 0.6;
         transition: opacity 0.2s ease;
       }
       .dashboard-kelas-row-card:hover .dashboard-kelas-row-actions {
         opacity: 1;
       }
       .dashboard-kelas-row-action-btn {
-        width: 28px;
-        height: 28px;
+        width: 26px;
+        height: 26px;
         border-radius: 6px;
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -3787,44 +4531,53 @@
         color: #ffffff;
       }
       .dashboard-kelas-row-action-btn.edit:hover {
-        color: #3b82f6;
-        border-color: rgba(59, 130, 246, 0.4);
+        background: rgba(56, 189, 248, 0.25);
+        border-color: #38bdf8;
+        color: #38bdf8;
       }
       .dashboard-kelas-row-action-btn.delete:hover {
+        background: rgba(239, 68, 68, 0.25);
+        border-color: #ef4444;
         color: #ef4444;
-        border-color: rgba(239, 68, 68, 0.4);
       }
       .dashboard-kelas-row-fase-badge {
-        font-size: 7.5pt;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        padding: 4px 10px;
-        border-radius: 99px;
+        font-size: 7pt;
+        font-weight: 800;
+        padding: 2px 7px;
+        border-radius: 6px;
         text-transform: uppercase;
-        white-space: nowrap;
-        text-align: center;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        background: rgba(14, 165, 233, 0.12);
-        border: 1px solid rgba(56, 189, 248, 0.35);
-        color: #38bdf8;
-        box-shadow: 0 0 10px rgba(56, 189, 248, 0.1);
-        transition: all 0.2s ease;
+        letter-spacing: 0.4px;
+        border: 1px solid;
       }
-      .dashboard-kelas-row-fase-badge.fase-e,
-      .dashboard-kelas-row-fase-badge.fase-f {
-        background: rgba(168, 85, 247, 0.12);
-        border: 1px solid rgba(192, 132, 252, 0.35);
+      .dashboard-kelas-row-fase-badge.fase-a {
+        background: rgba(236, 72, 153, 0.15);
+        color: #f472b6;
+        border-color: rgba(236, 72, 153, 0.3);
+      }
+      .dashboard-kelas-row-fase-badge.fase-b {
+        background: rgba(168, 85, 247, 0.15);
         color: #c084fc;
-        box-shadow: 0 0 10px rgba(168, 85, 247, 0.1);
+        border-color: rgba(168, 85, 247, 0.3);
       }
-      .dashboard-kelas-row-card:hover .dashboard-kelas-row-fase-badge,
-      .dashboard-kelas-row-card:hover .dashboard-kelas-row-fase-badge.fase-e,
-      .dashboard-kelas-row-card:hover .dashboard-kelas-row-fase-badge.fase-f {
-        background: rgba(250, 204, 21, 0.16);
-        border-color: rgba(250, 204, 21, 0.55);
-        color: #facc15;
-        box-shadow: 0 0 12px rgba(250, 204, 21, 0.25);
+      .dashboard-kelas-row-fase-badge.fase-c {
+        background: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
+        border-color: rgba(59, 130, 246, 0.3);
+      }
+      .dashboard-kelas-row-fase-badge.fase-d {
+        background: rgba(16, 185, 129, 0.15);
+        color: #34d399;
+        border-color: rgba(16, 185, 129, 0.3);
+      }
+      .dashboard-kelas-row-fase-badge.fase-e {
+        background: rgba(245, 158, 11, 0.15);
+        color: #fbbf24;
+        border-color: rgba(245, 158, 11, 0.3);
+      }
+      .dashboard-kelas-row-fase-badge.fase-f {
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+        border-color: rgba(239, 68, 68, 0.3);
       }
       .dashboard-kelas-row-arrow {
         color: rgba(255, 255, 255, 0.3);
@@ -3832,7 +4585,7 @@
       }
       .dashboard-kelas-row-card:hover .dashboard-kelas-row-arrow {
         transform: translateX(4px);
-        color: var(--accent);
+        color: #facc15;
       }
 
       .dashboard-kelas-empty {
@@ -4179,6 +4932,53 @@
       .modal-box.modal-box-landscape {
         width: 680px;
         max-width: 92vw;
+      }
+      .modal-box.modal-box-edit-tp {
+        width: 920px;
+        max-width: 95vw;
+        max-height: calc(100dvh - 50px);
+        padding: 24px 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .modal-tp-landscape-grid {
+        display: grid;
+        grid-template-columns: 1fr 3fr;
+        gap: 20px;
+      }
+      @media (max-width: 768px) {
+        .modal-tp-landscape-grid {
+          grid-template-columns: 1fr;
+          gap: 14px;
+        }
+      }
+      .modal-box-edit-tp .modal-actions {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 10px !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        padding-top: 16px;
+        margin-top: 4px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .modal-box-edit-tp .modal-actions button,
+      .modal-box-edit-tp .btn-modal-cancel,
+      .modal-box-edit-tp .btn-modal-ok {
+        min-height: 40px !important;
+        height: 40px !important;
+        padding: 0 20px !important;
+        font-size: 13.5px !important;
+        font-weight: 600 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        border-radius: 9999px !important;
+        box-sizing: border-box !important;
+        line-height: 1 !important;
       }
       .modal-box.modal-box-tp-detail {
         width: 860px;

@@ -2735,6 +2735,26 @@
         }
       }
 
+      function toggleLoginLicenseVisibility() {
+        const licenseInp = document.getElementById("login-license");
+        const toggleBtn = document.getElementById("login-license-toggle");
+        if (!licenseInp) return;
+        const isPassword = licenseInp.type === "password";
+        licenseInp.type = isPassword ? "text" : "password";
+
+        if (toggleBtn) {
+          toggleBtn.title = isPassword ? "Sembunyikan kode akses" : "Tampilkan kode akses";
+          toggleBtn.setAttribute("aria-label", isPassword ? "Sembunyikan kode akses" : "Tampilkan kode akses");
+          toggleBtn.innerHTML = `<i class="material-symbols-rounded" style="font-size: 14px;" data-lucide="${isPassword ? "eye-off" : "eye"}"></i>`;
+          if (typeof lucide !== "undefined" && lucide.createIcons) {
+            lucide.createIcons({
+              attrs: { class: "lucide" },
+              node: toggleBtn
+            });
+          }
+        }
+      }
+
       // ============================================================
       // GOOGLE FORM & GOOGLE SHEET LICENSE VERIFICATION SYSTEM
       // ============================================================
@@ -3772,7 +3792,13 @@ function doGet(e) {
           "Agen Perubahan",
           "Pendidik Visioner"
         ];
-        if(document.getElementById("dash-guru-title")) document.getElementById("dash-guru-title").innerHTML = `<i class="material-symbols-rounded" style="font-size: 16px;" data-lucide="star"></i> ${panggilanList[Math.floor(Math.random() * panggilanList.length)]}`;
+        if(document.getElementById("dash-guru-title")) {
+          const gelar = panggilanList[Math.floor(Math.random() * panggilanList.length)];
+          document.getElementById("dash-guru-title").innerHTML = `<i data-lucide="star" style="width: 11px; height: 11px; fill: currentColor;"></i> <span>${gelar}</span>`;
+          if (typeof lucide !== "undefined" && lucide.createIcons) {
+            lucide.createIcons();
+          }
+        }
         renderDaftarKelas();
         checkOnboarding();
       }
@@ -3937,6 +3963,9 @@ state.jadwal =
         state.liburGanjil = kalender.ganjil;
         state.liburGenap = kalender.genap;
 
+        state.jurnalMode = kelas.jurnalMode || "rinci";
+        updateJurnalModeUI();
+
         state.isGenerated = kelas.isGenerated || false;
         isGenerated = kelas.isGenerated || false;
 
@@ -3968,14 +3997,573 @@ state.jadwal =
       }
 
       // ============================================================
-      // DASHBOARD: RENDER DAFTAR KELAS
+      // DASHBOARD: RENDER DAFTAR KELAS & BULAN BERJALAN
       // ============================================================
+      let dashCalOffset = 0;
+
+      function navDashMonth(dir) {
+        dashCalOffset += dir;
+        renderDashboardMonthCard();
+      }
+
+      function renderDashboardMonthCard() {
+        const container = document.getElementById("dash-month-card-wrap");
+        if (!container) return;
+
+        const now = new Date();
+        const currentRealYear = now.getFullYear();
+        const currentRealMonth = now.getMonth();
+        const currentRealDate = now.getDate();
+        const todayISO = `${currentRealYear}-${String(currentRealMonth + 1).padStart(2, "0")}-${String(currentRealDate).padStart(2, "0")}`;
+
+        const targetDate = new Date(currentRealYear, currentRealMonth + dashCalOffset, 1);
+        const year = targetDate.getFullYear();
+        const month = targetDate.getMonth();
+
+        // Ambil data kaldik dari state atau kelas
+        let holidaysList = [];
+        if (typeof kalender !== "undefined" && ((kalender?.ganjil && kalender.ganjil.length) || (kalender?.genap && kalender.genap.length))) {
+          holidaysList = [...(kalender.ganjil || []), ...(kalender.genap || [])];
+        } else if (typeof daftarKelas !== "undefined" && daftarKelas.length > 0) {
+          for (const k of daftarKelas) {
+            if ((k.kalenderGanjil && k.kalenderGanjil.length) || (k.kalenderGenap && k.kalenderGenap.length)) {
+              holidaysList = [...(k.kalenderGanjil || []), ...(k.kalenderGenap || [])];
+              break;
+            }
+          }
+        }
+        if (holidaysList.length === 0 && typeof DEFAULT_STATE !== "undefined") {
+          holidaysList = [...(DEFAULT_STATE.liburGanjil || []), ...(DEFAULT_STATE.liburGenap || [])];
+        }
+
+        const safeKatList = [
+          { id: "libur", label: "Libur", warna: "#EF4444", countEfektif: false },
+          { id: "kegiatan_nonaktif", label: "Kegiatan Non-KBM", warna: "#F97316", countEfektif: false },
+          { id: "kegiatan_aktif", label: "Kegiatan KBM Aktif", warna: "#3B82F6", countEfektif: true }
+        ];
+
+        const lookup = {};
+        holidaysList.forEach(l => {
+          if (!l || !l.tanggal) return;
+          const kat = safeKatList.find(k => k.id === l.kategori) || { label: "Libur", warna: "#EF4444", countEfektif: false };
+          if (!lookup[l.tanggal]) {
+            lookup[l.tanggal] = {
+              warna: kat.warna,
+              tips: [],
+              countEfektif: kat.countEfektif,
+              penting: !!l.penting
+            };
+          }
+          if (!kat.countEfektif) lookup[l.tanggal].countEfektif = false;
+          if (l.penting) lookup[l.tanggal].penting = true;
+          lookup[l.tanggal].tips.push(l.keterangan || kat.label);
+        });
+
+        const fdw = 0; // Minggu sebagai hari pertama
+        const WD_LABELS = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+        const workDays = (typeof kalWorkDays !== "undefined" && kalWorkDays.size > 0) ? kalWorkDays : new Set([1, 2, 3, 4, 5]);
+
+        const totalDays = new Date(year, month + 1, 0).getDate();
+        const firstDow = new Date(Date.UTC(year, month, 1)).getUTCDay();
+        let startDowIndex = firstDow; // 0=Min, 1=Sen, dst.
+
+        const cells = [];
+        for (let i = 0; i < startDowIndex; i++) cells.push(null);
+        for (let d = 1; d <= totalDays; d++) cells.push(d);
+        while (cells.length % 7 !== 0) cells.push(null);
+
+        const dateCol = {};
+        cells.forEach((d, idx) => {
+          if (d !== null) dateCol[d] = idx % 7;
+        });
+
+        const dayMarks = {};
+        for (let d = 1; d <= totalDays; d++) {
+          const iso = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+          if (lookup[iso]) dayMarks[d] = lookup[iso];
+        }
+
+        function conn(d) {
+          const cur = dayMarks[d];
+          if (!cur) return null;
+          const col = dateCol[d];
+          const prev = dayMarks[d - 1], next = dayMarks[d + 1];
+          const cPrev = !!(prev && prev.warna === cur.warna && col > 0);
+          const cNext = !!(next && next.warna === cur.warna && col < 6);
+          return {
+            warna: cur.warna,
+            tips: cur.tips,
+            cPrev,
+            cNext,
+            penting: !!cur.penting
+          };
+        }
+
+        let rows = "";
+        let hariEfektif = 0;
+        let activeWeeksSet = new Set();
+
+        for (let r = 0; r < cells.length / 7; r++) {
+          let tds = "";
+          let hasWorkDayInRow = false;
+
+          for (let c = 0; c < 7; c++) {
+            const d = cells[r * 7 + c];
+            const actualDow = (c + fdw) % 7; // 1=Sen, ..., 6=Sab, 0=Min
+
+            if (d === null) {
+              tds += `<td class="kal-empty-cell" style="padding:0;"></td>`;
+              continue;
+            }
+
+            const iso = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+            const isToday = (iso === todayISO);
+            const isWork = workDays.has(actualDow);
+            const eventAtDay = lookup[iso];
+            const isLibur = eventAtDay ? !eventAtDay.countEfektif : false;
+
+            if (isWork && !isLibur) {
+              hariEfektif++;
+              hasWorkDayInRow = true;
+            }
+
+            const mk = conn(d);
+            const isSun = (actualDow === 0);
+            const isSat = (actualDow === 6);
+            const cellColorClass = !isWork
+              ? "kal-cell-wknd-off"
+              : isSun
+                ? "kal-cell-sun"
+                : isSat
+                  ? "kal-cell-sat"
+                  : "";
+
+            let defaultTip = isWork ? "Hari Efektif KBM" : (isSun ? "Libur Akhir Pekan (Minggu)" : (isSat ? "Libur Akhir Pekan (Sabtu)" : "Hari Libur"));
+            if (isToday) defaultTip += " [HARI INI]";
+
+            const todayRing = isToday ? `box-shadow: inset 0 0 0 2px #10b981, 0 0 8px rgba(16, 185, 129, 0.5) !important; border-radius: 4px;` : "";
+
+            if (!mk) {
+              const wkndBg = !isWork
+                ? (isSun ? "background: rgba(239, 68, 68, 0.12) !important;" : "background: rgba(56, 189, 248, 0.06) !important;")
+                : "";
+              tds += `<td style="padding:0; text-align:center; vertical-align:middle; position:relative; ${wkndBg} ${todayRing}" data-tip="${escH(defaultTip)}">
+                <span class="kal-cell-num ${cellColorClass}" style="display:inline-flex; align-items:center; justify-content:center; width:100%; height:25px; font-size:8.5pt; font-weight:${isToday ? '900' : '700'}; ${isToday ? 'color:#10b981!important;' : ''}">${d}</span>
+              </td>`;
+              continue;
+            }
+
+            const { warna, tips, cPrev, cNext } = mk;
+            let eventTip = tips.join(" | ");
+            if (isToday) eventTip += " [HARI INI]";
+
+            // Buat warna background sel yang jelas dan kontras
+            const softBg = (typeof hexToRgba === "function") ? hexToRgba(warna, 0.36) : `rgba(239, 68, 68, 0.35)`;
+            const borderCol = (typeof hexToRgba === "function") ? hexToRgba(warna, 0.55) : warna;
+            const isSingle = !cPrev && !cNext;
+
+            let borderStyle = `border-top: 1px solid ${borderCol}; border-bottom: 1px solid ${borderCol};`;
+            if (isSingle) {
+              borderStyle += ` border-left: 1px solid ${borderCol}; border-right: 1px solid ${borderCol}; border-radius: 5px;`;
+            } else {
+              if (!cPrev && cNext) borderStyle += ` border-left: 1px solid ${borderCol}; border-top-left-radius: 5px; border-bottom-left-radius: 5px;`;
+              if (cPrev && !cNext) borderStyle += ` border-right: 1px solid ${borderCol}; border-top-right-radius: 5px; border-bottom-right-radius: 5px;`;
+            }
+
+            const pOutline = mk.penting ? `box-shadow: inset 0 0 0 2px ${warna};` : todayRing;
+
+            tds += `<td class="kal-td-hl" style="background:${softBg} !important; ${borderStyle} padding:0; text-align:center; vertical-align:middle; position:relative; ${pOutline}" data-tip="${escH(eventTip)}">
+              <span class="kal-txt-hl" style="display:flex; align-items:center; justify-content:center; width:100%; height:25px; font-size:8.5pt; font-weight:800; color:#ffffff !important; text-shadow:0 1px 2px rgba(0,0,0,0.5); cursor:default; ${isToday ? 'color:#10b981!important;' : ''}">${d}</span>
+            </td>`;
+          }
+
+          if (hasWorkDayInRow) activeWeeksSet.add(r);
+          rows += `<tr>${tds}</tr>`;
+        }
+
+        const bulanNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+        const namaBulan = bulanNames[month] || `Bulan ${month + 1}`;
+        const jumlahPekan = activeWeeksSet.size;
+
+        const html = `
+          <div class="kal-month" style="margin: 0; box-shadow: 0 4px 16px rgba(0,0,0,0.3); border-color: rgba(56, 189, 248, 0.25);">
+            <div class="kal-month-hdr" style="padding: 6px 10px; display: flex; align-items: center; justify-content: space-between;">
+              <button type="button" onclick="navDashMonth(-1)" style="background: rgba(255,255,255,0.1); border: none; color: #fff; border-radius: 4px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; font-weight: 700; line-height: 1;" title="Bulan Sebelumnya">‹</button>
+              <div class="kal-month-title" style="font-size: 9.5pt; font-weight: 700; letter-spacing: 0.3px; display: flex; align-items: center; gap: 6px;">
+                <i data-lucide="calendar" style="width: 14px; height: 14px; color: #38bdf8;"></i>
+                <span>${namaBulan} ${year}</span>
+              </div>
+              <button type="button" onclick="navDashMonth(1)" style="background: rgba(255,255,255,0.1); border: none; color: #fff; border-radius: 4px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; font-weight: 700; line-height: 1;" title="Bulan Berikutnya">›</button>
+            </div>
+            <table class="kal-tbl">
+              <thead>
+                <tr>${WD_LABELS.map(w => `<th style="font-size: 7.5pt; padding: 3px 0 2px;">${w}</th>`).join("")}</tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+            <div class="kal-hari-efektif" style="padding: 5px 10px; font-size: 7.5pt; display:flex; align-items:center; justify-content:space-between;">
+              <span>Hari Efektif: <strong style="color: #38bdf8;">${hariEfektif}</strong> hari</span>
+              <span>Pekan: <strong style="color: #ffffff;">${jumlahPekan}</strong></span>
+            </div>
+            <div class="dash-kaldik-legend" style="display: flex; align-items: center; justify-content: space-around; padding: 5px 8px 6px; background: #070e1c; border-top: 1px solid rgba(255,255,255,0.06); font-size: 7pt; color: rgba(255,255,255,0.65); border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
+              <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:7px; height:7px; border-radius:2px; background:#ef4444; box-shadow:0 0 4px rgba(239,68,68,0.5);"></span> Libur</span>
+              <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:7px; height:7px; border-radius:2px; background:#f97316; box-shadow:0 0 4px rgba(249,115,22,0.5);"></span> Non-KBM</span>
+              <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:7px; height:7px; border-radius:2px; background:#3b82f6; box-shadow:0 0 4px rgba(59,130,246,0.5);"></span> KBM</span>
+              <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:7px; height:7px; border-radius:2px; border:1.5px solid #10b981; box-shadow:0 0 4px rgba(16,185,129,0.5);"></span> Hari Ini</span>
+            </div>
+          </div>
+        `;
+
+        container.innerHTML = html;
+        if (typeof lucide !== "undefined" && lucide.createIcons) {
+          lucide.createIcons();
+        }
+      }
+
+      window.renderDashboardMonthCard = renderDashboardMonthCard;
+      window.navDashMonth = navDashMonth;
+
+      // ============================================================
+      // WIDGET KOLOM KANAN DASHBOARD
+      // ============================================================
+
+      // 1. Jadwal Mengajar Hari Ini
+      function renderDashboardTodaySchedule() {
+        const container = document.getElementById("dash-today-schedule-list");
+        const badge = document.getElementById("dash-today-jp-badge");
+        const titleDay = document.getElementById("dash-today-name");
+        if (!container) return;
+
+        const now = new Date();
+        const dayIndex = now.getDay(); // 0=Minggu, 1=Senin, ..., 6=Sabtu
+        const hariNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+        const bulanNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+        const namaHari = hariNames[dayIndex];
+        const tglStr = `${namaHari}, ${now.getDate()} ${bulanNames[now.getMonth()]} ${now.getFullYear()}`;
+
+        if (titleDay) titleDay.textContent = tglStr;
+
+        const todayClasses = [];
+        let todayTotalJP = 0;
+
+        if (typeof daftarKelas !== "undefined" && Array.isArray(daftarKelas)) {
+          daftarKelas.forEach((k) => {
+            if (k.jadwal && Array.isArray(k.jadwal)) {
+              const item = k.jadwal.find((j) => j.hari === namaHari);
+              if (item && parseInt(item.jp, 10) > 0) {
+                const jpNum = parseInt(item.jp, 10);
+                todayTotalJP += jpNum;
+                todayClasses.push({
+                  id: k.id,
+                  mapel: k.mapel || "Mata Pelajaran",
+                  kelas: k.rombel || (k.kelas ? `Kelas ${k.kelas}` : "-"),
+                  fase: (k.fase || "").toUpperCase(),
+                  jp: jpNum,
+                  sekolah: k.sekolah || ""
+                });
+              }
+            }
+          });
+        }
+
+        if (badge) {
+          badge.textContent = `${todayTotalJP} JP`;
+        }
+
+        if (todayClasses.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 12px 8px; background: rgba(15, 23, 42, 0.4); border-radius: 8px; border: 1px dashed rgba(255,255,255,0.1);">
+              <i data-lucide="coffee" style="width: 20px; height: 20px; color: rgba(250, 204, 21, 0.6); margin: 0 auto 5px auto; display: block;"></i>
+              <div style="font-size: 8pt; font-weight: 600; color: rgba(255,255,255,0.85);">Tidak Ada Jadwal Mengajar</div>
+              <div style="font-size: 7pt; color: rgba(255,255,255,0.5); margin-top: 2px;">Hari ini (${namaHari}) bebas jam tatap muka.</div>
+            </div>
+          `;
+        } else {
+          container.innerHTML = todayClasses.map((item) => `
+            <div class="dash-sched-item" onclick="bukaKelas('${item.id}')" title="Buka kelas ${escH(item.mapel)} ${escH(item.kelas)}" style="cursor: pointer;">
+              <div class="dash-sched-info">
+                <div class="dash-sched-name">${escH(item.mapel)}</div>
+                <div class="dash-sched-sub">${escH(item.kelas)} &bull; Fase ${escH(item.fase)}</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                <div class="dash-sched-badge">${item.jp} JP</div>
+                <i data-lucide="arrow-right" style="width: 13px; height: 13px; color: rgba(250, 204, 21, 0.75);"></i>
+              </div>
+            </div>
+          `).join("");
+        }
+
+        if (typeof lucide !== "undefined" && lucide.createIcons) {
+          lucide.createIcons({ node: container });
+        }
+      }
+
+      // 2. Agenda & Libur Terdekat (Kaldik)
+      function renderDashboardUpcomingAgenda() {
+        const container = document.getElementById("dash-upcoming-agenda-list");
+        if (!container) return;
+
+        let holidaysList = [];
+        if (typeof kalender !== "undefined" && ((kalender?.ganjil && kalender.ganjil.length) || (kalender?.genap && kalender.genap.length))) {
+          holidaysList = [...(kalender.ganjil || []), ...(kalender.genap || [])];
+        } else if (typeof daftarKelas !== "undefined" && daftarKelas.length > 0) {
+          for (const k of daftarKelas) {
+            if ((k.kalenderGanjil && k.kalenderGanjil.length) || (k.kalenderGenap && k.kalenderGenap.length)) {
+              holidaysList = [...(k.kalenderGanjil || []), ...(k.kalenderGenap || [])];
+              break;
+            }
+          }
+        }
+        if (holidaysList.length === 0 && typeof DEFAULT_STATE !== "undefined") {
+          holidaysList = [...(DEFAULT_STATE.liburGanjil || []), ...(DEFAULT_STATE.liburGenap || [])];
+        }
+
+        const now = new Date();
+        const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+        const futureEntries = holidaysList
+          .filter((l) => l && l.tanggal && l.tanggal >= todayISO)
+          .sort((a, b) => a.tanggal.localeCompare(b.tanggal));
+
+        const grouped = [];
+        futureEntries.forEach((entry) => {
+          const last = grouped[grouped.length - 1];
+          if (last && last.keterangan === entry.keterangan && last.kategori === entry.kategori) {
+            last.tglAkhir = entry.tanggal;
+            last.count = (last.count || 1) + 1;
+          } else {
+            grouped.push({
+              keterangan: entry.keterangan || "Agenda Sekolah",
+              kategori: entry.kategori || "libur",
+              tglAwal: entry.tanggal,
+              tglAkhir: entry.tanggal,
+              count: 1
+            });
+          }
+        });
+
+        const topAgendas = grouped.slice(0, 3);
+
+        if (topAgendas.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 12px 8px; background: rgba(15, 23, 42, 0.4); border-radius: 8px; border: 1px dashed rgba(255,255,255,0.1);">
+              <i data-lucide="calendar-check" style="width: 20px; height: 20px; color: rgba(56, 189, 248, 0.6); margin: 0 auto 5px auto; display: block;"></i>
+              <div style="font-size: 8pt; font-weight: 600; color: rgba(255,255,255,0.85);">Semua Agenda Normal</div>
+              <div style="font-size: 7pt; color: rgba(255,255,255,0.5); margin-top: 2px;">Tidak ada libur terdekat dalam waktu dekat.</div>
+            </div>
+          `;
+        } else {
+          const bulanIndoShort = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+          function formatTglRange(start, end) {
+            const p1 = start.split("-");
+            const d1 = parseInt(p1[2], 10);
+            const m1 = bulanIndoShort[parseInt(p1[1], 10) - 1];
+            let dateStr = "";
+            if (start === end) {
+              dateStr = `${d1} ${m1}`;
+            } else {
+              const p2 = end.split("-");
+              const d2 = parseInt(p2[2], 10);
+              const m2 = bulanIndoShort[parseInt(p2[1], 10) - 1];
+              if (m1 === m2) {
+                dateStr = `${d1} - ${d2} ${m1}`;
+              } else {
+                dateStr = `${d1} ${m1} - ${d2} ${m2}`;
+              }
+            }
+
+            // Hitung sisa hari (remaining days)
+            const [yToday, mToday, dayToday] = todayISO.split("-").map(Number);
+            const [yStart, mStart, dayStart] = start.split("-").map(Number);
+            const [yEnd, mEnd, dayEnd] = end.split("-").map(Number);
+
+            const dtToday = new Date(yToday, mToday - 1, dayToday).getTime();
+            const dtStart = new Date(yStart, mStart - 1, dayStart).getTime();
+            const dtEnd = new Date(yEnd, mEnd - 1, dayEnd).getTime();
+
+            const msPerDay = 1000 * 60 * 60 * 24;
+            const diffDays = Math.round((dtStart - dtToday) / msPerDay);
+
+            let remainingText = "";
+            if (diffDays > 0) {
+              remainingText = `${diffDays} hari lagi`;
+            } else if (diffDays === 0) {
+              remainingText = "Hari ini";
+            } else if (dtToday <= dtEnd) {
+              remainingText = "Sedang berlangsung";
+            }
+
+            if (remainingText) {
+              return `${dateStr} (${remainingText})`;
+            }
+            return dateStr;
+          }
+
+          container.innerHTML = topAgendas.map((item) => {
+            const isLibur = item.kategori === "libur";
+            const isNonKbm = item.kategori === "kegiatan_nonaktif";
+            const tagLabel = isLibur ? "Libur" : (isNonKbm ? "Kegiatan" : "KBM");
+            const borderCol = isLibur ? "#ef4444" : (isNonKbm ? "#f97316" : "#3b82f6");
+            const tagBg = isLibur ? "rgba(239, 68, 68, 0.15)" : (isNonKbm ? "rgba(249, 115, 22, 0.15)" : "rgba(59, 130, 246, 0.15)");
+            const tagTextCol = isLibur ? "#f87171" : (isNonKbm ? "#fb923c" : "#60a5fa");
+
+            return `
+              <div class="dash-agenda-item" style="border-left-color: ${borderCol};">
+                <div class="dash-agenda-info">
+                  <div class="dash-agenda-title" title="${escH(item.keterangan)}">${escH(item.keterangan)}</div>
+                  <div class="dash-agenda-date">${formatTglRange(item.tglAwal, item.tglAkhir)}</div>
+                </div>
+                <span class="dash-agenda-tag" style="background: ${tagBg}; color: ${tagTextCol};">${tagLabel}</span>
+              </div>
+            `;
+          }).join("");
+        }
+
+        if (typeof lucide !== "undefined" && lucide.createIcons) {
+          lucide.createIcons({ node: container });
+        }
+      }
+
+      // 3. Catatan Cepat Guru
+      function getQuickNotesKey() {
+        const uid = (typeof currentUser !== "undefined" && currentUser && currentUser.uid) ? currentUser.uid : "guest";
+        return "promesta_quick_notes_" + uid;
+      }
+
+      function loadQuickNotes() {
+        try {
+          const raw = localStorage.getItem(getQuickNotesKey());
+          if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return [
+          { id: "qn_1", text: "Periksa kelengkapan jurnal mengajar pekan ini", done: false },
+          { id: "qn_2", text: "Siapkan lembar asesmen formatif & rubrik KKTP", done: false }
+        ];
+      }
+
+      function saveQuickNotes(notes) {
+        try {
+          localStorage.setItem(getQuickNotesKey(), JSON.stringify(notes));
+        } catch (e) {}
+      }
+
+      function renderDashboardQuickNotes() {
+        const container = document.getElementById("dash-quicknotes-list");
+        const statEl = document.getElementById("dash-notes-stat");
+        if (!container) return;
+
+        const notes = loadQuickNotes();
+        const doneCount = notes.filter((n) => n.done).length;
+
+        if (statEl) {
+          statEl.textContent = `${doneCount}/${notes.length} Selesai`;
+        }
+
+        if (notes.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 10px 6px; font-size: 7.5pt; color: rgba(255,255,255,0.45);">
+              Belum ada catatan. Tulis tugas baru di atas!
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = notes.map((n) => `
+          <div class="dash-quicknote-item ${n.done ? 'done' : ''}">
+            <div class="dash-quicknote-left">
+              <input type="checkbox" ${n.done ? 'checked' : ''} onchange="toggleQuickNote('${n.id}', this.checked)" style="width: 13px; height: 13px; accent-color: #10b981; cursor: pointer; flex-shrink: 0; border-radius: 3px;">
+              <span style="color: ${n.done ? 'rgba(255,255,255,0.4)' : '#f8fafc'}; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${escH(n.text)}</span>
+            </div>
+            <button type="button" class="dash-quicknote-del-btn" onclick="hapusQuickNote('${n.id}')" title="Hapus">
+              <i data-lucide="x" style="width: 12px; height: 12px;"></i>
+            </button>
+          </div>
+        `).join("");
+
+        if (typeof lucide !== "undefined" && lucide.createIcons) {
+          lucide.createIcons({ node: container });
+        }
+      }
+
+      function tambahQuickNote() {
+        const input = document.getElementById("dash-quicknote-input");
+        if (!input) return;
+        const val = input.value.trim();
+        if (!val) return;
+
+        const notes = loadQuickNotes();
+        notes.unshift({
+          id: "qn_" + Date.now(),
+          text: val,
+          done: false
+        });
+        saveQuickNotes(notes);
+        input.value = "";
+        renderDashboardQuickNotes();
+      }
+
+      function toggleQuickNote(id, done) {
+        const notes = loadQuickNotes();
+        const item = notes.find((n) => n.id === id);
+        if (item) {
+          item.done = !!done;
+          saveQuickNotes(notes);
+          renderDashboardQuickNotes();
+        }
+      }
+
+      function hapusQuickNote(id) {
+        let notes = loadQuickNotes();
+        notes = notes.filter((n) => n.id !== id);
+        saveQuickNotes(notes);
+        renderDashboardQuickNotes();
+      }
+
+      function bukaModalKaldikDashboard() {
+        if (typeof daftarKelas !== "undefined" && daftarKelas && daftarKelas.length > 0) {
+          bukaKelas(daftarKelas[0].id);
+          setTimeout(() => {
+            if (typeof showTab === "function") showTab("kalender");
+          }, 50);
+        } else {
+          bukaModalKelas();
+        }
+      }
+
+      window.renderDashboardTodaySchedule = renderDashboardTodaySchedule;
+      window.renderDashboardUpcomingAgenda = renderDashboardUpcomingAgenda;
+      window.renderDashboardQuickNotes = renderDashboardQuickNotes;
+      window.tambahQuickNote = tambahQuickNote;
+      window.toggleQuickNote = toggleQuickNote;
+      window.hapusQuickNote = hapusQuickNote;
+      window.bukaModalKaldikDashboard = bukaModalKaldikDashboard;
+
       function renderDaftarKelas() {
         const grid = document.getElementById("kelas-grid");
         const totalKelasEl = document.getElementById("stat-total-kelas");
         if (totalKelasEl) {
           totalKelasEl.textContent = daftarKelas.length;
         }
+
+        // Hitung akumulasi Rombel dan Total JP yang diampu guru
+        const totalRombel = daftarKelas.length;
+        const totalJP = daftarKelas.reduce((total, k) => {
+          const list = k.jadwal || [];
+          return total + list.reduce((sum, j) => sum + (parseInt(j.jp, 10) || 0), 0);
+        }, 0);
+
+        const totalJpEl = document.getElementById("stat-total-jp");
+        if (totalJpEl) {
+          totalJpEl.textContent = totalJP;
+        }
+
+        // Render kartu bulan berjalan di kolom kiri
+        renderDashboardMonthCard();
+
+        // Render widget kolom kanan: Jadwal Hari Ini, Agenda Terdekat, Catatan Cepat
+        renderDashboardTodaySchedule();
+        renderDashboardUpcomingAgenda();
+        renderDashboardQuickNotes();
 
         const cards = daftarKelas
           .map(
@@ -4040,13 +4628,332 @@ state.jadwal =
         }
       }
 
-      async function bukaKelas(kelasId) {
-        
-        document.getElementById("dashboard-screen").classList.add("hidden");
+      // ============================================================
+      // MODAL EKSPLORASI CAPAIAN PEMBELAJARAN (BSKAP 046/2025)
+      // ============================================================
+      let _allCPList = [];
 
+      function getAllCPSubjects() {
+        const json = window.BSKAP_046_DATA;
+        if (!json) return [];
+        const subjects = [];
+
+        if (json.lampiran_II && Array.isArray(json.lampiran_II.mata_pelajaran)) {
+          json.lampiran_II.mata_pelajaran.forEach(s => {
+            subjects.push({
+              nama: s.mata_pelajaran,
+              lampiran: "Lampiran II (Umum: SD/SMP/SMA)",
+              fases: s.fase || [],
+              raw: s
+            });
+          });
+        }
+
+        if (json.lampiran_III && Array.isArray(json.lampiran_III.mata_pelajaran)) {
+          json.lampiran_III.mata_pelajaran.forEach(s => {
+            subjects.push({
+              nama: s.mata_pelajaran,
+              lampiran: "Lampiran III (SMK / Kejuruan)",
+              fases: s.fase || [],
+              raw: s
+            });
+          });
+        }
+
+        return subjects;
+      }
+
+      function bukaModalEksplorasiCP(initialJenjang, initialFase) {
+        const modal = document.getElementById("modal-eksplorasi-cp");
+        if (!modal) return;
+
+        if (!window.BSKAP_046_DATA) {
+          loadBSKAP046Database();
+        }
+
+        const jenjangSelect = document.getElementById("filter-eksplorasi-jenjang");
+        if (jenjangSelect) {
+          jenjangSelect.value = initialJenjang || "ALL";
+        }
+
+        const faseSelect = document.getElementById("filter-eksplorasi-fase");
+        if (faseSelect) {
+          faseSelect.value = initialFase || "ALL";
+        }
+
+        const searchInput = document.getElementById("search-eksplorasi-cp");
+        if (searchInput) {
+          searchInput.value = "";
+        }
+
+        populateEksplorasiMapelOptions();
+        modal.classList.remove("hidden");
+
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+          lucide.createIcons();
+        }
+      }
+
+      function tutupModalEksplorasiCP() {
+        const modal = document.getElementById("modal-eksplorasi-cp");
+        if (modal) modal.classList.add("hidden");
+      }
+
+      function onEksplorasiJenjangChange() {
+        const jenjang = document.getElementById("filter-eksplorasi-jenjang")?.value || "ALL";
+        const faseSelect = document.getElementById("filter-eksplorasi-fase");
+        
+        // Sesuaikan pilihan fase default bila jenjang spesifik
+        if (faseSelect) {
+          if (jenjang === "SD" && (faseSelect.value === "D" || faseSelect.value === "E" || faseSelect.value === "F")) {
+            faseSelect.value = "A";
+          } else if (jenjang === "SMP" && faseSelect.value !== "D" && faseSelect.value !== "ALL") {
+            faseSelect.value = "D";
+          } else if ((jenjang === "SMA" || jenjang === "SMK") && (faseSelect.value === "A" || faseSelect.value === "B" || faseSelect.value === "C")) {
+            faseSelect.value = "E";
+          }
+        }
+        populateEksplorasiMapelOptions();
+      }
+
+      function filterEksplorasiCP() {
+        populateEksplorasiMapelOptions();
+      }
+
+      function formatFaseRentang(fases) {
+        if (!fases || fases.length === 0) return "";
+        const cleanFases = fases.map(f => (typeof f === 'string' ? f : f.fase || '')).filter(Boolean);
+        if (cleanFases.length === 0) return "";
+        if (cleanFases.length === 1) return `Fase ${cleanFases[0]}`;
+        return `Fase ${cleanFases[0]} - ${cleanFases[cleanFases.length - 1]}`;
+      }
+
+      function populateEksplorasiMapelOptions() {
+        const subjects = getAllCPSubjects();
+        const mapelSelect = document.getElementById("select-eksplorasi-mapel");
+        if (!mapelSelect) return;
+
+        const query = (document.getElementById("search-eksplorasi-cp")?.value || "").toLowerCase().trim();
+        const selectedJenjang = document.getElementById("filter-eksplorasi-jenjang")?.value || "ALL";
+        const selectedFase = document.getElementById("filter-eksplorasi-fase")?.value || "ALL";
+
+        // Filter subjects based on inputs
+        const filtered = subjects.filter(s => {
+          // Search query check on subject name or element text
+          const matchQuery = !query || s.nama.toLowerCase().includes(query) || s.fases.some(f => {
+            const elems = f.elemen || [];
+            return elems.some(e => 
+              (e.elemen && e.elemen.toLowerCase().includes(query)) ||
+              ((e.capaian_pembelajaran || e.cp || "").toLowerCase().includes(query))
+            );
+          });
+          if (!matchQuery) return false;
+
+          // Jenjang filter
+          if (selectedJenjang === "SMK") {
+            if (!s.lampiran.includes("SMK")) return false;
+          } else if (selectedJenjang === "SD") {
+            const hasSDFase = s.fases.some(f => {
+              const fn = (typeof f === 'string' ? f : f.fase || '').toUpperCase();
+              return fn === 'A' || fn === 'B' || fn === 'C';
+            });
+            if (!hasSDFase && s.lampiran.includes("SMK")) return false;
+          } else if (selectedJenjang === "SMP") {
+            const hasSMPFase = s.fases.some(f => {
+              const fn = (typeof f === 'string' ? f : f.fase || '').toUpperCase();
+              return fn === 'D';
+            });
+            if (!hasSMPFase && s.lampiran.includes("SMK")) return false;
+          } else if (selectedJenjang === "SMA") {
+            const hasSMAFase = s.fases.some(f => {
+              const fn = (typeof f === 'string' ? f : f.fase || '').toUpperCase();
+              return fn === 'E' || fn === 'F';
+            });
+            if (!hasSMAFase || s.lampiran.includes("SMK")) return false;
+          }
+
+          // Fase filter
+          if (selectedFase !== "ALL") {
+            const hasFase = s.fases.some(f => {
+              const fn = (typeof f === 'string' ? f : f.fase || '').toUpperCase();
+              return fn === selectedFase;
+            });
+            if (!hasFase) return false;
+          }
+
+          return true;
+        });
+
+        if (filtered.length === 0) {
+          mapelSelect.innerHTML = `<option value="">-- Tidak ada mata pelajaran yang cocok --</option>`;
+          renderEksplorasiCPContent();
+          return;
+        }
+
+        mapelSelect.innerHTML = filtered.map(s => {
+          const faseLabel = formatFaseRentang(s.fases);
+          const kurung = faseLabel ? ` (${escH(faseLabel)})` : "";
+          return `<option value="${escH(s.nama)}">${escH(s.nama)}${kurung}</option>`;
+        }).join("");
+
+        renderEksplorasiCPContent();
+      }
+
+      function renderEksplorasiCPContent() {
+        const container = document.getElementById("eksplorasi-cp-container");
+        const mapelSelect = document.getElementById("select-eksplorasi-mapel");
+        if (!container) return;
+
+        const selectedMapel = mapelSelect?.value;
+        if (!selectedMapel) {
+          container.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 180px; text-align: center; color: var(--text-light);">
+              <i data-lucide="file-search" style="width: 38px; height: 38px; opacity: 0.5; margin-bottom: 10px;"></i>
+              <p style="margin: 0; font-size: 13px;">Silakan pilih mata pelajaran atau sesuaikan kata kunci filter di atas.</p>
+            </div>
+          `;
+          if (typeof lucide !== 'undefined') lucide.createIcons();
+          return;
+        }
+
+        const subjects = getAllCPSubjects();
+        const subjectObj = subjects.find(s => s.nama === selectedMapel);
+        if (!subjectObj) {
+          container.innerHTML = `<p style="color: var(--text-light); text-align: center;">Mata pelajaran tidak ditemukan.</p>`;
+          return;
+        }
+
+        const selectedFase = document.getElementById("filter-eksplorasi-fase")?.value || "ALL";
+        const query = (document.getElementById("search-eksplorasi-cp")?.value || "").toLowerCase().trim();
+
+        let fasesToRender = subjectObj.fases;
+        if (selectedFase !== "ALL") {
+          fasesToRender = subjectObj.fases.filter(f => {
+            const fn = (typeof f === 'string' ? f : f.fase || '').toUpperCase();
+            return fn === selectedFase;
+          });
+        }
+
+        if (!fasesToRender || fasesToRender.length === 0) {
+          container.innerHTML = `
+            <div style="padding: 20px; text-align: center; color: var(--text-light);">
+              <p>Mata pelajaran ini tidak memiliki rumusan untuk Fase yang dipilih.</p>
+            </div>
+          `;
+          return;
+        }
+
+        let html = `
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+            <div>
+              <h3 style="margin: 0; font-size: 15px; color: #ffffff; font-weight: 700;">${escH(subjectObj.nama)}</h3>
+              <span style="font-size: 11.5px; color: #38bdf8;">${escH(subjectObj.lampiran)}</span>
+            </div>
+          </div>
+        `;
+
+        let totalRenderedElements = 0;
+
+        fasesToRender.forEach(f => {
+          const faseName = typeof f === 'string' ? f : f.fase || '';
+          const elemenList = f.elemen || [];
+
+          const filteredElemen = query 
+            ? elemenList.filter(e => 
+                (e.elemen && e.elemen.toLowerCase().includes(query)) ||
+                ((e.capaian_pembelajaran || e.cp || "").toLowerCase().includes(query))
+              )
+            : elemenList;
+
+          if (filteredElemen.length === 0) return;
+
+          html += `
+            <div style="margin-bottom: 18px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <span class="cp-elemen-badge" style="background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.3); color: #c084fc; font-size: 11.5px;">
+                  FASE ${escH(faseName)}
+                </span>
+                <span style="font-size: 12px; color: var(--text-light);">• ${filteredElemen.length} Elemen Pembelajaran</span>
+              </div>
+          `;
+
+          filteredElemen.forEach((e, idx) => {
+            totalRenderedElements++;
+            const elName = e.elemen || `Elemen ${idx + 1}`;
+            const subElemen = e.subelemen || e.sub_elemen || e.subElemen || "";
+            const cpText = e.capaian_pembelajaran || e.cp || "";
+
+            html += `
+              <div class="cp-elemen-card">
+                <div class="cp-elemen-header">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="cp-elemen-badge">
+                      <i data-lucide="bookmark" style="width: 12px; height: 12px;"></i>
+                      ${escH(elName)}
+                    </span>
+                  </div>
+                  <button type="button" class="btn-salin-cp" onclick="salinTeksCP(this, '${encodeURIComponent(cpText)}')">
+                    <i data-lucide="copy" style="width: 12px; height: 12px;"></i>
+                    <span>Salin CP</span>
+                  </button>
+                </div>
+                ${subElemen ? `<div class="cp-elemen-sub">${escH(subElemen)}</div>` : ''}
+                <p class="cp-elemen-text">${escH(cpText)}</p>
+              </div>
+            `;
+          });
+
+          html += `</div>`;
+        });
+
+        if (totalRenderedElements === 0) {
+          html += `
+            <div style="padding: 20px; text-align: center; color: var(--text-light);">
+              <p>Tidak ada rumusan elemen yang cocok dengan kata kunci pencarian.</p>
+            </div>
+          `;
+        }
+
+        container.innerHTML = html;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      }
+
+      function salinTeksCP(btn, encodedText) {
+        try {
+          const text = decodeURIComponent(encodedText);
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+              const oldHTML = btn.innerHTML;
+              btn.innerHTML = `<i data-lucide="check" style="width: 12px; height: 12px; color: #10b981;"></i> <span style="color: #10b981;">Tersalin!</span>`;
+              if (typeof lucide !== 'undefined') lucide.createIcons();
+              setTimeout(() => {
+                btn.innerHTML = oldHTML;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+              }, 1500);
+            });
+          } else {
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+            btn.textContent = "✓ Tersalin!";
+            setTimeout(() => { btn.textContent = "Salin CP"; }, 1500);
+          }
+        } catch (err) {
+          console.error("Gagal menyalin teks CP:", err);
+        }
+      }
+
+      async function bukaKelas(kelasId) {
+        document.getElementById("dashboard-screen").classList.add("hidden");
         currentKelasId = kelasId;
         showKelas(kelasId);
       }
+
+      window.bukaKelas = bukaKelas;
+      window.showKelas = showKelas;
 
       async function hapusKelas(kelasId) {
         const k = daftarKelas.find((x) => x.id === kelasId);
@@ -4061,6 +4968,8 @@ state.jadwal =
           await alert("Gagal menghapus kelas.");
         }
       }
+
+      window.hapusKelas = hapusKelas;
 
       // ============================================================
       // MODAL KELAS: TAMBAH / EDIT
@@ -4103,6 +5012,9 @@ state.jadwal =
         document.getElementById("modal-kelas").classList.add("hidden");
         _editKelasId = null;
       }
+
+      window.bukaModalKelas = bukaModalKelas;
+      window.tutupModalKelas = tutupModalKelas;
 
       // ============================================================
       // ONBOARDING MODAL & PETUNJUK
@@ -4847,6 +5759,7 @@ state.jadwal =
           imgTtdKepsek: state.imgTtdKepsek || null,
           imgCapSekolah: state.imgCapSekolah || null,
           imgTtdGuru: state.imgTtdGuru || null,
+          jurnalMode: state.jurnalMode || "rinci",
           isGenerated: typeof isGenerated !== "undefined" ? isGenerated : false,
           updated_at: new Date().toISOString(),
         };
@@ -7636,6 +8549,7 @@ state.jadwal =
             ev: true,
           },
         ],
+        jurnalMode: "rinci",
       };
 
       // ============================================================
@@ -10275,7 +11189,7 @@ function toggleSidebar() {
 
         let tpFieldHtml = "";
         if (tpData.ev) {
-            tpFieldHtml = `<textarea id="edit-tp-tp" rows="4" style="width:100%; padding:10px 14px; background:rgba(255,255,255,0.05); color:var(--text); border:1px solid var(--border); border-radius:8px; font-family:var(--f); font-size:var(--fs);">${escH(tpData.tp)}</textarea>`;
+            tpFieldHtml = `<textarea id="edit-tp-tp" rows="4" style="width:100%; min-height:96px; padding:10px 14px; background:rgba(255,255,255,0.05); color:var(--text); border:1px solid var(--border); border-radius:8px; font-family:var(--f); font-size:var(--fs); resize:vertical;" placeholder="Tuliskan tujuan pembelajaran evaluasi/sumatif...">${escH(tpData.tp)}</textarea>`;
         } else {
             const existsInCP = allOpts.some(o => o.label === tpData.tp);
             let optHtml = `<option value="">-- Pilih TP --</option>`;
@@ -10291,35 +11205,64 @@ function toggleSidebar() {
         modal.id = "edit-tp-modal";
         modal.className = "modal-overlay";
         modal.innerHTML = `
-          <div class="modal-box">
-            <div class="modal-title">Edit Tujuan Pembelajaran</div>
-            <div class="modal-field">
-              <label>Bab</label>
-              <input type="text" id="edit-tp-bab" value="${escH(tpData.bab)}">
+          <div class="modal-box modal-box-edit-tp">
+            <div class="modal-title" style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 4px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <i class="material-symbols-rounded" style="font-size: 20px; color: var(--accent);" data-lucide="edit-3"></i>
+                <span>Edit Tujuan Pembelajaran</span>
+              </div>
+              <span class="tp-badge" style="font-size:12px; padding:3px 12px; background:rgba(250, 204, 21, 0.12); color:#fde047; border:1px solid rgba(250, 204, 21, 0.3); border-radius:9999px;">
+                Semester ${sem === 'ganjil' ? 'Ganjil' : 'Genap'}
+              </span>
             </div>
-            <div class="modal-field">
-              <label>Materi Pokok</label>
-              <textarea id="edit-tp-mp" rows="3">${escH(tpData.mp)}</textarea>
+
+            <div class="modal-tp-landscape-grid">
+              <!-- Kolom Kiri: 1 Rasio (Bab, Kode TP, Alokasi Waktu) -->
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div class="modal-field" style="margin-bottom:0;">
+                  <label style="font-weight:600; margin-bottom:6px; display:block;">Bab</label>
+                  <input type="text" id="edit-tp-bab" value="${escH(tpData.bab)}" placeholder="Contoh: Bab 1">
+                </div>
+                <div class="modal-field" style="margin-bottom:0;">
+                  <label style="font-weight:600; margin-bottom:6px; display:block;">Kode TP</label>
+                  <input type="text" id="edit-tp-kode" value="${escH(tpData.kode)}" placeholder="Contoh: 1.1">
+                </div>
+                <div class="modal-field" style="margin-bottom:0;">
+                  <label style="font-weight:600; margin-bottom:6px; display:block;">Alokasi Waktu (JP)</label>
+                  <input type="number" id="edit-tp-jp" min="1" max="50" value="${tpData.jp}">
+                </div>
+              </div>
+
+              <!-- Kolom Kanan: 3 Rasio (Tujuan Pembelajaran & Materi Pokok) -->
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div class="modal-field" style="margin-bottom:0;">
+                  <label style="font-weight:600; margin-bottom:6px; display:block;">Tujuan Pembelajaran</label>
+                  ${tpFieldHtml}
+                </div>
+                <div class="modal-field" style="margin-bottom:0; display:flex; flex-direction:column; flex:1;">
+                  <label style="font-weight:600; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                    <span>Materi Pokok</span>
+                    <span class="info-tip" title="Tips: Cukup tekan Enter (baris baru) atau ketik ';' untuk membuat daftar materi berbutir (bullet list) di Jurnal Harian." style="cursor:help; display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.6); border:1px solid rgba(255,255,255,0.15); transition:all 0.2s ease;" onmouseover="this.style.background='rgba(250,204,21,0.2)'; this.style.color='#fde047'; this.style.borderColor='rgba(250,204,21,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.08)'; this.style.color='rgba(255,255,255,0.6)'; this.style.borderColor='rgba(255,255,255,0.15)';">
+                      <i class="material-symbols-rounded" style="font-size:13px; line-height:1;" data-lucide="info"></i>
+                    </span>
+                  </label>
+                  <textarea id="edit-tp-mp" rows="4" style="flex:1; min-height:86px; resize:vertical;" placeholder="Tuliskan materi pokok (tekan Enter untuk materi berikutnya)...">${escH(tpData.mp)}</textarea>
+                </div>
+              </div>
             </div>
-            <div class="modal-field">
-              <label>Kode TP</label>
-              <input type="text" id="edit-tp-kode" value="${escH(tpData.kode)}">
-            </div>
-            <div class="modal-field">
-              <label>Tujuan Pembelajaran</label>
-              ${tpFieldHtml}
-            </div>
-            <div class="modal-field">
-              <label>Alokasi Waktu (JP)</label>
-              <input type="number" id="edit-tp-jp" min="1" max="30" value="${tpData.jp}">
-            </div>
-            <div class="modal-actions" style="display: flex; align-items: center; justify-content: space-between;">
+
+            <div class="modal-actions">
               <button type="button" class="btn-modal-cancel" onclick="document.getElementById('edit-tp-modal').remove()">Batal</button>
-              <button type="button" class="btn-modal-cancel" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;" onclick="document.getElementById('edit-tp-modal').remove(); pindahSemesterTP('${sem}', ${index})">
-                <i class="material-symbols-rounded" style="font-size: 14px;" data-lucide="arrow-right-left"></i>
-                <span>Pindah ke Sem. ${sem === 'ganjil' ? 'Genap' : 'Ganjil'}</span>
-              </button>
-              <button type="button" class="btn-modal-ok btn-save" onclick="saveEditTP('${sem}', ${index})">Simpan</button>
+              <div style="display: flex; gap: 10px; align-items: center; margin-left: auto;">
+                <button type="button" class="btn-modal-cancel" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;" onclick="document.getElementById('edit-tp-modal').remove(); pindahSemesterTP('${sem}', ${index})" title="Pindahkan tujuan pembelajaran ini ke semester lainnya">
+                  <i class="material-symbols-rounded" style="font-size: 15px;" data-lucide="arrow-right-left"></i>
+                  <span>Pindah ke Sem. ${sem === 'ganjil' ? 'Genap' : 'Ganjil'}</span>
+                </button>
+                <button type="button" class="btn-modal-ok btn-save" onclick="saveEditTP('${sem}', ${index})">
+                  <i class="material-symbols-rounded" style="font-size: 15px;" data-lucide="check"></i>
+                  <span>Simpan Perubahan</span>
+                </button>
+              </div>
             </div>
           </div>
         `;
@@ -12691,9 +13634,66 @@ ${data.kktpText}`;
       // ============================================================
       // RENDER JURNAL
       // ============================================================
+      function updateJurnalModeUI() {
+        const mode = (state && state.jurnalMode) || "rinci";
+        const lbl = document.getElementById("lbl-jurnal-format-mode");
+        if (lbl) {
+          lbl.textContent = mode === "ringkas" ? "Format: Ringkas" : "Format: Rinci";
+        }
+        const optRinci = document.getElementById("opt-jurnal-mode-rinci");
+        const optRingkas = document.getElementById("opt-jurnal-mode-ringkas");
+        if (optRinci && optRingkas) {
+          if (mode === "ringkas") {
+            optRinci.classList.remove("accent");
+            optRingkas.classList.add("accent");
+          } else {
+            optRinci.classList.add("accent");
+            optRingkas.classList.remove("accent");
+          }
+        }
+        if (typeof lucide !== "undefined" && lucide.createIcons) {
+          lucide.createIcons();
+        }
+      }
+
+      function setJurnalMode(mode) {
+        if (!state) state = {};
+        state.jurnalMode = mode || "rinci";
+
+        updateJurnalModeUI();
+
+        const du = typeof getDU === "function" ? getDU() : {};
+        const j1El = document.getElementById("jurnal-1-content");
+        if (j1El && !j1El.querySelector(".empty")) {
+          const hG = buildHariEfektif(1);
+          const dG = distributeTP(state.tpGanjil, hG);
+          renderJurnal(1, du, dG);
+        }
+        const j2El = document.getElementById("jurnal-2-content");
+        if (j2El && !j2El.querySelector(".empty")) {
+          const hE = buildHariEfektif(2);
+          const dE = distributeTP(state.tpGenap, hE);
+          renderJurnal(2, du, dE);
+        }
+
+        if (typeof currentUser !== "undefined" && currentUser?.uid && typeof currentKelasId !== "undefined" && currentKelasId) {
+          if (typeof saveKelasData === "function") {
+            saveKelasData(currentUser.uid, currentKelasId);
+          }
+        }
+      }
+
       function renderJurnal(sem, du, dist) {
+        if (!du) du = typeof getDU === "function" ? getDU() : {};
+        if (!dist) {
+          const tpArr = sem === 1 ? state.tpGanjil : state.tpGenap;
+          const hEfektif = buildHariEfektif(sem);
+          dist = distributeTP(tpArr, hEfektif);
+        }
+
         const semLabel = sem === 1 ? "Ganjil" : "Genap";
         const jpPerPekan = state.jadwal.reduce((s, j) => s + (+j.jp || 0), 0);
+        const mode = (state && state.jurnalMode) || "rinci";
 
         // Format date range for a TP
         function fmtRange(tMul, tSel) {
@@ -12706,6 +13706,27 @@ ${data.kktpText}`;
           if (y1 === y2)
             return `${d1} ${BULAN[m1 - 1]} - ${d2} ${BULAN[m2 - 1]} ${y1}`;
           return `${fmtD(tMul)} - ${fmtD(tSel)}`;
+        }
+
+        // Format materi pokok jika mengandung pemisah Enter (baris baru), titik koma ';', atau bullet
+        function fmtMateriJurnal(mp) {
+          if (!mp || !String(mp).trim()) return " - ";
+          const str = String(mp).trim();
+          if (str.includes("\n") || str.includes("\r") || str.includes(";")) {
+            const rawItems = str.split(/[;\r\n]+/);
+            const items = rawItems
+              .map((s) => s.trim().replace(/^[-•*]\s*|^\d+[\.\)]\s*/, "").trim())
+              .filter(Boolean);
+            if (items.length > 1) {
+              const listItems = items
+                .map((it) => `<li style="margin-bottom:2px;line-height:1.35;word-break:break-word;">${escH(it)}</li>`)
+                .join("");
+              return `<ul style="margin:0;padding-left:16px;text-align:left;list-style-type:disc;">${listItems}</ul>`;
+            } else if (items.length === 1) {
+              return escH(items[0]);
+            }
+          }
+          return escH(str);
         }
 
         const rows = dist
@@ -12721,16 +13742,24 @@ ${data.kktpText}`;
                     : " - ";
 
               let tanggalCellHtml = " - ";
-              if (item.pertemuanList && item.pertemuanList.length > 0) {
-                const listItems = item.pertemuanList
-                  .map((p) => {
-                    const dateStr = fmtJurnalDate(p.tanggal, p.jp);
-                    return `<li style="margin-bottom:2px;line-height:1.35;white-space:nowrap;">${dateStr}</li>`;
-                  })
-                  .join("");
-                tanggalCellHtml = `<ul style="margin:0;padding-left:16px;text-align:left;list-style-type:disc;">${listItems}</ul>`;
-              } else if (item.tMul) {
+              let tanggalAlign = "left";
+
+              if (mode === "ringkas") {
                 tanggalCellHtml = fmtRange(item.tMul, item.tSel);
+                tanggalAlign = "center";
+              } else {
+                if (item.pertemuanList && item.pertemuanList.length > 0) {
+                  const listItems = item.pertemuanList
+                    .map((p) => {
+                      const dateStr = fmtJurnalDate(p.tanggal, p.jp);
+                      return `<li style="margin-bottom:2px;line-height:1.35;white-space:nowrap;">${dateStr}</li>`;
+                    })
+                    .join("");
+                  tanggalCellHtml = `<ul style="margin:0;padding-left:16px;text-align:left;list-style-type:disc;">${listItems}</ul>`;
+                } else if (item.tMul) {
+                  tanggalCellHtml = fmtRange(item.tMul, item.tSel);
+                  tanggalAlign = "center";
+                }
               }
 
               return `
@@ -12740,10 +13769,10 @@ ${data.kktpText}`;
         <span>${item.kode}</span>
       </td>
       <td style="padding:5px 8px;border:1px solid #1E3A5F;text-align:left;vertical-align:top;">${item.tp}</td>
-      <td style="padding:5px 8px;border:1px solid #1E3A5F;text-align:left;vertical-align:top;">${item.mp || " - "}</td>
+      <td style="padding:5px 8px;border:1px solid #1E3A5F;text-align:left;vertical-align:top;">${fmtMateriJurnal(item.mp)}</td>
       <td style="padding:5px 6px;border:1px solid #1E3A5F;text-align:center;vertical-align:top;white-space:nowrap;">${pertemuanCount}</td>
       <td style="padding:5px 8px;border:1px solid #1E3A5F;text-align:center;vertical-align:top;white-space:nowrap;">${asesmenText}</td>
-      <td style="padding:5px 8px;border:1px solid #1E3A5F;text-align:left;vertical-align:top;">${tanggalCellHtml}</td>
+      <td style="padding:5px 8px;border:1px solid #1E3A5F;text-align:${tanggalAlign};vertical-align:top;">${tanggalCellHtml}</td>
     </tr>`;
             },
           )
@@ -14425,10 +15454,8 @@ ${data.kktpText}`;
           cur = ad(cur, 1);
         }
 
-        // liburWkSet = weeks with ZERO active teaching JP where holidays occurred (full non-effective week)
-        // partialWkSet = weeks with active teaching JP (>0) BUT also having holiday dates on scheduled teaching days
+        // liburWkSet = weeks with ZERO active teaching JP where holidays/non-KBM occurred (full non-effective week)
         const liburWkSet = new Set();
-        const partialWkSet = new Set();
         months.forEach((m, mi) => {
           for (let w = 1; w <= monthWeeksArr[mi]; w++) {
             const key = `${mi}-${w}`;
@@ -14437,8 +15464,6 @@ ${data.kktpText}`;
             const hasGeneralLibur = calendarLiburWkSet.has(key);
             if (!hasActive && (hasLiburScheduled || hasGeneralLibur)) {
               liburWkSet.add(key);
-            } else if (hasActive && hasLiburScheduled) {
-              partialWkSet.add(key);
             }
           }
         });
@@ -14463,12 +15488,9 @@ ${data.kktpText}`;
             const cell = dateLookup[iso];
             if (cell && (isWorkingDay || isScheduled)) {
               const key = `${cell.mi}-${cell.wk}`;
-              if (
-                liburWkMap[key] &&
-                liburWkMap[key].has(ket) &&
-                (liburWkSet.has(key) || partialWkSet.has(key))
-              )
+              if (liburWkMap[key] && liburWkMap[key].has(ket)) {
                 grp.wkLabels.add(key);
+              }
             }
             c = ad(c, 1);
           }
@@ -14590,7 +15612,6 @@ ${data.kktpText}`;
                 Array.from({ length: monthWeeksArr[mi] }, (_, w) => {
                   const key = `${mi}-${w + 1}`;
                   const isFullLibur = liburWkSet.has(key);
-                  const isPartial = partialWkSet.has(key);
                   const cellJp = item.weeklyJp ? item.weeklyJp[key] : null;
                   const isFilled = cellJp !== undefined && cellJp > 0;
                   const dates = item.weeklyDates && item.weeklyDates[key] ? item.weeklyDates[key] : [];
@@ -14602,12 +15623,6 @@ ${data.kktpText}`;
                   }
                   const tipAttr = tip ? ` title="${escH(tip)}"` : "";
 
-                  if (isPartial) {
-                    if (isFilled) {
-                      return `<td class="filled partial-fill wk-cell"${tipAttr}><span class="prosem-jp-val">${cellJp}</span></td>`;
-                    }
-                    return `<td class="libur-col wk-cell"></td>`;
-                  }
                   if (isFullLibur) {
                     return `<td class="libur-col wk-cell"></td>`;
                   }
@@ -14629,18 +15644,16 @@ ${data.kktpText}`;
           })
           .join("");
 
-        // Footer: full libur -> "L", partial -> active JP with libur-wk (red), active -> normal active JP
+        // Footer: full libur -> "L", active -> normal active JP
         const footTds = months
           .map((m, mi) =>
             Array.from({ length: monthWeeksArr[mi] }, (_, w) => {
               const key = `${mi}-${w + 1}`;
               const isFullLibur = liburWkSet.has(key);
-              const isPartial = partialWkSet.has(key);
               if (isFullLibur) return `<td class="libur-wk wk-cell" title="Libur Penuh">L</td>`;
               const v = jpMap[key] || "";
               const footTip = v ? `Total ${m.name} Pekan ke-${w + 1}: ${v} JP` : "";
               const footTipAttr = footTip ? ` title="${escH(footTip)}"` : "";
-              if (isPartial) return `<td class="libur-wk wk-cell"${footTipAttr}>${v}</td>`;
               return `<td class="wk-cell"${footTipAttr}>${v}</td>`;
             }).join(""),
           )
@@ -14687,8 +15700,7 @@ ${data.kktpText}`;
   </div>
   <div style="display:flex;gap:20px;margin-bottom:10px;font-size:var(--fs);align-items:center;flex-wrap:wrap;">
     <span style="font-weight:700;">Keterangan:</span>
-    <span style="display:flex;align-items:center;gap:5px;"><span style="width:14px;height:14px;background:#4DAF7C;display:inline-block;border:1px solid #1E3A5F;"></span> Pekan aktif penuh</span>
-    <span style="display:flex;align-items:center;gap:5px;"><span style="width:14px;height:14px;background:linear-gradient(rgba(77, 175, 124, 0.45), rgba(77, 175, 124, 0.45)), #ffd0da;display:inline-block;border:1px solid #1E3A5F;"></span> Pekan aktif parsial (ada hari libur)</span>
+    <span style="display:flex;align-items:center;gap:5px;"><span style="width:14px;height:14px;background:#4DAF7C;display:inline-block;border:1px solid #1E3A5F;"></span> Pekan aktif KBM</span>
     <span style="display:flex;align-items:center;gap:5px;"><span style="width:14px;height:14px;background:#FF2D55;display:inline-block;border:1px solid #1E3A5F;"></span> Pekan libur / KBM non-aktif</span>
   </div>
   ${
@@ -17179,7 +18191,7 @@ ${data.kktpText}`;
                 c.style.cssText += "; background-color: #D9E1F2 !important; background: #D9E1F2 !important; mso-pattern: auto none; mso-shading: #D9E1F2; font-weight: bold; text-align: center;";
               });
               tbl.querySelectorAll("td.filled").forEach((c) => {
-                const bg = c.classList.contains("partial-fill") ? "#E2EFDA" : "#C6E0B4";
+                const bg = "#C6E0B4";
                 c.setAttribute("bgcolor", bg);
                 c.style.backgroundColor = bg;
                 c.style.cssText += `; background-color: ${bg} !important; background: ${bg} !important; mso-pattern: auto none; mso-shading: ${bg}; font-weight: normal; text-align: center;`;
@@ -18535,6 +19547,7 @@ xmlns="http://www.w3.org/TR/REC-html40">
           imgTtdKepsek: state.imgTtdKepsek,
           imgCapSekolah: state.imgCapSekolah,
           imgTtdGuru: state.imgTtdGuru,
+          jurnalMode: state.jurnalMode || "rinci",
           isGenerated: typeof isGenerated !== "undefined" ? isGenerated : false,
         };
         const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -18633,6 +19646,10 @@ xmlns="http://www.w3.org/TR/REC-html40">
               if (d.imgTtdKepsek) state.imgTtdKepsek = d.imgTtdKepsek;
               if (d.imgCapSekolah) state.imgCapSekolah = d.imgCapSekolah;
               if (d.imgTtdGuru) state.imgTtdGuru = d.imgTtdGuru;
+              if (d.jurnalMode) {
+                state.jurnalMode = d.jurnalMode;
+                updateJurnalModeUI();
+              }
 
               const setVal = (id, v) => {
                 const el = document.getElementById(id);
@@ -19305,6 +20322,7 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "setDMDataAction",
   "setDMDataScope",
   "setEkstraAITarget",
+  "setJurnalMode",
   "setupRandomWelcoming",
   "showCustomAlert",
   "showCustomPrompt",
@@ -19336,6 +20354,7 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "toggleHeaderDropdown",
   "toggleIdInput",
   "toggleJadwalHari",
+  "toggleLoginLicenseVisibility",
   "toggleLoginPasswordVisibility",
   "toggleMapelManual",
   "toggleProsemJPText",
@@ -19354,10 +20373,18 @@ xmlns="http://www.w3.org/TR/REC-html40">
   "tutupModalPetunjukPenilaian",
   "tutupModalPetunjukSiswa",
   "tutupModalPetunjukTP",
+  "bukaModalEksplorasiCP",
+  "tutupModalEksplorasiCP",
+  "onEksplorasiJenjangChange",
+  "filterEksplorasiCP",
+  "populateEksplorasiMapelOptions",
+  "renderEksplorasiCPContent",
+  "salinTeksCP",
   "updateBobotPenilaian",
   "updateChipsView",
   "updateDataUmumMapelOptions",
   "updateDataUmumPlaceholders",
+  "updateJurnalModeUI",
   "updateFaseOptions",
   "updateJadwalJp",
   "updateKelasSuggestions",

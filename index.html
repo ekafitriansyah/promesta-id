@@ -179,14 +179,27 @@
               </div>
               <div class="login-field" style="margin-bottom: 0;">
                 <label style="font-size: 10px; color: #ffffff; margin-bottom: 3px;">Kode Akses <span style="color: #ef4444; font-weight: bold;">*</span></label>
-                <input
-                  type="text"
-                  id="login-license"
-                  placeholder="Masukkan kode..."
-                  style="padding: 6px 9px; font-size: 8.5pt; text-transform: uppercase; background: rgba(225, 29, 72, 0.08); border: 1px dashed rgba(239, 68, 68, 0.6); color: #ffffff;"
-                  oninput="if (typeof clearLoginError === 'function') clearLoginError();"
-                  onkeydown="if (event.key === 'Enter') doLogin();"
-                />
+                <div class="login-input-wrap">
+                  <input
+                    type="password"
+                    id="login-license"
+                    placeholder="Masukkan kode..."
+                    style="padding: 6px 30px 6px 9px; font-size: 8.5pt; text-transform: uppercase; background: rgba(225, 29, 72, 0.08); border: 1px dashed rgba(239, 68, 68, 0.6); color: #ffffff;"
+                    oninput="if (typeof clearLoginError === 'function') clearLoginError();"
+                    onkeydown="if (event.key === 'Enter') doLogin();"
+                  />
+                  <button
+                    type="button"
+                    id="login-license-toggle"
+                    class="login-pass-toggle"
+                    onclick="toggleLoginLicenseVisibility()"
+                    title="Tampilkan kode akses"
+                    aria-label="Tampilkan kode akses"
+                    style="right: 4px; padding: 4px;"
+                  >
+                    <i class="material-symbols-rounded" style="font-size: 14px;" data-lucide="eye"></i>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -242,28 +255,35 @@
     <!-- DASHBOARD KELAS -->
     <div class="dashboard-screen hidden" id="dashboard-screen">
       <div class="dashboard-topbar">
-        <h1 class="typewriter-logo">
-          Promesta<span class="dot">.</span><span class="id">id</span>
-        </h1>
+        <div class="dashboard-topbar-left">
+          <h1 class="typewriter-logo">
+            Promesta<span class="dot">.</span><span class="id">id</span>
+          </h1>
+          <div class="dashboard-topbar-greeting" id="dash-topbar-greeting">
+            <span class="topbar-greeting-divider"></span>
+            <div class="topbar-greeting-box">
+              <div class="topbar-greeting-avatar">
+                <i data-lucide="user-check" style="width: 15px; height: 15px; color: #10b981;"></i>
+              </div>
+              <div class="topbar-greeting-text-wrap">
+                <span class="topbar-greeting-name" id="dash-welcome">Halo, Guru!</span>
+                <span class="topbar-greeting-badge" id="dash-guru-title">
+                  <i data-lucide="star" style="width: 11px; height: 11px; fill: currentColor;"></i>
+                  <span>Pendidik Berdedikasi</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="dashboard-topbar-right">
           <button onclick="bukaModalOnboarding()" class="dash-topbar-btn btn-topbar-help" title="Petunjuk">
             <i class="material-symbols-rounded" style="font-size: 15px;" data-lucide="help-circle"></i>
             <span class="topbar-btn-text">Petunjuk</span>
           </button>
-          <button onclick="bukaModalBackupDashboard()" class="dash-topbar-btn btn-topbar-backup" title="Petunjuk & Backup Dashboard">
-            <i class="material-symbols-rounded" style="font-size: 15px;" data-lucide="database-arrow-up"></i>
-            <span class="topbar-btn-text">Backup</span>
-          </button>
-          <button onclick="bukaModalImporDashboard()" class="dash-topbar-btn btn-topbar-impor" title="Petunjuk & Impor Dashboard">
-            <i class="material-symbols-rounded" style="font-size: 15px;" data-lucide="database-arrow-down"></i>
-            <span class="topbar-btn-text">Impor</span>
-          </button>
+          
           <input type="file" id="import-all-json" accept=".json" style="display: none;" onchange="importAllData(event)">
-          <button onclick="bukaModalResetDashboard()" class="dash-topbar-btn btn-topbar-reset" title="Petunjuk & Reset Dashboard">
-            <i class="material-symbols-rounded" style="font-size: 15px;" data-lucide="trash"></i>
-            <span class="topbar-btn-text">Reset</span>
-          </button>
-          <span id="dash-guru-nama" title="Profil Guru">
+
+          <span id="dash-guru-nama" title="Profil Guru" onclick="openChangePasswordModal()" style="cursor: pointer;">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="15"
@@ -281,14 +301,7 @@
             </svg>
             <span id="dash-guru-nama-text" class="topbar-btn-text"> - </span>
           </span>
-          <button
-            class="dash-topbar-btn btn-topbar-key"
-            onclick="openChangePasswordModal()"
-            title="Ganti Password"
-          >
-            <i class="material-symbols-rounded" style="font-size: 15px;" data-lucide="key-round"></i>
-            <span class="topbar-btn-text">Ganti Password</span>
-          </button>
+
           <button
             class="dash-topbar-btn btn-topbar-logout"
             onclick="doLogout()"
@@ -300,81 +313,164 @@
         </div>
       </div>
       <div class="dashboard-body">
-        <div class="dashboard-layout-grid">
-          <!-- Left Column: Hero & Checklist -->
-          <div class="dashboard-left-card">
-
-            <h1 class="dashboard-welcome-name" id="dash-welcome">Halo, Guru!</h1>
-            <div class="dashboard-guru-star" id="dash-guru-title">
-              <i data-lucide="star" style="width: 16px; height: 16px; fill: currentColor;"></i>
-              <span>Guru Hebat</span>
+        <div class="dashboard-layout-grid dashboard-kanban-board">
+          <!-- KANBAN COL 1: KALENDER & EKSPLORASI CP -->
+          <div class="dashboard-kanban-col kanban-col-profile dashboard-left-card">
+            <!-- Kanban Column Header -->
+            <div class="kanban-col-header">
+              <div class="kanban-col-title-wrap">
+                <div class="kanban-col-indicator indicator-emerald"></div>
+                <h2 class="kanban-col-title">Kalender &amp; Bank CP</h2>
+              </div>
+              <span class="kanban-col-badge badge-emerald">
+                <i data-lucide="calendar" style="width: 12px; height: 12px;"></i>
+                <span>Kaldik</span>
+              </span>
             </div>
-            <p class="dashboard-welcome-text">Pilih kelas aktif Anda untuk mulai menyusun administrasi berikut secara instan:</p>
-            <div class="dashboard-checklist-list">
-              <div class="dashboard-checklist-item">
-                <i data-lucide="circle-check-big" style="width: 16px; height: 16px; color: #10b981; flex-shrink: 0;"></i>
-                <span>Kalender Pendidikan</span>
+
+            <!-- Kanban Column Body / Swimlane -->
+            <div class="kanban-col-body">
+              <!-- CARD 1: TOMBOL EKSPLORASI BANK CP -->
+              <button type="button" class="btn-dash-cp-explore kanban-card" onclick="bukaModalEksplorasiCP()">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <i data-lucide="search" style="width: 15px; height: 15px; color: #38bdf8;"></i>
+                  <span>Jelajahi Bank CP &amp; Elemen</span>
+                </div>
+                <i data-lucide="arrow-right" style="width: 14px; height: 14px; margin-left: auto;"></i>
+              </button>
+
+              <!-- CARD 3: KARTU BULAN BERJALAN KALDIK -->
+              <div id="dash-month-card-wrap" class="dash-month-card-wrap kanban-card">
+                <!-- Kalender bulan berjalan dirender oleh JS -->
               </div>
-              <div class="dashboard-checklist-item">
-                <i data-lucide="circle-check-big" style="width: 16px; height: 16px; color: #10b981; flex-shrink: 0;"></i>
-                <span>Alur Tujuan Pembelajaran</span>
+
+              <!-- CARD 4: MANAJEMEN DATA & CADANGAN -->
+              <div class="dash-dm-section kanban-card">
+                <div class="dash-dm-label">
+                  <i data-lucide="shield-check" style="width: 14px; height: 14px; color: #10b981;"></i>
+                  <span>Manajemen Data &amp; Cadangan</span>
+                </div>
+                <div class="dash-dm-actions-grid">
+                  <button type="button" class="btn-dash-dm btn-dash-backup" onclick="bukaModalBackupDashboard()" title="Unduh File Cadangan (.json)">
+                    <i data-lucide="database-arrow-up" style="width: 14px; height: 14px;"></i>
+                    <span>Backup</span>
+                  </button>
+                  <button type="button" class="btn-dash-dm btn-dash-impor" onclick="bukaModalImporDashboard()" title="Pulihkan Data dari Berkas (.json)">
+                    <i data-lucide="database-arrow-down" style="width: 14px; height: 14px;"></i>
+                    <span>Impor</span>
+                  </button>
+                  <button type="button" class="btn-dash-dm btn-dash-reset" onclick="bukaModalResetDashboard()" title="Reset / Hapus Semua Data Kelas">
+                    <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                    <span>Reset</span>
+                  </button>
+                </div>
               </div>
-              <div class="dashboard-checklist-item">
-                <i data-lucide="circle-check-big" style="width: 16px; height: 16px; color: #10b981; flex-shrink: 0;"></i>
-                <span>Rencana Pekan Efektif (RPE)</span>
-              </div>
-              <div class="dashboard-checklist-item">
-                <i data-lucide="circle-check-big" style="width: 16px; height: 16px; color: #10b981; flex-shrink: 0;"></i>
-                <span>Program Tahunan (Prota)</span>
-              </div>
-              <div class="dashboard-checklist-item">
-                <i data-lucide="circle-check-big" style="width: 16px; height: 16px; color: #10b981; flex-shrink: 0;"></i>
-                <span>Program Semester (Prosem)</span>
-              </div>
-              <div class="dashboard-checklist-item">
-                <i data-lucide="circle-check-big" style="width: 16px; height: 16px; color: #10b981; flex-shrink: 0;"></i>
-                <span>Kriteria Ketercapaian (KKTP)</span>
-              </div>
-              <div class="dashboard-checklist-item">
-                <i data-lucide="circle-check-big" style="width: 16px; height: 16px; color: #10b981; flex-shrink: 0;"></i>
-                <span>Presensi & Absensi Murid</span>
-              </div>
-              <div class="dashboard-checklist-item">
-                <i data-lucide="circle-check-big" style="width: 16px; height: 16px; color: #10b981; flex-shrink: 0;"></i>
-                <span>Jurnal Harian Mengajar</span>
-              </div>
-              <div class="dashboard-checklist-item">
-                <i data-lucide="circle-check-big" style="width: 16px; height: 16px; color: #10b981; flex-shrink: 0;"></i>
-                <span>Rekapitulasi Nilai Asesmen</span>
+
+              <!-- COPYRIGHT DI BAGIAN BAWAH KARTU -->
+              <div class="dash-left-copyright">
+                <span>Hak Cipta &copy; 2026 <strong>Eka Fitriansyah</strong> &bull; Promesta.id</span>
               </div>
             </div>
           </div>
 
-          <!-- Right Column: Classes Grid -->
-          <div class="dashboard-right-card">
-            <div class="dashboard-classes-header" style="justify-content: space-between; align-items: flex-start; gap: 16px;">
-              <div style="display: flex; flex-direction: column; flex: 1;">
-                <h2 class="dashboard-classes-title">Daftar Kelas Mengajar Anda</h2>
-                <div class="dashboard-welcome-text" style="margin: 6px 0 0 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                  <i data-lucide="graduation-cap" style="width: 16px; height: 16px; color: #10b981; flex-shrink: 0;"></i>
-                  <span style="font-weight: 700; color: #10b981;"><span id="stat-total-kelas" class="num">0</span> Kelas Aktif</span>
-                </div>
+          <!-- KANBAN COL 2: DAFTAR KELAS MENGAJAR -->
+          <div class="dashboard-kanban-col kanban-col-classes dashboard-center-card">
+            <!-- Kanban Column Header -->
+            <div class="kanban-col-header" style="justify-content: space-between;">
+              <div class="kanban-col-title-wrap">
+                <div class="kanban-col-indicator indicator-blue"></div>
+                <h2 class="kanban-col-title">Kelas Mengajar</h2>
+                <span class="kanban-col-badge badge-blue"><span id="stat-total-kelas" class="num">0</span> Kelas</span>
+                <span class="kanban-col-badge badge-amber"><span id="stat-total-jp" class="num">0</span> JP</span>
               </div>
-              <button class="dashboard-add-btn" onclick="bukaModalKelas()" title="Tambah Kelas Baru" style="align-self: flex-start; margin-top: 4px;">
-                <i data-lucide="plus" style="width: 18px; height: 18px;"></i>
+              <button class="kanban-col-add-btn" onclick="bukaModalKelas()" title="Tambah Kelas Baru">
+                <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+                <span>Tambah Kelas</span>
               </button>
             </div>
-            <div class="kelas-grid" id="kelas-grid">
+
+            <!-- Kanban Column Body / Swimlane -->
+            <div class="kanban-col-body kelas-grid" id="kelas-grid">
               <!-- cards dirender JS -->
             </div>
           </div>
-        </div>
-        <!-- FOOTER HAK CIPTA DASHBOARD -->
-        <footer class="app-ui-footer dashboard-footer no-print">
-          <div class="app-ui-footer-inner">
-            <span>Hak Cipta &copy; 2026 <strong>Eka Fitriansyah</strong> &bull; Promesta.id</span>
+
+          <!-- KANBAN COL 3: AGENDA & AKTIVITAS -->
+          <div class="dashboard-kanban-col kanban-col-activity dashboard-right-card">
+            <!-- Kanban Column Header -->
+            <div class="kanban-col-header">
+              <div class="kanban-col-title-wrap">
+                <div class="kanban-col-indicator indicator-rose"></div>
+                <h2 class="kanban-col-title">Agenda &amp; Aktivitas</h2>
+              </div>
+              <span class="kanban-col-badge badge-rose">3 Modul</span>
+            </div>
+
+            <!-- Kanban Column Body / Swimlane -->
+            <div class="kanban-col-body kanban-widgets-stack">
+              <!-- WIDGET 1: JADWAL MENGAJAR HARI INI -->
+              <div class="dash-widget-card kanban-card" id="dash-widget-schedule">
+                <div class="dash-widget-header">
+                  <div class="dash-widget-title-wrap">
+                    <div class="dash-widget-icon" style="background: rgba(250, 204, 21, 0.15); color: #facc15;">
+                      <i data-lucide="calendar-clock" style="width: 15px; height: 15px;"></i>
+                    </div>
+                    <div>
+                      <h3 class="dash-widget-title">Jadwal Hari Ini</h3>
+                      <span class="dash-widget-subtitle" id="dash-today-name">-</span>
+                    </div>
+                  </div>
+                  <span class="dash-widget-badge" id="dash-today-jp-badge" style="background: rgba(250, 204, 21, 0.15); color: #facc15; border-color: rgba(250, 204, 21, 0.3);">0 JP</span>
+                </div>
+                <div class="dash-widget-body" id="dash-today-schedule-list">
+                  <!-- Dirender JS -->
+                </div>
+              </div>
+
+              <!-- WIDGET 2: AGENDA & LIBUR TERDEKAT (KALDIK) -->
+              <div class="dash-widget-card kanban-card" id="dash-widget-agenda">
+                <div class="dash-widget-header">
+                  <div class="dash-widget-title-wrap">
+                    <div class="dash-widget-icon" style="background: rgba(244, 63, 94, 0.15); color: #fb7185;">
+                      <i data-lucide="bell" style="width: 15px; height: 15px;"></i>
+                    </div>
+                    <div>
+                      <h3 class="dash-widget-title">Agenda Terdekat</h3>
+                      <span class="dash-widget-subtitle">Kalender Pendidikan</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="dash-widget-body" id="dash-upcoming-agenda-list">
+                  <!-- Dirender JS -->
+                </div>
+              </div>
+
+              <!-- WIDGET 3: CATATAN CEPAT GURU -->
+              <div class="dash-widget-card kanban-card" id="dash-widget-notes">
+                <div class="dash-widget-header">
+                  <div class="dash-widget-title-wrap">
+                    <div class="dash-widget-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+                      <i data-lucide="notebook-pen" style="width: 15px; height: 15px;"></i>
+                    </div>
+                    <div>
+                      <h3 class="dash-widget-title">Catatan Cepat Guru</h3>
+                      <span class="dash-widget-subtitle" id="dash-notes-stat">0 Selesai</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="dash-quicknotes-input-wrap">
+                  <input type="text" id="dash-quicknote-input" placeholder="Tulis tugas / agenda..." maxlength="80" onkeydown="if(event.key==='Enter') tambahQuickNote()">
+                  <button type="button" onclick="tambahQuickNote()" title="Tambah Catatan">
+                    <i data-lucide="plus" style="width: 13px; height: 13px;"></i>
+                  </button>
+                </div>
+                <div class="dash-quicknotes-list" id="dash-quicknotes-list">
+                  <!-- Dirender JS -->
+                </div>
+              </div>
+            </div>
           </div>
-        </footer>
+        </div>
       </div>
     </div>
 
@@ -1320,6 +1416,88 @@
           <button type="button" id="dm-execute-btn" onclick="eksekusiDataManagementSelectedAction()" class="btn-modal-ok" style="display: flex; align-items: center; gap: 8px; padding: 8px 20px; font-weight: 600; color: #ffffff !important;">
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- MODAL EKSPLORASI CAPAIAN PEMBELAJARAN (CP) BSKAP 046/2025 -->
+    <div class="modal-overlay hidden" id="modal-eksplorasi-cp" style="z-index: 10002;">
+      <div class="modal-box" style="max-width: 820px; width: 94%; max-height: 90vh; display: flex; flex-direction: column; padding: 22px;">
+        
+        <!-- Header -->
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i data-lucide="compass" style="width: 22px; height: 22px;"></i>
+            </div>
+            <div>
+              <h2 class="modal-title" style="margin: 0; font-size: 17px; line-height: 1.2; color: #ffffff;">Eksplorasi Bank Capaian Pembelajaran</h2>
+              <span style="font-size: 12px; color: var(--text-light); opacity: 0.85;">Keputusan BSKAP No. 046/H/KR/2025 • Kurikulum Merdeka</span>
+            </div>
+          </div>
+          <button type="button" onclick="tutupModalEksplorasiCP()" style="background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 18px; padding: 6px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: background 0.2s;" title="Tutup">✕</button>
+        </div>
+
+        <!-- Filter & Search Bar -->
+        <div style="display: grid; grid-template-columns: 1fr 140px 140px; gap: 10px; margin-bottom: 14px;">
+          <div style="position: relative;">
+            <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--text-light);"></i>
+            <input 
+              type="text" 
+              id="search-eksplorasi-cp" 
+              placeholder="Cari mata pelajaran atau kata kunci CP..." 
+              oninput="filterEksplorasiCP()"
+              style="width: 100%; padding: 9px 12px 9px 36px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 13px; box-sizing: border-box;"
+            />
+          </div>
+
+          <div>
+            <select 
+              id="filter-eksplorasi-jenjang" 
+              onchange="onEksplorasiJenjangChange()"
+              style="width: 100%; padding: 9px 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 13px; cursor: pointer; box-sizing: border-box;"
+            >
+              <option value="ALL">Semua Jenjang</option>
+              <option value="SD">SD</option>
+              <option value="SMP">SMP</option>
+              <option value="SMA">SMA</option>
+              <option value="SMK">SMK</option>
+            </select>
+          </div>
+
+          <div>
+            <select 
+              id="filter-eksplorasi-fase" 
+              onchange="filterEksplorasiCP()"
+              style="width: 100%; padding: 9px 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 13px; cursor: pointer; box-sizing: border-box;"
+            >
+              <option value="ALL">Semua Fase</option>
+              <option value="A">Fase A (Kelas 1-2)</option>
+              <option value="B">Fase B (Kelas 3-4)</option>
+              <option value="C">Fase C (Kelas 5-6)</option>
+              <option value="D">Fase D (Kelas 7-9)</option>
+              <option value="E">Fase E (Kelas 10)</option>
+              <option value="F">Fase F (Kelas 11-12)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Subject Select Dropdown -->
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text-light); margin-bottom: 5px;">PILIH MATA PELAJARAN:</label>
+          <select 
+            id="select-eksplorasi-mapel" 
+            onchange="renderEksplorasiCPContent()"
+            style="width: 100%; padding: 10px 14px; background: rgba(30, 41, 59, 0.8); border: 1.5px solid rgba(56, 189, 248, 0.3); border-radius: 8px; color: #38bdf8; font-size: 13.5px; font-weight: 600; cursor: pointer; box-sizing: border-box;"
+          >
+            <option value="">-- Memuat Bank Capaian Pembelajaran... --</option>
+          </select>
+        </div>
+
+        <!-- Results Area -->
+        <div id="eksplorasi-cp-container" style="flex: 1; min-height: 240px; max-height: 460px; overflow-y: auto; background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border); border-radius: 10px; padding: 16px;">
+          <!-- Content rendered by JS -->
+        </div>
+
       </div>
     </div>
 
@@ -2880,7 +3058,47 @@
               </button>
             </div>
           </div>
-          <div style="display: flex; gap: 8px; align-items: center;">
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <div class="header-dropdown align-right" id="dropdown-jurnal-format">
+              <button
+                class="btn-format-tanggal header-dropdown-btn"
+                type="button"
+                id="btn-dropdown-jurnal-format"
+                onclick="toggleHeaderDropdown(event, 'dropdown-jurnal-format')"
+                title="Pilih format tampilan tanggal pada tabel jurnal"
+              >
+                <i class="material-symbols-rounded" style="font-size:16px" data-lucide="calendar-check-2"></i>
+                <span id="lbl-jurnal-format-mode">Format: Rinci</span>
+                <i class="material-symbols-rounded chevron-icon" style="font-size:16px; margin-left: 2px" data-lucide="chevron-down"></i>
+              </button>
+              <div class="header-dropdown-menu" style="min-width: 230px;">
+                <div class="header-dropdown-group-title">Format Tanggal Jurnal</div>
+                <button
+                  class="header-dropdown-item accent"
+                  id="opt-jurnal-mode-rinci"
+                  type="button"
+                  onclick="setJurnalMode('rinci'); closeAllHeaderDropdowns();"
+                >
+                  <i class="material-symbols-rounded" style="font-size:16px" data-lucide="list"></i>
+                  <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
+                    <span style="font-weight: 600;">Mode Rinci (Default)</span>
+                    <small style="font-size: 11px; opacity: 0.75;">Daftar butir per tanggal pertemuan</small>
+                  </div>
+                </button>
+                <button
+                  class="header-dropdown-item"
+                  id="opt-jurnal-mode-ringkas"
+                  type="button"
+                  onclick="setJurnalMode('ringkas'); closeAllHeaderDropdowns();"
+                >
+                  <i class="material-symbols-rounded" style="font-size:16px" data-lucide="calendar-range"></i>
+                  <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
+                    <span style="font-weight: 600;">Mode Ringkas</span>
+                    <small style="font-size: 11px; opacity: 0.75;">Rentang tanggal awal &amp; akhir</small>
+                  </div>
+                </button>
+              </div>
+            </div>
             <button
               class="btn-docx"
               id="btn-docx-jurnal-1"
